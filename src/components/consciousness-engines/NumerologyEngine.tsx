@@ -9,9 +9,11 @@
 
 import { SacredFractal } from '@/generators/fractal-noise/minimal-fractals';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { BreathState, ConsciousnessState, NumerologyInput, NumerologyOutput } from '@/types';
 import { CONSCIOUSNESS_CONSTANTS } from '@/utils/consciousness-constants';
+import { AutoSaveStatusIndicator } from '@/components/ui/AutoSaveStatusIndicator';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -144,11 +146,27 @@ export const NumerologyEngine: React.FC<NumerologyEngineProps> = ({
   const [result, setResult] = useState<NumerologyOutput | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Auto-save hook for consciousness readings
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
+
   // Hooks
   const { calculateNumerology, state: apiState } = useWitnessOSAPI({
     onSuccess: data => {
       const numerologyResult = data as NumerologyOutput;
       setResult(numerologyResult);
+      
+      // Auto-save the reading
+      saveEngineResult(
+        'numerology',
+        numerologyResult,
+        { fullName, birthDate },
+        {
+          system: 'pythagorean',
+          currentYear: new Date().getFullYear(),
+          consciousnessLevel: consciousness.awarenessLevel,
+        }
+      );
+      
       if (onResultChange) {
         onResultChange(numerologyResult);
       }
@@ -238,7 +256,10 @@ export const NumerologyEngine: React.FC<NumerologyEngineProps> = ({
   }
 
   return (
-    <div className='w-full h-full'>
+    <div className='w-full h-full relative'>
+      {/* Auto-save status indicator */}
+      <AutoSaveStatusIndicator position="top-right" showWhenIdle={true} />
+      
       {/* 3D Visualization */}
       <div className='h-96 w-full'>
         <Canvas camera={{ position: [0, 0, size * 1.5], fov: 60 }}>

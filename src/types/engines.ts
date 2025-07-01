@@ -46,6 +46,7 @@ export interface HumanDesignInput extends BaseEngineInput {
   timezone: string;
   includeDesignCalculation?: boolean;
   detailedGates?: boolean;
+  [key: string]: unknown; // Add index signature to satisfy BaseEngineInput constraint
 }
 
 export interface HumanDesignGate {
@@ -114,6 +115,7 @@ export interface HumanDesignOutput extends BaseEngineOutput {
   strategyGuidance: string;
   authorityGuidance: string;
   deconditioningGuidance: string;
+  [key: string]: unknown; // Add index signature to satisfy BaseEngineOutput constraint
 }
 
 // ===== TAROT ENGINE =====
@@ -297,6 +299,7 @@ export type EngineName =
   | 'biorhythm'
   | 'vimshottari'
   | 'gene_keys'
-  | 'sigil_forge';
+  | 'sigil_forge'
+  | 'nadabrahman';
 
 // Export all types - removed to avoid conflicts, using individual exports above

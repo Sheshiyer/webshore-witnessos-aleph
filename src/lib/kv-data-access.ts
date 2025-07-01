@@ -59,8 +59,9 @@ export class CloudflareKVDataAccess implements KVOperations {
       const prefix = `user:${userId}:${engineName}:`;
       const list = await this.userProfiles.list({ prefix, limit: 1 });
       if (!list.keys.length) return null;
-      key = list.keys[0]?.name;
-      if (!key) return null;
+      const keyName = list.keys[0]?.name;
+      if (!keyName) return null;
+      key = keyName;
     }
 
     try {
@@ -176,6 +177,56 @@ export class CloudflareKVDataAccess implements KVOperations {
     }
   }
 
+  // Consciousness Profile Operations
+  async getConsciousnessProfile(userId: string): Promise<any | null> {
+    const key = `consciousness:${userId}:profile`;
+    
+    try {
+      const data = await this.userProfiles.get(key, { type: 'json' });
+      return data;
+    } catch (error) {
+      console.error(`Failed to get consciousness profile for ${userId}:`, error);
+      return null;
+    }
+  }
+
+  async setConsciousnessProfile(userId: string, profile: any): Promise<string> {
+    const timestamp = new Date().toISOString();
+    const key = `consciousness:${userId}:profile`;
+    
+    try {
+      const profileData = {
+        ...profile,
+        userId,
+        timestamp,
+        updatedAt: timestamp,
+        version: '1.0.0'
+      };
+      
+      await this.userProfiles.put(
+        key, 
+        JSON.stringify(profileData),
+        { expirationTtl: CACHE_TTL_CONFIG.user_profiles }
+      );
+      
+      return timestamp;
+    } catch (error) {
+      console.error(`Failed to set consciousness profile for ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteConsciousnessProfile(userId: string): Promise<void> {
+    const key = `consciousness:${userId}:profile`;
+    
+    try {
+      await this.userProfiles.delete(key);
+    } catch (error) {
+      console.error(`Failed to delete consciousness profile for ${userId}:`, error);
+      throw error;
+    }
+  }
+
   // Maintenance Operations
   async listEngineDataKeys(engineName: string): Promise<string[]> {
     const prefix = `engine:${engineName}:`;
@@ -248,6 +299,170 @@ export class CloudflareKVDataAccess implements KVOperations {
     } catch (error) {
       console.error('Failed to clear cache:', error);
       throw error;
+    }
+  }
+
+  // Reading History Operations
+  async saveReading(userId: string, reading: any): Promise<{ success: boolean; readingId?: string; error?: string }> {
+    try {
+      const readingId = crypto.randomUUID();
+      const timestamp = new Date().toISOString();
+      const key = `reading:${userId}:${readingId}`;
+      
+      const readingData = {
+        id: readingId,
+        userId,
+        timestamp,
+        ...reading,
+        favorite: false,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
+
+      await this.userProfiles.put(
+        key,
+        JSON.stringify(readingData),
+        { expirationTtl: CACHE_TTL_CONFIG.user_profiles }
+      );
+
+      return { success: true, readingId };
+    } catch (error) {
+      console.error(`Failed to save reading for user ${userId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async getReading(readingId: string): Promise<any | null> {
+    try {
+      // Search for the reading across all user namespaces
+      // This is a simplified approach - in production you'd want to include userId in the request
+      const prefix = 'reading:';
+      const list = await this.userProfiles.list({ prefix, limit: 1000 });
+      
+      for (const key of list.keys) {
+        if (key.name.includes(readingId)) {
+          const data = await this.userProfiles.get(key.name, { type: 'json' });
+          if (data && data.id === readingId) {
+            return data;
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Failed to get reading ${readingId}:`, error);
+      return null;
+    }
+  }
+
+  async getUserReadings(userId: string, limit: number = 10, timeRange: string = '30d'): Promise<any[]> {
+    try {
+      const prefix = `reading:${userId}:`;
+      const readings: any[] = [];
+      let cursor: string | undefined;
+
+      // Calculate time threshold
+      const now = new Date();
+      const timeThreshold = new Date();
+      if (timeRange.endsWith('d')) {
+        const days = parseInt(timeRange.slice(0, -1));
+        timeThreshold.setDate(now.getDate() - days);
+      } else if (timeRange.endsWith('m')) {
+        const months = parseInt(timeRange.slice(0, -1));
+        timeThreshold.setMonth(now.getMonth() - months);
+      }
+
+      do {
+        const list = await this.userProfiles.list({ 
+          prefix, 
+          limit: Math.min(limit * 2, 1000), // Get more than needed to filter
+          ...(cursor && { cursor })
+        });
+
+        for (const key of list.keys) {
+          if (readings.length >= limit) break;
+          
+          const data = await this.userProfiles.get(key.name, { type: 'json' });
+          if (data && data.timestamp) {
+            const readingDate = new Date(data.timestamp);
+            if (readingDate >= timeThreshold) {
+              readings.push(data);
+            }
+          }
+        }
+
+        cursor = list.cursor;
+      } while (cursor && readings.length < limit);
+
+      // Sort by timestamp (newest first) and limit
+      return readings
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+
+    } catch (error) {
+      console.error(`Failed to get user readings for ${userId}:`, error);
+      return [];
+    }
+  }
+
+  async deleteReading(readingId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Find and delete the reading
+      const prefix = 'reading:';
+      const list = await this.userProfiles.list({ prefix, limit: 1000 });
+      
+      for (const key of list.keys) {
+        if (key.name.includes(readingId)) {
+          const data = await this.userProfiles.get(key.name, { type: 'json' });
+          if (data && data.id === readingId) {
+            await this.userProfiles.delete(key.name);
+            return { success: true };
+          }
+        }
+      }
+      
+      return { success: false, error: 'Reading not found' };
+    } catch (error) {
+      console.error(`Failed to delete reading ${readingId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async toggleFavorite(readingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      // Find the reading
+      const prefix = 'reading:';
+      const list = await this.userProfiles.list({ prefix, limit: 1000 });
+      
+      for (const key of list.keys) {
+        if (key.name.includes(readingId)) {
+          const data = await this.userProfiles.get(key.name, { type: 'json' });
+          if (data && data.id === readingId) {
+            // Toggle favorite status
+            const updatedData = {
+              ...data,
+              favorite: !data.favorite,
+              updatedAt: new Date().toISOString()
+            };
+            
+            await this.userProfiles.put(
+              key.name,
+              JSON.stringify(updatedData),
+              { expirationTtl: CACHE_TTL_CONFIG.user_profiles }
+            );
+            
+            return { 
+              success: true, 
+              message: updatedData.favorite ? 'Reading marked as favorite' : 'Reading removed from favorites'
+            };
+          }
+        }
+      }
+      
+      return { success: false, error: 'Reading not found' };
+    } catch (error) {
+      console.error(`Failed to toggle favorite for reading ${readingId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 

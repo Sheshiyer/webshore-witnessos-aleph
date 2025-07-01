@@ -17,6 +17,7 @@ import SacredGeometryEngineComponent from './SacredGeometryEngine';
 import SigilForgeEngineComponent from './SigilForgeEngine';
 import TarotEngineComponent from './TarotEngine';
 import VimshottariEngineComponent from './VimshottariEngine';
+import { NadaBrahmanEngine as NadaBrahmanEngineComponent } from './NadaBrahmanEngine';
 
 // Re-export with consistent names
 export {
@@ -31,6 +32,7 @@ export {
   SigilForgeEngineComponent as SigilForgeEngine,
   TarotEngineComponent as TarotEngine,
   VimshottariEngineComponent as VimshottariEngine,
+  NadaBrahmanEngineComponent as NadaBrahmanEngine,
 };
 
 // Engine type definitions for easy reference

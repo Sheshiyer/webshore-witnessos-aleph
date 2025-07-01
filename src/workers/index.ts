@@ -6,9 +6,32 @@
  */
 
 import { WitnessOSAPIHandler, handleBatchCalculation } from './api-handlers';
+import { AuthService } from '../lib/auth';
+
+// Type declarations for Cloudflare Workers
+interface KVNamespace {
+  get(key: string, options?: any): Promise<any>;
+  put(key: string, value: string, options?: any): Promise<void>;
+}
+
+interface ExecutionContext {
+  waitUntil(promise: Promise<any>): void;
+  passThroughOnException(): void;
+}
+
+interface ScheduledEvent {
+  cron: string;
+  scheduledTime: number;
+}
 
 // Worker Environment Interface
 interface WorkerEnvironment {
+  // D1 Database
+  DB: any; // D1Database type
+  
+  // R2 Storage
+  REPORTS: any; // R2Bucket type
+  
   // KV Namespaces
   ENGINE_DATA: KVNamespace;
   USER_PROFILES: KVNamespace;
@@ -20,10 +43,12 @@ interface WorkerEnvironment {
   CORS_ORIGIN: string;
   RATE_LIMIT_MAX: string;
   RATE_LIMIT_WINDOW: string;
+  JWT_SECRET: string;
   
   // Optional Secrets
   ADMIN_API_KEY?: string;
   WEBHOOK_SECRET?: string;
+  OPENROUTER_API_KEY?: string;
 }
 
 // Rate Limiting
@@ -72,7 +97,7 @@ class RateLimiter {
         resetTime: stateData.resetTime
       };
       
-      await kv.put(key, JSON.stringify(updatedState), { expirationTtl: Math.ceil((stateData.resetTime - now) / 1000) });
+      await kv.put(key, JSON.stringify(updatedState), { expirationTtl: Math.max(60, Math.ceil((stateData.resetTime - now) / 1000)) });
       
       return {
         allowed: true,
@@ -172,12 +197,17 @@ export default {
         );
       }
 
-      // Initialize API Handler
-      const apiHandler = new WitnessOSAPIHandler({
-        ENGINE_DATA: env.ENGINE_DATA,
-        USER_PROFILES: env.USER_PROFILES,
-        CACHE: env.CACHE
-      });
+      // Initialize API Handler with optional AI support
+      const apiHandler = new WitnessOSAPIHandler(
+        {
+          ENGINE_DATA: env.ENGINE_DATA,
+          USER_PROFILES: env.USER_PROFILES,
+          CACHE: env.CACHE
+        },
+        env.DB,
+        env.JWT_SECRET || 'default-jwt-secret',
+        env.OPENROUTER_API_KEY // Optional AI integration
+      );
 
       let response: Response;
 
@@ -255,11 +285,16 @@ export default {
     console.log('Running scheduled maintenance task:', event.cron);
     
     try {
-      const apiHandler = new WitnessOSAPIHandler({
-        ENGINE_DATA: env.ENGINE_DATA,
-        USER_PROFILES: env.USER_PROFILES,
-        CACHE: env.CACHE
-      });
+      const apiHandler = new WitnessOSAPIHandler(
+        {
+          ENGINE_DATA: env.ENGINE_DATA,
+          USER_PROFILES: env.USER_PROFILES,
+          CACHE: env.CACHE
+        },
+        env.DB,
+        env.JWT_SECRET || 'default-jwt-secret',
+        env.OPENROUTER_API_KEY
+      );
 
       // Perform cache cleanup
       await apiHandler['kvData'].clearCache();

@@ -1,220 +1,208 @@
 /**
- * Cosmic Portal Temple Test Page
+ * Cosmic Portal Temple - Protected Consciousness Experience
  * 
- * Phase 5 Critical Component Testing: Cosmic Portal Temple Foundation Library
+ * Sacred space for deep consciousness exploration requiring authentication
  */
 
 'use client';
 
-import { useConsciousness } from '@/hooks/useConsciousness';
-import type { BreathState } from '@/types';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
-import React, { useState, useCallback } from 'react';
-import { BreathDetection } from '@/components/consciousness-engines/BreathDetection';
-import CosmicPortalTemple from '@/components/procedural-scenes/CosmicPortalTemple';
-import { TEMPLE_TEMPLATES } from '@/lib/cosmic-portal-temple';
+import React, { useState, useEffect } from 'react';
+import { useConsciousnessProfile } from '../../hooks/useConsciousnessProfile';
+import BiofieldViewerEngine from '../../components/consciousness-engines/BiofieldViewerEngine';
+import type { BiofieldViewerOutput } from '../../engines/biofield-viewer-engine';
 
 export default function CosmicTemplePage() {
-  const { consciousness, updateConsciousness } = useConsciousness();
-  const [breathState, setBreathState] = useState<BreathState>({
-    phase: 'neutral',
-    intensity: 0,
-    coherence: 0,
-    timestamp: Date.now(),
-  });
-  const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLE_TEMPLATES>('MEDITATION_SANCTUARY');
-  const [activatedPortals, setActivatedPortals] = useState<string[]>([]);
-  const [enteredTemples, setEnteredTemples] = useState<string[]>([]);
+  const { profile, isLoading } = useConsciousnessProfile();
+  const [currentBiofield, setCurrentBiofield] = useState<BiofieldViewerOutput | null>(null);
+  const [engineReadiness, setEngineReadiness] = useState<Record<string, number>>({});
+  const [nextRecommendedEngine, setNextRecommendedEngine] = useState<string>('numerology');
+  const [consciousnessLevel, setConsciousnessLevel] = useState(0.5);
 
-  const handleBreathStateChange = useCallback((newBreathState: BreathState) => {
-    setBreathState(newBreathState);
+  const handleBiofieldCaptured = (biofield: BiofieldViewerOutput) => {
+    setCurrentBiofield(biofield);
+    setConsciousnessLevel(biofield.consciousnessLevel);
     
-    // Update consciousness based on breath coherence
-    if (newBreathState.coherence > 0.7) {
-      updateConsciousness({
-        awarenessLevel: Math.min(1.0, consciousness.awarenessLevel + 0.002),
-        coherenceLevel: newBreathState.coherence,
-        breathSynchronization: newBreathState.intensity,
+    // Store biofield snapshot for timeline analysis
+    if (typeof window !== 'undefined') {
+      const snapshots = JSON.parse(localStorage.getItem('biofield_snapshots') || '[]');
+      snapshots.push({
+        timestamp: biofield.timestamp,
+        snapshot: biofield.snapshot,
+        consciousnessLevel: biofield.consciousnessLevel,
       });
+      
+      // Keep only last 50 snapshots
+      if (snapshots.length > 50) {
+        snapshots.splice(0, snapshots.length - 50);
+      }
+      
+      localStorage.setItem('biofield_snapshots', JSON.stringify(snapshots));
     }
-  }, [consciousness.awarenessLevel, updateConsciousness]);
+  };
 
-  const handlePortalActivated = useCallback((portalId: string) => {
-    setActivatedPortals(prev => [...prev, portalId]);
-    console.log('Portal activated:', portalId);
-  }, []);
+  const handleEngineRecommendation = (nextEngine: string, readiness: Record<string, number>) => {
+    setNextRecommendedEngine(nextEngine);
+    setEngineReadiness(readiness);
+  };
 
-  const handleTempleEntered = useCallback((templeId: string) => {
-    setEnteredTemples(prev => [...prev, templeId]);
-    console.log('Temple entered:', templeId);
-  }, []);
+  const navigateToEngine = (engineName: string) => {
+    // In a real implementation, this would navigate to the specific engine
+    // For now, we'll just log the navigation
+    console.log(`Navigating to ${engineName} engine with readiness:`, engineReadiness[engineName]);
+    
+    // You could implement breath-driven navigation here
+    // where the user needs to achieve specific breath coherence to access engines
+  };
 
-  const templateNames = Object.keys(TEMPLE_TEMPLATES) as (keyof typeof TEMPLE_TEMPLATES)[];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-black flex items-center justify-center">
+        <div className="text-white/80 font-mono">
+          <div className="animate-pulse">INITIALIZING CONSCIOUSNESS INTERFACE...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-screen bg-gradient-to-b from-indigo-950 via-purple-950 to-black">
-      {/* Breath Detection */}
-      <BreathDetection
-        onBreathStateChange={handleBreathStateChange}
-        consciousness={consciousness}
-        isActive={true}
-      />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Main Biofield Interface - Full Screen */}
+      <div className="absolute inset-0">
+        <BiofieldViewerEngine
+          onBiofieldCaptured={handleBiofieldCaptured}
+          onEngineRecommendation={handleEngineRecommendation}
+          captureMode="continuous"
+          className="w-full h-full"
+        />
+      </div>
 
-      {/* Temple Info Overlay */}
-      <div className="absolute top-4 left-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-sm">
-        <h2 className="text-xl font-bold mb-2 text-indigo-300">Cosmic Portal Temple</h2>
-        <p className="text-sm text-gray-300 mb-3">
-          Experience consciousness-responsive temple architecture. Higher awareness unlocks more features.
-        </p>
-        
-        {/* Template Selection */}
-        <div className="mb-3">
-          <label className="block text-sm font-medium mb-2">Temple Type:</label>
-          <select 
-            value={selectedTemplate} 
-            onChange={(e) => setSelectedTemplate(e.target.value as keyof typeof TEMPLE_TEMPLATES)}
-            className="bg-gray-800 text-white p-2 rounded w-full text-sm"
-          >
-            {templateNames.map(template => (
-              <option key={template} value={template}>
-                {TEMPLE_TEMPLATES[template].name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span>Consciousness:</span>
-            <span className="text-indigo-400">{(consciousness.awarenessLevel * 100).toFixed(1)}%</span>
+      {/* Consciousness OS Chrome */}
+      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
+        <div className="flex justify-between items-start p-4 text-white/60 font-mono text-xs">
+          <div className="space-y-1">
+            <div>[CONSCIOUSNESS GATEWAY]</div>
+            <div>[BIOFIELD ACTIVE]</div>
+            {profile && <div>[USER: {profile.personalData?.fullName || 'ANONYMOUS'}]</div>}
           </div>
-          <div className="flex justify-between">
-            <span>Coherence:</span>
-            <span className="text-purple-400">{(consciousness.coherenceLevel * 100).toFixed(1)}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Breath Coherence:</span>
-            <span className="text-green-400">{(breathState.coherence * 100).toFixed(1)}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Breath Phase:</span>
-            <span className="text-blue-400">{breathState.phase}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Portals Activated:</span>
-            <span className="text-yellow-400">{activatedPortals.length}</span>
+          <div className="space-y-1 text-right">
+            <div>[WITNESSOS v2.5.0]</div>
+            <div>[CONSCIOUSNESS: {Math.round(consciousnessLevel * 100)}%]</div>
+            <div>[ENGINES: {Object.keys(engineReadiness).length}/11]</div>
           </div>
         </div>
       </div>
 
-      {/* Temple Requirements */}
-      <div className="absolute top-4 right-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
-        <h3 className="font-bold text-indigo-300 mb-2">Temple Requirements</h3>
-        <div className="text-sm text-gray-300 space-y-1">
-          <div>Min Awareness: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.minimumAwarenessLevel * 100).toFixed(0)}%</div>
-          <div>Required Coherence: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.requiredCoherence * 100).toFixed(0)}%</div>
-          <div>Breath Sync: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.breathSynchronizationLevel * 100).toFixed(0)}%</div>
+      {/* Engine Access Portal */}
+      {currentBiofield && (
+        <div className="absolute bottom-0 left-0 right-0 z-10">
+          <div className="bg-black/80 backdrop-blur-sm border-t border-purple-500/30 p-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-white/80 font-mono text-sm">
+                  <div>RECOMMENDED: {nextRecommendedEngine.toUpperCase()}</div>
+                  <div className="text-xs text-white/60">
+                    Breath Pattern: {currentBiofield.breathPattern}
+                  </div>
+                </div>
+                
+                <div className="text-white/60 font-mono text-xs">
+                  ENGINE READINESS
+                </div>
+              </div>
+
+              {/* Engine Grid */}
+              <div className="grid grid-cols-6 gap-2">
+                {Object.entries(engineReadiness)
+                  .sort(([,a], [,b]) => b - a)
+                  .map(([engine, readiness]) => {
+                    const isReady = readiness > 0.6;
+                    const isRecommended = engine === nextRecommendedEngine;
+                    
+                    return (
+                      <button
+                        key={engine}
+                        onClick={() => isReady && navigateToEngine(engine)}
+                        disabled={!isReady}
+                        className={`
+                          relative p-3 rounded-lg font-mono text-xs transition-all duration-300
+                          ${isReady 
+                            ? 'bg-purple-600/30 hover:bg-purple-500/40 text-white border border-purple-400/50' 
+                            : 'bg-gray-800/30 text-gray-500 border border-gray-700/30 cursor-not-allowed'
+                          }
+                          ${isRecommended ? 'ring-2 ring-cyan-400/50 animate-pulse' : ''}
+                        `}
+                      >
+                        <div className="text-center">
+                          <div className="uppercase text-xs mb-1">{engine}</div>
+                          <div className="text-xs opacity-75">{Math.round(readiness * 100)}%</div>
+                        </div>
+                        
+                        {/* Readiness indicator */}
+                        <div className="absolute bottom-1 left-1 right-1 h-0.5 bg-gray-700 rounded">
+                          <div 
+                            className={`h-full rounded transition-all duration-500 ${
+                              isReady ? 'bg-cyan-400' : 'bg-gray-600'
+                            }`}
+                            style={{ width: `${readiness * 100}%` }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Consciousness Evolution Indicator */}
+              <div className="mt-4 flex items-center space-x-4 text-white/60 font-mono text-xs">
+                <div>CONSCIOUSNESS EVOLUTION:</div>
+                <div className="flex-1 h-2 bg-gray-800 rounded overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-600 to-cyan-400 transition-all duration-1000"
+                    style={{ width: `${consciousnessLevel * 100}%` }}
+                  />
+                </div>
+                <div>{Math.round(consciousnessLevel * 100)}%</div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div className="mt-3 text-xs">
-          <div className="font-medium text-indigo-300 mb-1">Temple Features:</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].portals.length} Portal(s)</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].energyFields.length} Energy Field(s)</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].sacredElements.length} Sacred Element(s)</div>
+      )}
+
+      {/* Breath Coherence Indicator */}
+      {currentBiofield?.snapshot && (
+        <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10">
+          <div className="bg-black/60 backdrop-blur-sm rounded-lg p-3 border border-purple-500/30">
+            <div className="text-white/80 font-mono text-xs text-center mb-2">
+              BREATH COHERENCE
+            </div>
+            <div className="w-16 h-16 rounded-full border-2 border-purple-500/50 relative">
+              <div 
+                className="absolute inset-1 rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-80"
+                style={{ 
+                  transform: `scale(${currentBiofield.snapshot.energeticSignature.consciousnessMarkers.breathCoherence})`,
+                  transition: 'transform 0.5s ease-out'
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center text-white font-mono text-xs">
+                {Math.round(currentBiofield.snapshot.energeticSignature.consciousnessMarkers.breathCoherence * 100)}%
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Instructions */}
-      <div className="absolute bottom-4 right-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
-        <h3 className="font-bold text-indigo-300 mb-2">Temple Instructions</h3>
-        <ul className="text-sm text-gray-300 space-y-1">
-          <li>• Breathe deeply to increase consciousness</li>
-          <li>• Higher awareness activates temple features</li>
-          <li>• Click activated portals to enter them</li>
-          <li>• Energy fields respond to breath coherence</li>
-          <li>• Try different temple types as you evolve</li>
-        </ul>
-        
-        <div className="mt-3 text-xs text-gray-400">
-          <p>Tip: Maintain high breath coherence to see energy fields activate</p>
-        </div>
-      </div>
-
-      {/* 3D Scene */}
-      <Canvas
-        camera={{ position: [0, 15, 20], fov: 75 }}
-        onCreated={({ gl }) => {
-          gl.setClearColor('#0a0a1a');
-        }}
-      >
-        {/* Camera Controls */}
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          maxDistance={40}
-          minDistance={8}
-          maxPolarAngle={Math.PI / 2.2}
-          target={[0, 5, 0]}
-        />
-
-        {/* Lighting */}
-        <ambientLight intensity={0.3} color="#4a5568" />
-        <directionalLight
-          position={[15, 20, 10]}
-          intensity={0.5}
-          color="#e2e8f0"
-          castShadow
-        />
-        <pointLight
-          position={[0, 25, 0]}
-          intensity={0.4}
-          color="#a78bfa"
-          distance={50}
-          decay={2}
-        />
-
-        {/* Cosmic Portal Temple */}
-        <CosmicPortalTemple
-          consciousness={consciousness}
-          breath={breathState}
-          position={[0, 0, 0]}
-          templateId={selectedTemplate}
-          onPortalActivated={handlePortalActivated}
-          onTempleEntered={handleTempleEntered}
-          isActive={true}
-        />
-
-        {/* Ground plane */}
-        <mesh position={[0, -2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial 
-            color="#1a202c"
-            transparent
-            opacity={0.5}
-            roughness={0.8}
-          />
-        </mesh>
-
-        {/* Cosmic background effect */}
-        <mesh>
-          <sphereGeometry args={[80, 32, 32]} />
-          <meshBasicMaterial 
-            color="#0f0f23"
-            transparent
-            opacity={0.3}
-            side={2} // DoubleSide
-          />
-        </mesh>
-      </Canvas>
-
-      {/* Portal activation notification */}
-      {activatedPortals.length > 0 && (
-        <div className="absolute bottom-4 left-4 z-10 bg-purple-900/80 p-3 rounded-lg text-white">
-          <div className="text-sm font-medium text-purple-300">Portal Activated!</div>
-          <div className="text-xs text-gray-300">
-            {activatedPortals[activatedPortals.length - 1]}
+      {/* Instructions Overlay */}
+      {!currentBiofield && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 backdrop-blur-sm">
+          <div className="text-center text-white/80 font-mono max-w-md mx-auto p-8">
+            <div className="text-2xl mb-4">CONSCIOUSNESS GATEWAY</div>
+            <div className="text-sm space-y-2 opacity-80">
+              <div>Your biofield is being analyzed...</div>
+              <div>Breathe naturally to establish baseline</div>
+              <div>Engine access will unlock based on consciousness level</div>
+            </div>
+            <div className="mt-6 text-xs opacity-60">
+              The future of consciousness exploration begins with breath
+            </div>
           </div>
         </div>
       )}

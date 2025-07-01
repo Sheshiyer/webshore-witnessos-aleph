@@ -14,6 +14,10 @@
 import { gsap } from 'gsap';
 import React, { useEffect, useRef, useState } from 'react';
 import { type ConsciousnessProfile } from './ConsciousnessDataCollector';
+import { useAuth } from '@/contexts/AuthContext';
+import { useConsciousnessProfile } from '@/hooks/useConsciousnessProfile';
+import { SPECTRAL_COLORS } from './SacredGeometryForm';
+import { apiClient } from '@/utils/api-client';
 
 interface IntegratedConsciousnessOnboardingProps {
   onProfileComplete: (profile: ConsciousnessProfile) => void;
@@ -28,6 +32,10 @@ interface IntegratedConsciousnessOnboardingProps {
 }
 
 type OnboardingStep =
+  | 'consciousness_gateway'
+  | 'auth_choice'
+  | 'login_portal'
+  | 'register_portal'
   | 'direction_selection'
   | 'name_story'
   | 'birth_date_story'
@@ -128,6 +136,10 @@ export const IntegratedConsciousnessOnboarding: React.FC<
   const contentRef = useRef<HTMLDivElement>(null);
   const compassRef = useRef<HTMLDivElement>(null);
 
+  // Auth integration for final profile upload
+  const { isAuthenticated } = useAuth();
+  const { uploadToCloud } = useConsciousnessProfile();
+
   // Initialize state from saved data or defaults
   const getInitialStep = (): OnboardingStep => {
     const stepMap: OnboardingStep[] = [
@@ -145,7 +157,7 @@ export const IntegratedConsciousnessOnboarding: React.FC<
   const [selectedDirection, setSelectedDirection] = useState<ArchetypalDirection | null>(() => {
     if (initialData?.preferences?.spectralDirection) {
       return (
-        ARCHETYPAL_DIRECTIONS.find(d => d.id === initialData.preferences.spectralDirection) || null
+        ARCHETYPAL_DIRECTIONS.find(d => d.id === initialData?.preferences?.spectralDirection) || null
       );
     }
     return null;
@@ -260,14 +272,14 @@ export const IntegratedConsciousnessOnboarding: React.FC<
 
   // Update step tracking with progressive persistence
   useEffect(() => {
-    const stepMap: Record<OnboardingStep, number> = {
+    const stepMap = {
       direction_selection: 1,
       name_story: 2,
       birth_date_story: 3,
       birth_time_story: 4,
       birth_location_story: 5,
       confirmation: 6,
-    };
+    } as const;
 
     // Call with step name - profile data will be passed when handlers are called
     onStepChange?.(stepMap[currentStep], 6, currentStep);
@@ -363,18 +375,19 @@ export const IntegratedConsciousnessOnboarding: React.FC<
 
   const handleBirthTimeSubmit = (time: string) => {
     setBirthTime(time);
-    setProfile(prev => ({
-      ...prev,
+    const updatedProfile = {
+      ...profile,
       birthData: {
-        birthDate: prev.birthData?.birthDate || '',
+        birthDate: profile.birthData?.birthDate || '',
         birthTime: time,
-        birthLocation: prev.birthData?.birthLocation || [0, 0],
-        timezone: prev.birthData?.timezone || '',
-        date: prev.birthData?.date || '',
+        birthLocation: profile.birthData?.birthLocation || [0, 0],
+        timezone: profile.birthData?.timezone || '',
+        date: profile.birthData?.date || '',
         time: time,
-        location: prev.birthData?.location || [0, 0],
+        location: profile.birthData?.location || [0, 0],
       },
-    }));
+    };
+    setProfile(updatedProfile);
 
     // Update profile card with birth time
     setProfileCardData(prev => ({
@@ -383,14 +396,17 @@ export const IntegratedConsciousnessOnboarding: React.FC<
       completionPercentage: 66.67, // 4/6 steps complete
     }));
 
+    // Save progress with updated profile data
+    onStepChange?.(4, 6, 'birth_time_story', updatedProfile);
+
     setCurrentStep('birth_location_story');
   };
 
   const handleLocationSubmit = (city: string, country: string) => {
     setBirthCity(city);
     setBirthCountry(country);
-    setProfile(prev => ({
-      ...prev,
+    const updatedProfile = {
+      ...profile,
       location: {
         city,
         country,
@@ -399,15 +415,16 @@ export const IntegratedConsciousnessOnboarding: React.FC<
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
       birthData: {
-        birthDate: prev.birthData?.birthDate || '',
-        birthTime: prev.birthData?.birthTime || '',
-        birthLocation: [0, 0],
+        birthDate: profile.birthData?.birthDate || '',
+        birthTime: profile.birthData?.birthTime || '',
+        birthLocation: [0, 0] as [number, number],
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        date: prev.birthData?.date || '',
-        time: prev.birthData?.time || '',
-        location: [0, 0],
+        date: profile.birthData?.date || '',
+        time: profile.birthData?.time || '',
+        location: [0, 0] as [number, number],
       },
-    }));
+    };
+    setProfile(updatedProfile);
 
     // Update profile card with location
     setProfileCardData(prev => ({
@@ -416,10 +433,13 @@ export const IntegratedConsciousnessOnboarding: React.FC<
       completionPercentage: 83.33, // 5/6 steps complete
     }));
 
+    // Save progress with updated profile data
+    onStepChange?.(5, 6, 'birth_location_story', updatedProfile);
+
     setCurrentStep('confirmation');
   };
 
-  const handleConfirmation = () => {
+  const handleConfirmation = async () => {
     // Complete the profile card evolution
     setProfileCardData(prev => ({
       ...prev,
@@ -438,6 +458,12 @@ export const IntegratedConsciousnessOnboarding: React.FC<
         ...(selectedDirection?.name && { humanDesignType: selectedDirection.name }),
       },
     };
+
+    // Upload final profile to cloud if authenticated
+    if (isAuthenticated) {
+      await uploadToCloud(finalProfile);
+    }
+
     onProfileComplete(finalProfile);
   };
 
@@ -478,6 +504,8 @@ export const IntegratedConsciousnessOnboarding: React.FC<
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
+
+
 
       {/* Main Content - Left-Right Split Layout */}
       <div ref={contentRef} className='relative z-10 flex-1 flex overflow-hidden'>

@@ -9,6 +9,7 @@
 
 import { createFractalGeometry } from '@/generators/fractal-noise';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { BirthData } from '@/types';
 import { useFrame } from '@react-three/fiber';

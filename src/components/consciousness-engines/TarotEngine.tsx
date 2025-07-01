@@ -9,6 +9,7 @@
 
 import { createFractalGeometry } from '@/generators/fractal-noise';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { QuestionInput } from '@/types';
 import { useFrame } from '@react-three/fiber';
@@ -96,25 +97,44 @@ export const TarotEngine: React.FC<TarotEngineProps> = ({
   const groupRef = useRef<Group>(null);
   const { calculateTarot, state } = useWitnessOSAPI();
   const { breathPhase, consciousnessLevel } = useConsciousness();
+  
+  // Auto-save hook for consciousness readings
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
 
   // Calculate Tarot reading
   useEffect(() => {
     if (question && visible) {
-      calculateTarot({
+      const tarotInput = {
         question: question.question,
         spread_type: (question.context as any)?.spread_type || 'three_card',
         focus_area: (question.context as any)?.focus_area || 'general',
         include_reversals: true,
         include_numerology: true,
-      })
+      };
+      
+      calculateTarot(tarotInput)
         .then(result => {
-          if (result.success && onCalculationComplete) {
-            onCalculationComplete(result.data);
+          if (result.success) {
+            // Auto-save the reading
+            saveEngineResult(
+              'tarot',
+              result.data,
+              tarotInput,
+              {
+                spreadType: tarotInput.spread_type,
+                focusArea: tarotInput.focus_area,
+                consciousnessLevel,
+              }
+            );
+            
+            if (onCalculationComplete) {
+              onCalculationComplete(result.data);
+            }
           }
         })
         .catch(console.error);
     }
-  }, [question, visible, calculateTarot, onCalculationComplete]);
+  }, [question, visible, calculateTarot, onCalculationComplete, consciousnessLevel, saveEngineResult]);
 
   // Process tarot data into 3D card structures
   const { cards, spread, cardGeometries } = useMemo(() => {

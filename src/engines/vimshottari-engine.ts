@@ -77,6 +77,34 @@ export class VimshottariEngine extends BaseEngine<VimshottariInput, VimshottariO
   public readonly name = 'vimshottari';
   public readonly description = 'Calculates Vedic astrology Dasha periods and timeline with karmic guidance';
 
+  protected validateInput(input: VimshottariInput): boolean {
+    return !!(input.birth_date && input.full_name);
+  }
+
+  protected async performCalculation(input: VimshottariInput): Promise<Record<string, unknown>> {
+    return this._calculate(input);
+  }
+
+  protected generateInterpretation(results: Record<string, unknown>, input: VimshottariInput): string {
+    return this._interpret(results, input);
+  }
+
+  protected generateRecommendations(results: Record<string, unknown>, input: VimshottariInput): string[] {
+    return this._generateRecommendations(results, input);
+  }
+
+  protected generateRealityPatches(results: Record<string, unknown>, input: VimshottariInput): string[] {
+    return this._generateRealityPatches(results, input);
+  }
+
+  protected identifyArchetypalThemes(results: Record<string, unknown>, input: VimshottariInput): string[] {
+    return this._identifyArchetypalThemes(results, input);
+  }
+
+  protected calculateConfidence(results: Record<string, unknown>, input: VimshottariInput): number {
+    return this._calculateConfidence(results, input);
+  }
+
   // Vimshottari Dasha periods (in years)
   private readonly DASHA_PERIODS: Record<string, number> = {
     'Ketu': 7,

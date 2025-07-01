@@ -9,6 +9,7 @@
 
 import { generateWaveInterference } from '@/generators/wave-equations';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { QuestionInput } from '@/types';
 import { useFrame } from '@react-three/fiber';
@@ -112,6 +113,7 @@ export const IChingEngine: React.FC<IChingEngineProps> = ({
   const groupRef = useRef<Group>(null);
   const { calculateIChing, state } = useWitnessOSAPI();
   const { breathPhase, consciousnessLevel } = useConsciousness();
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
 
   // Calculate I-Ching reading
   useEffect(() => {
@@ -124,13 +126,30 @@ export const IChingEngine: React.FC<IChingEngineProps> = ({
         focus_area: (question.context as any)?.focus_area || 'general',
       })
         .then(result => {
-          if (result.success && onCalculationComplete) {
-            onCalculationComplete(result.data);
+          if (result.success) {
+            // Auto-save the I-Ching reading result
+            saveEngineResult({
+              engineName: 'iching',
+              result: result.data,
+              question: question.question,
+              timestamp: new Date().toISOString(),
+              metadata: {
+                hexagram: result.data?.hexagram?.number,
+                changingLines: result.data?.changing_lines?.length || 0,
+                consciousnessLevel,
+              }
+            });
+            
+            if (onCalculationComplete) {
+              onCalculationComplete(result.data);
+            }
           }
         })
-        .catch(console.error);
+        .catch(error => {
+          console.error('I-Ching calculation error:', error);
+        });
     }
-  }, [question, visible, calculateIChing, onCalculationComplete]);
+      }, [question, visible, calculateIChing, onCalculationComplete, saveEngineResult, consciousnessLevel]);
 
   // Process I-Ching data into 3D hexagram structures
   const { currentHexagram, futureHexagram, transformationLines } = useMemo(() => {

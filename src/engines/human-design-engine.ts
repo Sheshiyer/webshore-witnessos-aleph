@@ -502,8 +502,12 @@ Remember: This is your energetic operating manual. Your strategy and authority a
   private determineType(personalityGates: Record<string, HumanDesignGate>, designGates: Record<string, HumanDesignGate>): HumanDesignType {
     // Simplified type determination (in real implementation, would check specific gates and centers)
     const types = Object.keys(this.typeData);
-    const randomType = types[Math.floor(Math.random() * types.length)];
+    const randomType = types[Math.floor(Math.random() * types.length)] || 'Generator';
     const typeInfo = this.typeData[randomType];
+
+    if (!typeInfo) {
+      throw new Error(`Invalid type: ${randomType}`);
+    }
 
     return {
       typeName: randomType,
@@ -573,7 +577,7 @@ Remember: This is your energetic operating manual. Your strategy and authority a
     const definedCount = Math.floor(Math.random() * 5) + 1;
     for (let i = 0; i < definedCount; i++) {
       const randomChannel = channelKeys[Math.floor(Math.random() * channelKeys.length)];
-      if (!channels.includes(randomChannel)) {
+      if (randomChannel && !channels.includes(randomChannel)) {
         channels.push(randomChannel);
       }
     }

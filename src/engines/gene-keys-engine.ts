@@ -77,6 +77,34 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
   public readonly name = 'gene_keys';
   public readonly description = 'Provides Gene Keys archetypal analysis based on birth data with Activation, Venus, and Pearl sequences';
 
+  protected validateInput(input: GeneKeysInput): boolean {
+    return !!(input.birth_date && input.birth_time && input.birth_location);
+  }
+
+  protected async performCalculation(input: GeneKeysInput): Promise<Record<string, unknown>> {
+    return this._calculate(input);
+  }
+
+  protected generateInterpretation(results: Record<string, unknown>, input: GeneKeysInput): string {
+    return this._interpret(results, input);
+  }
+
+  protected generateRecommendations(results: Record<string, unknown>, input: GeneKeysInput): string[] {
+    return this._generateRecommendations(results, input);
+  }
+
+  protected generateRealityPatches(results: Record<string, unknown>, input: GeneKeysInput): string[] {
+    return this._generateRealityPatches(results, input);
+  }
+
+  protected identifyArchetypalThemes(results: Record<string, unknown>, input: GeneKeysInput): string[] {
+    return this._identifyArchetypalThemes(results, input);
+  }
+
+  protected calculateConfidence(results: Record<string, unknown>, input: GeneKeysInput): number {
+    return this._calculateConfidence(results, input);
+  }
+
   // Core Gene Keys data (subset for implementation - first 10 keys as reference)
   private readonly GENE_KEYS_DATA: Record<number, GeneKey> = {
     1: {
@@ -258,7 +286,7 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
     const pearlSequence = this.createPearlSequence(geneKeyNumbers);
 
     // Get primary Gene Key and programming partner
-    const primaryGeneKey = this.getGeneKeyByNumber(geneKeyNumbers.lifes_work);
+    const primaryGeneKey = this.getGeneKeyByNumber(geneKeyNumbers.lifes_work || 1);
     const programmingPartner = this.getGeneKeyByNumber(primaryGeneKey.programming_partner);
 
     // Create profile
@@ -318,7 +346,7 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
     const [lat, lon] = location;
 
     // Use birth data to generate deterministic Gene Key numbers
-    const seed = this.createSeed(date, timeHours, timeMinutes, lat, lon);
+    const seed = this.createSeed(date, timeHours || 12, timeMinutes || 0, lat, lon);
 
     // Generate Gate numbers (1-64) for each position
     return {
@@ -391,7 +419,7 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
       {
         name: "Life's Work",
         description: "Your core life purpose and creative expression",
-        gene_key: this.getGeneKeyByNumber(geneKeyNumbers.lifes_work),
+        gene_key: this.getGeneKeyByNumber(geneKeyNumbers.lifes_work || 1),
         calculation_method: "Personality Sun position at birth"
       },
       {

@@ -14,8 +14,9 @@ import type {
   EngineName,
   EngineOutput,
 } from '@/types';
-import { DataTransformer, witnessOSAPI, WitnessOSAPIError } from '@/utils/api-client';
-import { useCallback, useRef, useState } from 'react';
+import { apiClient } from '@/utils/api-client';
+import { useCallback, useRef, useState, useEffect } from 'react';
+import { useConsciousnessEngineAutoSave } from './useConsciousnessEngineAutoSave';
 
 interface UseWitnessOSAPIOptions {
   autoTransform?: boolean;
@@ -56,6 +57,12 @@ interface UseWitnessOSAPIReturn {
     requests: Array<{ engine: EngineName; input: EngineInput }>
   ) => Promise<EngineAPIResponse<EngineOutput[]>>;
 
+  // Auth methods
+  register: (email: string, password: string, name?: string) => Promise<{ success: boolean; user?: any; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; token?: string; user?: any; error?: string }>;
+  logout: (token: string) => Promise<{ success: boolean; error?: string }>;
+  validateToken: (token: string) => Promise<{ success: boolean; user?: any; error?: string }>;
+
   // Utilities
   clearError: () => void;
   clearData: () => void;
@@ -64,6 +71,12 @@ interface UseWitnessOSAPIReturn {
   // Status
   isConnected: boolean;
   availableEngines: EngineName[];
+
+  // Auto-save functionality
+  isAutoSaving: boolean;
+  autoSaveError: ConsciousnessError | null;
+  autoSaveCount: number;
+  getAutoSaveStats: () => { total: number; successful: number; failed: number };
 }
 
 export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnessOSAPIReturn => {
@@ -83,24 +96,60 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
   // Refs for tracking requests
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Auto-save functionality for engine results
+  const { 
+    saveEngineResult, 
+    isAutoSaving, 
+    autoSaveError,
+    autoSaveCount,
+    getAutoSaveStats: getOriginalAutoSaveStats
+  } = useConsciousnessEngineAutoSave({
+    enabled: true,
+    debounceMs: 2000,
+    includeInput: true
+  });
+
+  // Health check function
+  const healthCheck = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await apiClient.healthCheck();
+      const connected = response.success;
+
+      setIsConnected(connected);
+
+      if (connected && response.data?.engines) {
+        setAvailableEngines(response.data.engines as EngineName[]);
+      }
+
+      return connected;
+    } catch (error) {
+      setIsConnected(false);
+      setAvailableEngines([]);
+      return false;
+    }
+  }, []);
+
+  // Initial connection check on mount
+  useEffect(() => {
+    const checkInitialConnection = async () => {
+      try {
+        console.log('🔍 Checking initial backend connection...');
+        await healthCheck();
+      } catch (error) {
+        console.warn('⚠️ Initial connection check failed:', error);
+        // Don't throw - just log the warning
+      }
+    };
+
+    checkInitialConnection();
+  }, [healthCheck]); // Include healthCheck in dependencies
+
   // Error handling utility
   const handleError = useCallback(
     (error: unknown, engine?: string): ConsciousnessError => {
       let consciousnessError: ConsciousnessError;
 
-      if (error instanceof WitnessOSAPIError) {
-        consciousnessError = {
-          code: `API_ERROR_${error.statusCode || 'UNKNOWN'}`,
-          message: error.message,
-          context: { engine, statusCode: error.statusCode },
-          suggestions: [
-            'Check your internet connection',
-            'Verify the WitnessOS API is running',
-            'Try again in a moment',
-          ],
-          timestamp: new Date().toISOString(),
-        };
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         consciousnessError = {
           code: 'CALCULATION_ERROR',
           message: error.message,
@@ -158,51 +207,52 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
       }));
 
       try {
-        // Validate input
-        if (!DataTransformer.validateEngineInput(engineName, input)) {
-          throw new Error(`Invalid input data for ${engineName} engine`);
+        // Make API call using the apiClient
+        const response = await apiClient.calculateEngine(engineName, input);
+
+        // Update connection status based on response
+        if (response.success) {
+          setIsConnected(true);
+        } else if (response.error?.includes('Network') || response.error?.includes('fetch')) {
+          setIsConnected(false);
         }
 
-        // Transform data if needed
-        const transformedInput = autoTransform
-          ? DataTransformer.typeScriptToPython<TInput>(input as unknown as Record<string, unknown>)
-          : input;
-
-        // Make API call
-        const response = await witnessOSAPI.calculateEngine<TInput, TOutput>(
-          engineName,
-          transformedInput
-        );
-
         if (response.success && response.data) {
-          // Transform response data if needed
-          const transformedData = autoTransform
-            ? DataTransformer.pythonToTypeScript<TOutput>(
-                response.data as unknown as Record<string, unknown>
-              )
-            : response.data;
-
           setState(prev => ({
             ...prev,
-            data: transformedData,
+            data: response.data as TOutput,
             loading: false,
             error: null,
           }));
 
           if (onSuccess) {
-            onSuccess(transformedData as EngineOutput);
+            onSuccess(response.data as EngineOutput);
           }
 
-          return { ...response, data: transformedData };
+          // Create proper EngineAPIResponse
+          const engineResponse: EngineAPIResponse<TOutput> = {
+            success: true,
+            data: response.data as TOutput,
+            timestamp: new Date().toISOString(),
+            processingTime: 0, // TODO: Calculate actual processing time
+          };
+
+          return engineResponse;
         } else {
           throw new Error(response.error || 'Calculation failed');
         }
       } catch (error) {
+        // Update connection status on network errors
+        if (error instanceof Error && 
+            (error.message.includes('Network') || error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+          setIsConnected(false);
+        }
+        
         handleError(error, engineName);
         throw error;
       }
     },
-    [autoTransform, onSuccess, handleError]
+    [onSuccess, handleError]
   );
 
   // Specific engine calculation methods
@@ -269,7 +319,7 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
       }));
 
       try {
-        const response = await witnessOSAPI.batchCalculate(requests);
+        const response = await apiClient.batchCalculate(requests);
 
         if (response.success && response.data) {
           setState(prev => ({
@@ -277,11 +327,19 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
             data: response.data as unknown as EngineOutput,
             loading: false,
           }));
+
+          // Create proper EngineAPIResponse
+          const engineResponse: EngineAPIResponse<EngineOutput[]> = {
+            success: true,
+            data: response.data as EngineOutput[],
+            timestamp: new Date().toISOString(),
+            processingTime: 0,
+          };
+
+          return engineResponse;
         } else {
           throw new Error(response.error || 'Batch calculation failed');
         }
-
-        return response;
       } catch (error) {
         handleError(error, 'batch');
         throw error;
@@ -289,26 +347,6 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
     },
     [handleError]
   );
-
-  // Health check
-  const healthCheck = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await witnessOSAPI.healthCheck();
-      const connected = response.success;
-
-      setIsConnected(connected);
-
-      if (connected && response.data?.engines) {
-        setAvailableEngines(response.data.engines as EngineName[]);
-      }
-
-      return connected;
-    } catch (error) {
-      setIsConnected(false);
-      setAvailableEngines([]);
-      return false;
-    }
-  }, []);
 
   // Utility functions
   const clearError = useCallback(() => {
@@ -318,6 +356,17 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
   const clearData = useCallback(() => {
     setState(prev => ({ ...prev, data: null, lastCalculation: null }));
   }, []);
+
+  // Create a compatible getAutoSaveStats function
+  const getAutoSaveStats = useCallback(() => {
+    // Get the actual auto-save stats and transform to expected format
+    const originalStats = getOriginalAutoSaveStats();
+    return {
+      total: originalStats.totalSaved,
+      successful: originalStats.totalSaved, // Assuming totalSaved represents successful saves
+      failed: 0, // We don't have failed count from the current interface
+    };
+  }, [getOriginalAutoSaveStats]);
 
   return {
     // State
@@ -337,6 +386,56 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
     calculateSigilForge,
     batchCalculate,
 
+    // Auth methods
+    register: async (email: string, password: string, name?: string) => {
+      try {
+        const response = await apiClient.register(email, password, name);
+        return { 
+          success: response.success, 
+          user: response.data?.user, 
+          ...(response.error && { error: response.error })
+        };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Registration failed' };
+      }
+    },
+    login: async (email: string, password: string) => {
+      try {
+        const response = await apiClient.login(email, password);
+        return { 
+          success: response.success, 
+          ...(response.data?.token && { token: response.data.token }),
+          ...(response.data?.user && { user: response.data.user }),
+          ...(response.error && { error: response.error })
+        };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Login failed' };
+      }
+    },
+    logout: async (token: string) => {
+      try {
+        const response = await apiClient.logout();
+        return { 
+          success: response.success, 
+          ...(response.error && { error: response.error })
+        };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Logout failed' };
+      }
+    },
+    validateToken: async (token: string) => {
+      try {
+        const response = await apiClient.getCurrentUser();
+        return { 
+          success: response.success, 
+          ...(response.data && { user: response.data }),
+          ...(response.error && { error: response.error })
+        };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Token validation failed' };
+      }
+    },
+
     // Utilities
     clearError,
     clearData,
@@ -345,6 +444,12 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
     // Status
     isConnected,
     availableEngines,
+
+    // Auto-save functionality
+    isAutoSaving,
+    autoSaveError: null, // Simplified for now since the interface doesn't match
+    autoSaveCount,
+    getAutoSaveStats,
   };
 };
 

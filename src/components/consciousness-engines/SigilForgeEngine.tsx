@@ -9,6 +9,7 @@
 
 import { createFractalGeometry } from '@/generators/fractal-noise';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { QuestionInput } from '@/types';
 import { useFrame } from '@react-three/fiber';
@@ -61,26 +62,46 @@ export const SigilForgeEngine: React.FC<SigilForgeEngineProps> = ({
   const groupRef = useRef<Group>(null);
   const { calculateSigilForge, state } = useWitnessOSAPI();
   const { breathPhase, consciousnessLevel } = useConsciousness();
+  
+  // Auto-save hook for consciousness readings
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
 
   // Calculate Sigil design
   useEffect(() => {
     if (intention && visible) {
-      calculateSigilForge({
+      const sigilInput = {
         intention: intention.question,
         method: 'chaos_magic',
         include_numerology: true,
         include_sacred_geometry: true,
         complexity_level: Math.floor(consciousnessLevel * 5) + 1,
         style: 'fractal_minimalist',
-      })
+      };
+      
+      calculateSigilForge(sigilInput)
         .then(result => {
-          if (result.success && onCalculationComplete) {
-            onCalculationComplete(result.data);
+          if (result.success) {
+            // Auto-save the reading
+            saveEngineResult(
+              'sigil_forge',
+              result.data,
+              sigilInput,
+              {
+                complexityLevel: sigilInput.complexity_level,
+                method: sigilInput.method,
+                style: sigilInput.style,
+                consciousnessLevel,
+              }
+            );
+            
+            if (onCalculationComplete) {
+              onCalculationComplete(result.data);
+            }
           }
         })
         .catch(console.error);
     }
-  }, [intention, visible, calculateSigilForge, onCalculationComplete, consciousnessLevel]);
+  }, [intention, visible, calculateSigilForge, onCalculationComplete, consciousnessLevel, saveEngineResult]);
 
   // Generate sigil geometry from intention text
   const generateSigilFromText = (text: string): SigilLayer[] => {

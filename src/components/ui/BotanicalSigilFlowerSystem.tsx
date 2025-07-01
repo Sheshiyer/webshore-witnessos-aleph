@@ -8,7 +8,6 @@
 
 'use client';
 
-import { useConsciousness } from '@/hooks/useConsciousness';
 import type { ConsciousnessState } from '@/types';
 import { SACRED_MATHEMATICS } from '@/utils/consciousness-constants';
 import { useFrame } from '@react-three/fiber';
@@ -72,7 +71,8 @@ export const BotanicalSigilFlowerSystem: React.FC<BotanicalSigilFlowerSystemProp
   const groupRef = useRef<THREE.Group>(null);
   const [sigilFlowers, setSigilFlowers] = useState<SigilFlower[]>([]);
   const [selectedArchetype, setSelectedArchetype] = useState<string>('wisdom');
-  const { consciousnessLevel } = useConsciousness();
+  // Use passed consciousness prop instead of hook
+  const consciousnessLevel = consciousness.awarenessLevel;
 
   // Archetypal hues based on consciousness frequencies
   const archetypalHues = useMemo<ArchetypalHue[]>(

@@ -10,6 +10,7 @@
 import { createFractalGeometry } from '@/generators/fractal-noise';
 import { generateSacredGeometry } from '@/generators/sacred-geometry';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { PersonalData } from '@/types';
 import { useFrame } from '@react-three/fiber';
@@ -192,26 +193,48 @@ export const EnneagramEngine: React.FC<EnneagramEngineProps> = ({
   const groupRef = useRef<Group>(null);
   const { calculateEnneagram, state } = useWitnessOSAPI();
   const { breathPhase, consciousnessLevel } = useConsciousness();
+  
+  // Auto-save hook for consciousness readings
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
 
   // Calculate Enneagram profile
   useEffect(() => {
     if (personalData && visible) {
-      calculateEnneagram({
+      const enneagramInput = {
         name: personalData.name,
         birth_date: personalData.birthDate,
         include_wings: true,
         include_instincts: true,
         include_centers: true,
         include_arrows: true,
-      })
+      };
+      
+      calculateEnneagram(enneagramInput)
         .then(result => {
-          if (result.success && onCalculationComplete) {
-            onCalculationComplete(result.data);
+          if (result.success) {
+            // Auto-save the reading
+            saveEngineResult(
+              'enneagram',
+              result.data,
+              enneagramInput,
+              {
+                personalData,
+                includeWings: true,
+                includeInstincts: true,
+                includeCenters: true,
+                includeArrows: true,
+                consciousnessLevel,
+              }
+            );
+            
+            if (onCalculationComplete) {
+              onCalculationComplete(result.data);
+            }
           }
         })
         .catch(console.error);
     }
-  }, [personalData, visible, calculateEnneagram, onCalculationComplete]);
+  }, [personalData, visible, calculateEnneagram, onCalculationComplete, consciousnessLevel, saveEngineResult]);
 
   // Process Enneagram data into 3D personality space
   const { primaryType, wings, arrows, typeStrengths, centerGeometries } = useMemo(() => {

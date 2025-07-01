@@ -1,90 +1,68 @@
 /**
- * Consciousness Profile Hook
- *
- * React hook for managing consciousness profile state with localStorage persistence
- * Handles loading, saving, and progressive persistence of onboarding data
+ * Simple Consciousness Profile Hook
+ * Basic profile management with localStorage and cloud sync
  */
 
 'use client';
 
 import type { ConsciousnessProfile } from '@/components/ui/ConsciousnessDataCollector';
 import {
-  clearAllWitnessOSData,
-  clearConsciousnessProfile,
-  clearOnboardingProgress,
-  getCacheInfo,
-  loadConsciousnessProfile,
-  loadOnboardingProgress,
-  type OnboardingProgress,
   saveConsciousnessProfile,
-  saveOnboardingProgress,
+  loadConsciousnessProfile,
+  clearConsciousnessProfile,
+  hasStoredProfile,
 } from '@/utils/consciousness-storage';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/utils/api-client';
 
 export interface ConsciousnessProfileState {
   // Profile data
   profile: ConsciousnessProfile | null;
   isLoaded: boolean;
   isLoading: boolean;
-
-  // Onboarding state
   hasCompletedOnboarding: boolean;
-  onboardingProgress: OnboardingProgress | null;
 
-  // Cache information
-  cacheInfo: ReturnType<typeof getCacheInfo>;
+  // Cloud sync state
+  isSyncing: boolean;
+  syncError: string | null;
 
   // Actions
   saveProfile: (profile: ConsciousnessProfile) => boolean;
-  updateProgress: (progress: OnboardingProgress) => boolean;
   clearProfile: () => void;
-  clearProgress: () => void;
-  clearAllData: () => void;
-  refreshCacheInfo: () => void;
-
-  // Validation
-  isProfileValid: boolean;
-  profileAge: number;
+  uploadToCloud: (profileToUpload?: ConsciousnessProfile) => Promise<boolean>;
+  downloadFromCloud: () => Promise<boolean>;
 }
 
 /**
- * Hook for managing consciousness profile with localStorage persistence
+ * Simple hook for managing consciousness profile
  */
 export const useConsciousnessProfile = (): ConsciousnessProfileState => {
   const [profile, setProfile] = useState<ConsciousnessProfile | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress | null>(null);
-  const [cacheInfo, setCacheInfo] = useState(() => getCacheInfo());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const { isAuthenticated, user } = useAuth();
+
+  // Determine if onboarding is complete from the authoritative user object
+  const hasCompletedOnboarding = useMemo(() => !!user?.has_completed_onboarding, [user]);
 
   /**
-   * Load profile and progress from localStorage on mount
+   * Load profile from localStorage on mount
    */
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-
+      
       try {
-        // Load cached profile
-        const cachedProfile = loadConsciousnessProfile();
-        if (cachedProfile) {
-          setProfile(cachedProfile);
-          console.log('Loaded cached consciousness profile');
+        const storedProfile = loadConsciousnessProfile();
+        if (storedProfile) {
+          setProfile(storedProfile);
         }
-
-        // Load onboarding progress (only if no complete profile)
-        if (!cachedProfile) {
-          const progress = loadOnboardingProgress();
-          if (progress) {
-            setOnboardingProgress(progress);
-            console.log('Loaded onboarding progress');
-          }
-        }
-
-        // Update cache info
-        setCacheInfo(getCacheInfo());
       } catch (error) {
-        console.error('Error loading consciousness data:', error);
+        console.error('Error loading profile:', error);
       } finally {
         setIsLoaded(true);
         setIsLoading(false);
@@ -95,178 +73,118 @@ export const useConsciousnessProfile = (): ConsciousnessProfileState => {
   }, []);
 
   /**
-   * Save complete consciousness profile
+   * Save profile to localStorage
    */
   const saveProfile = useCallback((newProfile: ConsciousnessProfile): boolean => {
     const success = saveConsciousnessProfile(newProfile);
     if (success) {
       setProfile(newProfile);
-      setOnboardingProgress(null); // Clear progress since profile is complete
-      setCacheInfo(getCacheInfo());
     }
     return success;
   }, []);
 
   /**
-   * Update onboarding progress incrementally
-   */
-  const updateProgress = useCallback((progress: OnboardingProgress): boolean => {
-    const success = saveOnboardingProgress(progress);
-    if (success) {
-      setOnboardingProgress(progress);
-      setCacheInfo(getCacheInfo());
-    }
-    return success;
-  }, []);
-
-  /**
-   * Clear consciousness profile
+   * Clear profile from localStorage
    */
   const clearProfile = useCallback(() => {
     clearConsciousnessProfile();
     setProfile(null);
-    setCacheInfo(getCacheInfo());
   }, []);
 
   /**
-   * Clear onboarding progress
+   * Upload profile to cloud
    */
-  const clearProgress = useCallback(() => {
-    clearOnboardingProgress();
-    setOnboardingProgress(null);
-    setCacheInfo(getCacheInfo());
-  }, []);
+  const uploadToCloud = useCallback(async (profileToUpload?: ConsciousnessProfile): Promise<boolean> => {
+    if (!isAuthenticated) {
+      setSyncError('Authentication required');
+      return false;
+    }
+
+    const targetProfile = profileToUpload || profile;
+    if (!targetProfile) {
+      setSyncError('No profile to upload');
+      return false;
+    }
+
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      const response = await apiClient.uploadConsciousnessProfile(targetProfile);
+      if (response.success) {
+        return true;
+      } else {
+        setSyncError('Upload failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setSyncError(error instanceof Error ? error.message : 'Upload failed');
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isAuthenticated, profile]);
 
   /**
-   * Clear all WitnessOS data
+   * Download profile from cloud
    */
-  const clearAllData = useCallback(() => {
-    clearAllWitnessOSData();
-    setProfile(null);
-    setOnboardingProgress(null);
-    setCacheInfo(getCacheInfo());
-  }, []);
+  const downloadFromCloud = useCallback(async (): Promise<boolean> => {
+    if (!isAuthenticated) {
+      setSyncError('Authentication required');
+      return false;
+    }
 
-  /**
-   * Refresh cache information
-   */
-  const refreshCacheInfo = useCallback(() => {
-    setCacheInfo(getCacheInfo());
-  }, []);
+    setIsSyncing(true);
+    setSyncError(null);
 
-  // Computed values
-  const hasCompletedOnboarding = !!profile;
-  const isProfileValid =
-    !!profile && cacheInfo.available && cacheInfo.profile?.exists && !cacheInfo.profile?.expired;
-  const profileAge = cacheInfo.profile?.age || 0;
+    try {
+      const response = await apiClient.downloadConsciousnessProfile();
+      if (response.success && response.data) {
+        const cloudProfile = response.data;
+        saveConsciousnessProfile(cloudProfile);
+        setProfile(cloudProfile);
+        return true;
+      } else {
+        setSyncError('Download failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      setSyncError(error instanceof Error ? error.message : 'Download failed');
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isAuthenticated]);
 
   return {
-    // Profile data
     profile,
     isLoaded,
     isLoading,
-
-    // Onboarding state
     hasCompletedOnboarding,
-    onboardingProgress,
-
-    // Cache information
-    cacheInfo,
-
-    // Actions
+    isSyncing,
+    syncError,
     saveProfile,
-    updateProgress,
     clearProfile,
-    clearProgress,
-    clearAllData,
-    refreshCacheInfo,
-
-    // Validation
-    isProfileValid,
-    profileAge,
+    uploadToCloud,
+    downloadFromCloud,
   };
 };
 
 /**
- * Helper hook for onboarding flow management
+ * Simple onboarding flow helper
  */
 export const useOnboardingFlow = () => {
-  const profileState = useConsciousnessProfile();
+  const { profile, isLoaded } = useConsciousnessProfile();
+  const { user } = useAuth();
 
-  /**
-   * Determine if onboarding should be skipped
-   */
-  const shouldSkipOnboarding = useCallback((): boolean => {
-    return profileState.isLoaded && profileState.isProfileValid;
-  }, [profileState.isLoaded, profileState.isProfileValid]);
-
-  /**
-   * Get initial onboarding step based on progress
-   */
-  const getInitialStep = useCallback((): number => {
-    if (profileState.onboardingProgress) {
-      return profileState.onboardingProgress.currentStep;
-    }
-    return 0;
-  }, [profileState.onboardingProgress]);
-
-  /**
-   * Get partial data for resuming onboarding
-   */
-  const getPartialData = useCallback((): Partial<ConsciousnessProfile> | null => {
-    return profileState.onboardingProgress?.partialData || null;
-  }, [profileState.onboardingProgress]);
-
-  /**
-   * Save step completion
-   */
-  const saveStepCompletion = useCallback(
-    (
-      step: number,
-      totalSteps: number,
-      stepName: string,
-      partialData: Partial<ConsciousnessProfile>
-    ): boolean => {
-      const progress: OnboardingProgress = {
-        currentStep: step,
-        totalSteps,
-        completedSteps: [
-          ...(profileState.onboardingProgress?.completedSteps || []),
-          stepName,
-        ].filter((step, index, array) => array.indexOf(step) === index), // Remove duplicates
-        partialData,
-        timestamp: Date.now(),
-        version: '1.0.0',
-      };
-
-      return profileState.updateProgress(progress);
-    },
-    [profileState]
-  );
-
-  /**
-   * Complete onboarding with final profile
-   */
-  const completeOnboarding = useCallback(
-    (profile: ConsciousnessProfile): boolean => {
-      const success = profileState.saveProfile(profile);
-      if (success) {
-        // Clear progress since onboarding is complete
-        profileState.clearProgress();
-      }
-      return success;
-    },
-    [profileState]
-  );
+  // The single source of truth for onboarding completion
+  const isOnboardingComplete = useMemo(() => !!user?.has_completed_onboarding, [user]);
 
   return {
-    ...profileState,
-    shouldSkipOnboarding,
-    getInitialStep,
-    getPartialData,
-    saveStepCompletion,
-    completeOnboarding,
+    isOnboardingComplete,
+    hasStoredProfile: () => hasStoredProfile(),
+    isDataLoaded: isLoaded,
   };
 };
-
-export default useConsciousnessProfile;

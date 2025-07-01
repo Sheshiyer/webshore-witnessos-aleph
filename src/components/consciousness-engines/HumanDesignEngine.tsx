@@ -9,6 +9,7 @@
 
 import { createFractalGeometry } from '@/generators/fractal-noise';
 import { useConsciousness } from '@/hooks/useConsciousness';
+import { useConsciousnessEngineAutoSave } from '@/hooks/useConsciousnessEngineAutoSave';
 import { useWitnessOSAPI } from '@/hooks/useWitnessOSAPI';
 import type { BirthData } from '@/types';
 import { useFrame } from '@react-three/fiber';
@@ -61,25 +62,45 @@ export const HumanDesignEngine: React.FC<HumanDesignEngineProps> = ({
   const groupRef = useRef<Group>(null);
   const { calculateHumanDesign, state } = useWitnessOSAPI();
   const { breathPhase, consciousnessLevel } = useConsciousness();
+  
+  // Auto-save hook for consciousness readings
+  const { saveEngineResult, isAutoSaving, autoSaveCount } = useConsciousnessEngineAutoSave();
 
   // Calculate Human Design data
   useEffect(() => {
     if (birthData && visible) {
-      calculateHumanDesign({
+      const hdInput = {
         birth_date: birthData.date,
         birth_time: birthData.time,
         birth_location: birthData.location,
         include_transits: false,
         include_lines: true,
-      })
+      };
+      
+      calculateHumanDesign(hdInput)
         .then(result => {
-          if (result.success && onCalculationComplete) {
-            onCalculationComplete(result.data);
+          if (result.success) {
+            // Auto-save the reading
+            saveEngineResult(
+              'human_design',
+              result.data,
+              hdInput,
+              {
+                birthData,
+                includeTransits: false,
+                includeLines: true,
+                consciousnessLevel,
+              }
+            );
+            
+            if (onCalculationComplete) {
+              onCalculationComplete(result.data);
+            }
           }
         })
         .catch(console.error);
     }
-  }, [birthData, visible, calculateHumanDesign, onCalculationComplete]);
+  }, [birthData, visible, calculateHumanDesign, onCalculationComplete, consciousnessLevel, saveEngineResult]);
 
   // Process Human Design data into 3D structures
   const { energyCenters, gates, channels } = useMemo(() => {

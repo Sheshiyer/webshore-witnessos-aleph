@@ -82,6 +82,34 @@ export class SigilForgeEngine extends BaseEngine<SigilForgeInput, SigilForgeOutp
   public readonly name = 'sigil_forge';
   public readonly description = 'Converts intentions into symbolic sigils for manifestation and consciousness programming';
 
+  protected validateInput(input: SigilForgeInput): boolean {
+    return !!(input.intention && input.intention.trim().length > 0);
+  }
+
+  protected async performCalculation(input: SigilForgeInput): Promise<Record<string, unknown>> {
+    return this._calculate(input);
+  }
+
+  protected generateInterpretation(results: Record<string, unknown>, input: SigilForgeInput): string {
+    return this._interpret(results, input);
+  }
+
+  protected generateRecommendations(results: Record<string, unknown>, input: SigilForgeInput): string[] {
+    return this._generateRecommendations(results, input);
+  }
+
+  protected generateRealityPatches(results: Record<string, unknown>, input: SigilForgeInput): string[] {
+    return this._generateRealityPatches(results, input);
+  }
+
+  protected identifyArchetypalThemes(results: Record<string, unknown>, input: SigilForgeInput): string[] {
+    return this._identifyArchetypalThemes(results, input);
+  }
+
+  protected calculateConfidence(results: Record<string, unknown>, input: SigilForgeInput): number {
+    return this._calculateConfidence(results, input);
+  }
+
   // Sigil generation methods
   private readonly GENERATION_METHODS = {
     traditional: {

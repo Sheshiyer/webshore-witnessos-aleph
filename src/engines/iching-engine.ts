@@ -14,6 +14,7 @@ export interface IChingInput extends QuestionInput {
   method?: 'coins' | 'yarrow' | 'random' | undefined;
   focusArea?: string | undefined;
   includeChangingLines?: boolean;
+  [key: string]: unknown; // Add index signature to satisfy BaseEngineInput constraint
 }
 
 export interface Trigram {
@@ -63,6 +64,7 @@ export interface IChingOutput extends BaseEngineOutput {
   reading: IChingReading;
   interpretation: string;
   changingLineInterpretations?: string[] | undefined;
+  [key: string]: unknown; // Add index signature to satisfy BaseEngineOutput constraint
 }
 
 // Hexagram data - core set for implementation
@@ -355,7 +357,12 @@ export class IChingEngine {
 
   private generateRandomLine(seed: number): number {
     const values = [6, 7, 8, 9];
-    return values[seed % 4];
+    const index = seed % 4;
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error('Invalid random line generation');
+    }
+    return value;
   }
 
   private linesToHexagramNumber(lines: number[]): number {

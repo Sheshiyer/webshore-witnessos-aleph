@@ -491,7 +491,10 @@ Remember: The cards are mirrors of your inner landscape, reflecting the energies
     drawnCards.forEach(drawnCard => {
       const element = drawnCard.card.element;
       if (element && element in elements) {
-        elements[element]++;
+        const currentCount = elements[element];
+        if (currentCount !== undefined) {
+          elements[element] = currentCount + 1;
+        }
       }
     });
     
