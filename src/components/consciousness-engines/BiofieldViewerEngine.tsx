@@ -365,6 +365,17 @@ export const BiofieldViewerEngine: React.FC<BiofieldViewerEngineProps> = ({
     }
   }, [createFallbackVideo]);
 
+  const handleWitnessAnchor = useCallback(async () => {
+    if (!canvasRef.current) return;
+    const dataUrl = canvasRef.current.toDataURL('image/png');
+    await fetch('/api/witness-anchor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl })
+    });
+    // Optionally show a toast/notification here
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       await initCamera();
@@ -410,6 +421,12 @@ export const BiofieldViewerEngine: React.FC<BiofieldViewerEngineProps> = ({
           <div className="text-green-400 text-sm">
             {Math.round(overallProgress * 100)}%
           </div>
+          <button
+            className="ml-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow transition"
+            onClick={handleWitnessAnchor}
+          >
+            Witness Anchor
+          </button>
         </div>
       </div>
 
@@ -471,25 +488,6 @@ export const BiofieldViewerEngine: React.FC<BiofieldViewerEngineProps> = ({
             />
           ))}
 
-          {/* Energy Field Rings - Scaled for Full Screen */}
-          {[1, 2, 3, 4, 5].map((ring) => (
-            <div
-              key={ring}
-              className="absolute border rounded-full"
-              style={{
-                left: '50%',
-                top: '50%',
-                width: `${ring * 120 + consciousnessLevel * 80}px`,
-                height: `${ring * 120 + consciousnessLevel * 80}px`,
-                borderColor: `hsl(${280 + ring * 25}, 70%, 60%)`,
-                borderWidth: '2px',
-                transform: 'translate(-50%, -50%)',
-                opacity: Math.max(0.1, (consciousness?.awarenessLevel || 0.5) - (ring * 0.12)),
-                animation: `pulse ${4 + ring}s infinite reverse`,
-              }}
-            />
-          ))}
-
           {/* Breath Flow Indicator - Bottom Right */}
           <div 
             className="absolute bottom-8 right-8 flex items-center space-x-3 bg-black/60 backdrop-blur-md rounded-xl px-4 py-3 border border-white/20"
@@ -518,6 +516,16 @@ export const BiofieldViewerEngine: React.FC<BiofieldViewerEngineProps> = ({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Witness Anchor Button */}
+      <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50">
+        <button
+          className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white text-lg rounded-full shadow-xl transition font-bold tracking-wide border-2 border-white/20 backdrop-blur-md"
+          onClick={handleWitnessAnchor}
+        >
+          Witness Anchor
+        </button>
       </div>
     </div>
   );
