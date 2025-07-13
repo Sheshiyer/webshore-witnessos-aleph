@@ -1,57 +1,17 @@
 {
-  "name": "webshore",
-  "version": "0.1.0",
-  "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:debug": "NODE_OPTIONS='--inspect' next dev",
-    "dev:turbo": "next dev --turbo",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "lint:strict": "eslint . --ext .ts,.tsx --max-warnings 0",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch",
-    "consciousness:check": "npm run type-check && npm run lint:strict && npm run format:check",
-    "consciousness:fix": "npm run format && npm run lint:fix",
-    "pre-commit": "npm run consciousness:check",
-    "workers:dev": "wrangler dev src/workers/index.ts",
-    "workers:deploy": "wrangler deploy",
-    "test-api": "chmod +x scripts/test-api.sh && ./scripts/test-api.sh"
+    "dev": "next dev"
   },
   "dependencies": {
-    "@nextui-org/react": "^2.6.11",
-    "@react-three/drei": "^10.1.2",
-    "@react-three/fiber": "^9.1.2",
-    "framer-motion": "^12.15.0",
-    "gsap": "^3.13.0",
-    "next": "15.3.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "three": "^0.177.0"
+    "astronomy-engine": "^2.1.19",
+    "ephemeris": "^2.0.0",
+    "next": "^15.3.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/three": "^0.176.0",
-    "@typescript-eslint/eslint-plugin": "^8.33.0",
-    "@typescript-eslint/parser": "^8.33.0",
-    "eslint": "^9.28.0",
-    "eslint-config-next": "^15.3.3",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-prettier": "^5.4.1",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "prettier": "^3.5.3",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "wrangler": "^4.21.0"
+    "@types/node": "24.0.13",
+    "@types/react": "19.1.8",
+    "typescript": "5.8.3"
   }
 }

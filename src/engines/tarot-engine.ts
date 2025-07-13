@@ -21,9 +21,21 @@ export class TarotEngine extends BaseEngine<TarotInput, TarotOutput> {
   async calculate(input: TarotInput): Promise<CalculationResult<TarotOutput>> {
     const startTime = Date.now();
     
+    this.log('info', 'Starting Tarot calculation', {
+      question: input.question,
+      spreadType: input.spreadType || 'three_card',
+      deck: input.deck || 'rider_waite'
+    });
+    
     try {
       // Validate input
-      if (!this.validateInput(input)) {
+      const validationStart = Date.now();
+      const isValid = this.validateInput(input);
+      this.logInputValidation(input, isValid);
+      this.logStep('Input validation', validationStart, { isValid });
+      
+      if (!isValid) {
+        this.log('error', 'Input validation failed', input);
         return {
           success: false,
           error: this.createError('INVALID_INPUT', 'Invalid tarot input data'),
@@ -33,16 +45,53 @@ export class TarotEngine extends BaseEngine<TarotInput, TarotOutput> {
       }
 
       // Perform calculation
+      const calculationStart = Date.now();
+      this.log('debug', 'Starting core calculation');
       const calculationResults = await this.performCalculation(input);
+      this.logStep('Core calculation', calculationStart, {
+        drawnCardsCount: (calculationResults.drawnCards as any[])?.length,
+        spreadType: (calculationResults.spreadLayout as any)?.name
+      });
       
       // Generate interpretation and other outputs
+      const interpretationStart = Date.now();
+      this.log('debug', 'Generating interpretation');
       const interpretation = this.generateInterpretation(calculationResults, input);
+      this.logStep('Interpretation generation', interpretationStart, {
+        interpretationLength: interpretation.length
+      });
+      
+      const recommendationsStart = Date.now();
+      this.log('debug', 'Generating recommendations');
       const recommendations = this.generateRecommendations(calculationResults, input);
+      this.logStep('Recommendations generation', recommendationsStart, {
+        recommendationsCount: recommendations.length
+      });
+      
+      const realityPatchesStart = Date.now();
+      this.log('debug', 'Generating reality patches');
       const realityPatches = this.generateRealityPatches(calculationResults, input);
+      this.logStep('Reality patches generation', realityPatchesStart, {
+        realityPatchesCount: realityPatches.length
+      });
+      
+      const archetypalStart = Date.now();
+      this.log('debug', 'Identifying archetypal themes');
       const archetypalThemes = this.identifyArchetypalThemes(calculationResults, input);
+      this.logStep('Archetypal themes identification', archetypalStart, {
+        archetypalThemesCount: archetypalThemes.length
+      });
+      
+      const confidenceStart = Date.now();
+      this.log('debug', 'Calculating confidence score');
       const confidenceScore = this.calculateConfidence(calculationResults, input);
+      this.logStep('Confidence calculation', confidenceStart, {
+        confidenceScore
+      });
 
       // Build output
+      const outputStart = Date.now();
+      this.log('debug', 'Building final output');
       const output: TarotOutput = {
         engineName: this.engineName,
         calculationTime: Date.now() - startTime,
@@ -63,20 +112,39 @@ export class TarotEngine extends BaseEngine<TarotInput, TarotOutput> {
         cardMeanings: calculationResults.cardMeanings as Record<string, string>,
         spreadInterpretation: calculationResults.spreadInterpretation as string
       };
+      
+      this.logStep('Output building', outputStart, {
+        outputSize: JSON.stringify(output).length
+      });
+      
+      const totalTime = Date.now() - startTime;
+      this.logCalculationResult(output, totalTime);
+      this.log('info', `✅ Tarot calculation completed successfully in ${totalTime}ms`);
 
       return {
         success: true,
         data: output,
-        processingTime: Date.now() - startTime,
+        processingTime: totalTime,
         timestamp: new Date().toISOString()
       };
 
     } catch (error) {
-      this.log('error', 'Tarot calculation failed', error);
+      const totalTime = Date.now() - startTime;
+      this.log('error', '❌ Tarot calculation failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        processingTime: totalTime,
+        input: {
+          question: input.question,
+          spreadType: input.spreadType,
+          deck: input.deck
+        }
+      });
+      
       return {
         success: false,
         error: this.createError('CALCULATION_ERROR', `Tarot calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`),
-        processingTime: Date.now() - startTime,
+        processingTime: totalTime,
         timestamp: new Date().toISOString()
       };
     }
@@ -603,4 +671,4 @@ Remember: The cards are mirrors of your inner landscape, reflecting the energies
       overallTheme: { type: 'string' }
     };
   }
-} 
+}

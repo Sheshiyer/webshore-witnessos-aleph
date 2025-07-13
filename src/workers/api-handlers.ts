@@ -7,16 +7,22 @@
 
 import { createKVDataAccess, CloudflareKVDataAccess } from '../lib/kv-data-access';
 import { AuthService } from '../lib/auth';
-import { 
-  getEngine, 
-  listEngines, 
+import {
+  getEngine,
+  listEngines,
   calculateEngine,
   isEngineAvailable,
   getEngineMetadata,
   healthCheck
 } from '../engines';
 import type { EngineName } from '../types/engines';
-import { createAIInterpreter, AIInterpretationConfig } from '../lib/ai-interpreter';
+import { createAIInterpreter, AIInterpretationConfig, AIInterpreter } from '../lib/ai-interpreter';
+import {
+  DEFAULT_TEST_USER,
+  getEngineTestInput,
+  getAllEngineTestInputs,
+  VALIDATION_METADATA
+} from '../lib/validation-constants';
 
 // Type declarations for Cloudflare Workers
 interface KVNamespace {
@@ -67,12 +73,34 @@ export class WitnessOSAPIHandler {
   };
 
   constructor(kvBindings: any, db: any, jwtSecret: string, openRouterApiKey?: string) {
+    console.log('🔧 Initializing WitnessOSAPIHandler');
+    console.log('📊 Database provided:', !!db);
+    console.log('🔑 JWT Secret provided:', !!jwtSecret);
+    console.log('🤖 OpenRouter API Key provided:', !!openRouterApiKey);
+    
     this.kvData = createKVDataAccess(kvBindings);
     this.authService = new AuthService(db, jwtSecret);
     
-    // Initialize AI interpreter if API key is provided
-    if (openRouterApiKey) {
-      this.aiInterpreter = createAIInterpreter(openRouterApiKey);
+    // AI interpreter will be initialized lazily from KV secrets
+    this.aiInterpreter = null;
+    
+    console.log('✅ WitnessOSAPIHandler initialized successfully');
+  }
+
+  /**
+   * Initialize AI interpreter from KV secrets
+   */
+  private async initializeAIInterpreter(): Promise<AIInterpreter | null> {
+    if (this.aiInterpreter) {
+      return this.aiInterpreter;
+    }
+
+    try {
+      this.aiInterpreter = await AIInterpreter.createFromSecrets(this.kvData);
+      return this.aiInterpreter;
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize AI interpreter from secrets:', error);
+      return null;
     }
   }
 
@@ -131,6 +159,20 @@ export class WitnessOSAPIHandler {
         return await this.handleSpiritualWorkflow(request, requestId);
       }
 
+      // Validation endpoints for engine testing
+      if (path === '/validate/engines' && method === 'GET') {
+        return await this.handleValidateAllEngines(requestId);
+      }
+
+      if (path.startsWith('/validate/engines/') && method === 'GET') {
+        const engineName = path.split('/')[3] as EngineName;
+        return await this.handleValidateEngine(engineName, requestId);
+      }
+
+      if (path === '/validate/user' && method === 'GET') {
+        return await this.handleValidateUser(requestId);
+      }
+
       if (path === '/workflows/shadow' && method === 'POST') {
         return await this.handleShadowWorkflow(request, requestId);
       }
@@ -187,6 +229,20 @@ export class WitnessOSAPIHandler {
 
       if (path === '/auth/reset-password' && method === 'POST') {
         return await this.handlePasswordReset(request, requestId);
+      }
+
+      if (path === '/auth/request-reset' && method === 'POST') {
+        return await this.handlePasswordResetRequest(request, requestId);
+      }
+
+      // Admin endpoints
+      if (path.match(/^\/admin\/users\/[^\/]+$/) && method === 'DELETE') {
+        const emailParam = path.split('/')[3];
+        if (!emailParam) {
+          return this.createErrorResponse(400, 'INVALID_EMAIL', 'Email parameter required', requestId);
+        }
+        const email = decodeURIComponent(emailParam);
+        return await this.handleAdminDeleteUser(email, request, requestId);
       }
 
       // Correlation and insights endpoints
@@ -353,9 +409,33 @@ export class WitnessOSAPIHandler {
         }
       }
 
-      // Calculate using engine
-      console.log(`[${requestId}] Calculating ${engineName} with input:`, Object.keys(input));
-      const result = await calculateEngine(engineName, input);
+      // Calculate using engine with verbose logging
+      console.log(`🚀 [${requestId}] Starting ${engineName} calculation`);
+      console.log(`📥 [${requestId}] Input keys:`, Object.keys(input));
+      console.log(`📊 [${requestId}] Input size:`, JSON.stringify(input).length, 'bytes');
+      
+      // Enable verbose logging for engines
+      const engineConfig = {
+        requestId,
+        verboseLogging: true,
+        debugMode: process.env.NODE_ENV === 'development',
+        enableLogging: true
+      };
+      
+      const calculationStart = Date.now();
+      const result = await calculateEngine(engineName, input, engineConfig);
+      const calculationTime = Date.now() - calculationStart;
+      
+      console.log(`⏱️ [${requestId}] ${engineName} calculation completed in ${calculationTime}ms`);
+      console.log(`📤 [${requestId}] Result success:`, result.success);
+      
+      if (result.success && result.data) {
+        console.log(`📋 [${requestId}] Output keys:`, Object.keys(result.data));
+        console.log(`📊 [${requestId}] Output size:`, JSON.stringify(result.data).length, 'bytes');
+        console.log(`🎯 [${requestId}] Confidence score:`, (result.data as any).confidenceScore);
+      } else if (result.error) {
+        console.error(`❌ [${requestId}] Engine error:`, result.error);
+      }
 
       // Cache result if enabled
       if (options.useCache !== false && result.success && result.data && (result.data as any).confidenceScore > 0.7) {
@@ -461,7 +541,12 @@ export class WitnessOSAPIHandler {
     request: Request,
     requestId: string
   ): Promise<Response> {
-    if (!this.aiInterpreter) {
+    const startTime = Date.now();
+    
+    // Initialize AI interpreter from KV secrets
+    const aiInterpreter = await this.initializeAIInterpreter();
+    if (!aiInterpreter) {
+      console.log(`❌ [${requestId}] AI service not available for ${engineName}`);
       return this.createErrorResponse(503, 'AI_NOT_AVAILABLE', 'AI interpretation service not available', requestId);
     }
 
@@ -469,17 +554,44 @@ export class WitnessOSAPIHandler {
       const body = await request.json();
       const { input, options = {}, aiConfig = {} } = body;
 
+      console.log(`🤖 [${requestId}] AI-Enhanced calculation for ${engineName}`);
+      console.log(`📥 [${requestId}] Input keys:`, Object.keys(input));
+      console.log(`📊 [${requestId}] Input size:`, JSON.stringify(input).length, 'bytes');
+      console.log(`⚙️ [${requestId}] AI Config:`, {
+        model: aiConfig.model || 'default',
+        maxTokens: aiConfig.maxTokens || 'default',
+        temperature: aiConfig.temperature || 'default',
+        focusArea: aiConfig.focusArea || options.focusArea || 'general'
+      });
+
       if (!input) {
+        console.error(`❌ [${requestId}] Missing input data`);
         return this.createErrorResponse(400, 'MISSING_INPUT', 'Input data required', requestId);
       }
 
-      // First perform the regular engine calculation
-      console.log(`[${requestId}] AI-Enhanced calculation for ${engineName} with input:`, Object.keys(input));
-      const engineResult = await calculateEngine(engineName, input);
+      // First perform the regular engine calculation with verbose logging
+      const engineCalculationStart = Date.now();
+      console.log(`🚀 [${requestId}] Starting base ${engineName} calculation`);
+      
+      const engineConfig = {
+        requestId,
+        verboseLogging: true,
+        debugMode: process.env.NODE_ENV === 'development',
+        enableLogging: true
+      };
+      
+      const engineResult = await calculateEngine(engineName, input, engineConfig);
+      const engineCalculationTime = Date.now() - engineCalculationStart;
+      
+      console.log(`⏱️ [${requestId}] Base calculation completed in ${engineCalculationTime}ms`);
 
       if (!engineResult.success) {
+        console.error(`❌ [${requestId}] Engine calculation failed:`, engineResult.error);
         return this.createErrorResponse(500, 'ENGINE_CALCULATION_FAILED', 'Engine calculation failed', requestId);
       }
+
+      console.log(`✅ [${requestId}] Base calculation successful, starting AI enhancement`);
+      console.log(`📋 [${requestId}] Engine result keys:`, Object.keys(engineResult.data || {}));
 
       // Extract user context from input
       const userContext = {
@@ -487,9 +599,23 @@ export class WitnessOSAPIHandler {
         birthDate: input.birthDate,
         focusArea: aiConfig.focusArea || options.focusArea
       };
+      
+      console.log(`👤 [${requestId}] User context:`, {
+        hasName: !!userContext.name,
+        hasBirthDate: !!userContext.birthDate,
+        focusArea: userContext.focusArea || 'general'
+      });
 
       // Enhance with AI interpretation
-      const aiInterpretation = await this.aiInterpreter.enhanceReading(
+      const aiEnhancementStart = Date.now();
+      console.log(`🧠 [${requestId}] Starting AI interpretation`);
+      
+      if (!engineResult.data) {
+        console.error(`❌ [${requestId}] Engine result data is missing`);
+        return this.createErrorResponse(500, 'ENGINE_DATA_MISSING', 'Engine calculation returned no data', requestId);
+      }
+
+      const aiInterpretation = await aiInterpreter.enhanceReading(
         engineName,
         engineResult.data,
         {
@@ -499,27 +625,57 @@ export class WitnessOSAPIHandler {
           userContext
         }
       );
+      
+      const aiEnhancementTime = Date.now() - aiEnhancementStart;
+      console.log(`🧠 [${requestId}] AI enhancement completed in ${aiEnhancementTime}ms`);
+      console.log(`📤 [${requestId}] AI interpretation size:`, JSON.stringify(aiInterpretation).length, 'bytes');
 
+      // Extract AI metadata for response
+      const { modelUsed, attemptedModels, modelSwitches, ...interpretationData } = aiInterpretation;
+      
       const response = {
         engine: engineName,
         calculation: engineResult,
-        aiInterpretation,
+        aiInterpretation: interpretationData,
         cached: false,
         requestId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        metadata: {
+          timings: {
+            engineCalculation: engineCalculationTime,
+            aiEnhancement: aiEnhancementTime,
+            total: Date.now() - startTime
+          },
+          ai: {
+            modelUsed,
+            attemptedModels,
+            modelSwitches,
+            timestamp: new Date().toISOString()
+          }
+        }
       };
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`🎯 [${requestId}] AI-enhanced calculation completed successfully in ${totalTime}ms`);
+      console.log(`📊 [${requestId}] Total response size:`, JSON.stringify(response).length, 'bytes');
 
       return this.createResponse(200, {}, response);
 
     } catch (error) {
-      console.error(`[${requestId}] AI-enhanced calculation failed for ${engineName}:`, error);
+      const totalTime = Date.now() - startTime;
+      console.error(`❌ [${requestId}] AI-enhanced calculation failed for ${engineName} after ${totalTime}ms:`, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return this.createErrorResponse(500, 'AI_CALCULATION_FAILED', 'AI-enhanced calculation failed', requestId);
     }
   }
 
   // AI Multi-Engine Synthesis Handler
   private async handleAISynthesis(request: Request, requestId: string): Promise<Response> {
-    if (!this.aiInterpreter) {
+    // Initialize AI interpreter from KV secrets
+    const aiInterpreter = await this.initializeAIInterpreter();
+    if (!aiInterpreter) {
       return this.createErrorResponse(503, 'AI_NOT_AVAILABLE', 'AI interpretation service not available', requestId);
     }
 
@@ -547,7 +703,7 @@ export class WitnessOSAPIHandler {
       };
 
       // Generate AI synthesis
-      const synthesis = await this.aiInterpreter.synthesizeMultipleReadings(
+      const synthesis = await aiInterpreter.synthesizeMultipleReadings(
         validReadings,
         {
           model: aiConfig.model,
@@ -557,12 +713,23 @@ export class WitnessOSAPIHandler {
         }
       );
 
+      // Extract AI metadata for response
+      const { modelUsed, attemptedModels, modelSwitches, ...synthesisData } = synthesis;
+
       const response = {
-        synthesis,
+        synthesis: synthesisData,
         readingsCount: validReadings.length,
         engines: validReadings.map(r => r.engine),
         requestId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        metadata: {
+          ai: {
+            modelUsed,
+            attemptedModels,
+            modelSwitches,
+            timestamp: new Date().toISOString()
+          }
+        }
       };
 
       return this.createResponse(200, {}, response);
@@ -604,19 +771,60 @@ export class WitnessOSAPIHandler {
   // Authentication Handlers
   private async handleUserRegistration(request: Request, requestId: string): Promise<Response> {
     try {
-      const body = await request.json();
+      console.log(`[${requestId}] Starting user registration`);
+      
+      // Parse request body
+      let body;
+      try {
+        body = await request.json();
+        console.log(`[${requestId}] Request body parsed:`, { 
+          email: body.email ? 'provided' : 'missing',
+          password: body.password ? 'provided' : 'missing',
+          name: body.name ? 'provided' : 'missing'
+        });
+      } catch (parseError) {
+        console.error(`[${requestId}] Failed to parse request body:`, parseError);
+        return this.createErrorResponse(400, 'INVALID_JSON', 'Invalid JSON in request body', requestId);
+      }
+
       const { email, password, name } = body;
 
+      // Validate required fields
       if (!email || !password) {
+        console.log(`[${requestId}] Missing required fields - email: ${!!email}, password: ${!!password}`);
         return this.createErrorResponse(400, 'MISSING_FIELDS', 'Email and password are required', requestId);
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        console.log(`[${requestId}] Invalid email format: ${email}`);
+        return this.createErrorResponse(400, 'INVALID_EMAIL', 'Invalid email format', requestId);
+      }
+
+      // Validate password length
+      if (password.length < 6) {
+        console.log(`[${requestId}] Password too short: ${password.length} characters`);
+        return this.createErrorResponse(400, 'WEAK_PASSWORD', 'Password must be at least 6 characters long', requestId);
+      }
+
+      console.log(`[${requestId}] Calling authService.register for email: ${email}`);
+      
+      // Attempt registration
       const result = await this.authService.register(email, password, name);
       
+      console.log(`[${requestId}] Registration result:`, {
+        success: result.success,
+        error: result.error,
+        hasUser: !!result.user
+      });
+      
       if (!result.success) {
+        console.error(`[${requestId}] Registration failed:`, result.error);
         return this.createErrorResponse(400, 'REGISTRATION_FAILED', result.error || 'Registration failed', requestId);
       }
 
+      console.log(`[${requestId}] User registered successfully: ${email}`);
       return this.createResponse(201, {}, {
         message: 'User registered successfully',
         user: result.user,
@@ -624,6 +832,7 @@ export class WitnessOSAPIHandler {
       });
     } catch (error) {
       console.error(`[${requestId}] Registration error:`, error);
+      console.error(`[${requestId}] Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
       return this.createErrorResponse(500, 'REGISTRATION_ERROR', 'Registration failed', requestId);
     }
   }
@@ -710,6 +919,33 @@ export class WitnessOSAPIHandler {
     }
   }
 
+  private async handlePasswordResetRequest(request: Request, requestId: string): Promise<Response> {
+    try {
+      const body = await request.json();
+      const { email } = body;
+
+      if (!email) {
+        return this.createErrorResponse(400, 'MISSING_EMAIL', 'Email is required', requestId);
+      }
+
+      const result = await this.authService.generatePasswordResetToken(email);
+      
+      if (!result.success) {
+        return this.createErrorResponse(400, 'RESET_REQUEST_FAILED', result.error || 'Failed to generate reset token', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        message: 'Password reset token generated',
+        token: result.token || 'Token generated but not returned for security',
+        timestamp: new Date().toISOString(),
+        requestId
+      });
+    } catch (error) {
+      console.error(`[${requestId}] Password reset request error:`, error);
+      return this.createErrorResponse(500, 'RESET_REQUEST_FAILED', 'Password reset request failed', requestId);
+    }
+  }
+
   private async handlePasswordReset(request: Request, requestId: string): Promise<Response> {
     try {
       const body = await request.json();
@@ -734,6 +970,42 @@ export class WitnessOSAPIHandler {
     } catch (error) {
       console.error(`[${requestId}] Password reset failed:`, error);
       return this.createErrorResponse(500, 'PASSWORD_RESET_FAILED', 'Password reset failed', requestId);
+    }
+  }
+
+  private async handleAdminDeleteUser(email: string, request: Request, requestId: string): Promise<Response> {
+    try {
+      // Check admin authentication
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', 'Admin authentication required', requestId);
+      }
+
+      const token = authHeader.slice(7);
+      const adminValidation = await this.authService.validateAdminToken(token);
+      
+      if (!adminValidation.valid || !adminValidation.isAdmin) {
+        return this.createErrorResponse(403, 'FORBIDDEN', 'Admin access required', requestId);
+      }
+
+      if (!email) {
+        return this.createErrorResponse(400, 'MISSING_EMAIL', 'Email is required', requestId);
+      }
+
+      const result = await this.authService.deleteUser(email);
+      
+      if (!result.success) {
+        return this.createErrorResponse(400, 'DELETE_FAILED', result.error || 'User deletion failed', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        message: 'User deleted successfully',
+        email,
+        requestId
+      });
+    } catch (error) {
+      console.error(`[${requestId}] Admin delete user error:`, error);
+      return this.createErrorResponse(500, 'DELETE_ERROR', 'User deletion failed', requestId);
     }
   }
 
@@ -1572,6 +1844,120 @@ export class WitnessOSAPIHandler {
       return this.createErrorResponse(500, 'TOGGLE_ERROR', 'Failed to toggle favorite', requestId);
     }
   }
+
+  /**
+   * Validate all engines with default test user data
+   */
+  private async handleValidateAllEngines(requestId: string): Promise<Response> {
+    console.log(`[${requestId}] Validating all engines with default test user`);
+
+    try {
+      const results: Record<string, any> = {};
+      const allInputs = getAllEngineTestInputs();
+
+      // Test each engine
+      for (const [engineName, input] of Object.entries(allInputs)) {
+        try {
+          console.log(`[${requestId}] Testing engine: ${engineName}`);
+          const startTime = Date.now();
+
+          const result = await calculateEngine(engineName as EngineName, input);
+          const calculationTime = Date.now() - startTime;
+
+          results[engineName] = {
+            success: true,
+            calculationTime,
+            input,
+            result,
+            timestamp: new Date().toISOString()
+          };
+
+          console.log(`[${requestId}] ✅ ${engineName} completed in ${calculationTime}ms`);
+        } catch (error) {
+          console.error(`[${requestId}] ❌ ${engineName} failed:`, error);
+          results[engineName] = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            input,
+            timestamp: new Date().toISOString()
+          };
+        }
+      }
+
+      return this.createResponse(200, {}, {
+        success: true,
+        testUser: VALIDATION_METADATA.testUser,
+        results,
+        summary: {
+          totalEngines: Object.keys(allInputs).length,
+          successful: Object.values(results).filter(r => r.success).length,
+          failed: Object.values(results).filter(r => !r.success).length,
+          timestamp: new Date().toISOString()
+        },
+        requestId
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Validation failed:`, error);
+      return this.createResponse(500, {}, {
+        success: false,
+        error: error instanceof Error ? error.message : 'Validation failed',
+        requestId
+      });
+    }
+  }
+
+  /**
+   * Validate a specific engine with default test user data
+   */
+  private async handleValidateEngine(engineName: EngineName, requestId: string): Promise<Response> {
+    console.log(`[${requestId}] Validating engine: ${engineName}`);
+
+    try {
+      const input = getEngineTestInput(engineName);
+      const startTime = Date.now();
+
+      const result = await calculateEngine(engineName, input);
+      const calculationTime = Date.now() - startTime;
+
+      return this.createResponse(200, {}, {
+        success: true,
+        engine: engineName,
+        testUser: VALIDATION_METADATA.testUser,
+        input,
+        result,
+        calculationTime,
+        timestamp: new Date().toISOString(),
+        requestId
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Engine ${engineName} validation failed:`, error);
+      return this.createResponse(500, {}, {
+        success: false,
+        engine: engineName,
+        error: error instanceof Error ? error.message : 'Engine validation failed',
+        requestId
+      });
+    }
+  }
+
+  /**
+   * Get default test user information
+   */
+  private async handleValidateUser(requestId: string): Promise<Response> {
+    console.log(`[${requestId}] Getting default test user information`);
+
+    return this.createResponse(200, {}, {
+      success: true,
+      testUser: DEFAULT_TEST_USER,
+      metadata: VALIDATION_METADATA,
+      availableEngines: VALIDATION_METADATA.expectedEngines,
+      requestId
+    });
+  }
+
+
 }
 
 // Batch calculation handler for multiple engines
@@ -1668,4 +2054,4 @@ export async function handleBatchCalculation(
       requestId
     }), { status: 500 });
   }
-} 
+}

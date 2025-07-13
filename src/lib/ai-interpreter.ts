@@ -10,6 +10,8 @@ import type { BaseEngineOutput } from '@/engines/core/types';
 
 export interface AIInterpretationConfig {
   model: string;
+  fallbackModel1?: string;
+  fallbackModel2?: string;
   maxTokens: number;
   temperature: number;
   systemPrompt: string;
@@ -19,6 +21,13 @@ export interface AIInterpretationConfig {
     previousReadings?: any[];
     focusArea?: string;
   };
+}
+
+export interface AIModelConfig {
+  defaultModel: string;
+  fallbackModel1: string;
+  fallbackModel2: string;
+  apiKey: string;
 }
 
 export interface AIInterpretationResult {
@@ -32,11 +41,69 @@ export interface AIInterpretationResult {
 }
 
 export class AIInterpreter {
-  private apiKey: string;
+  private modelConfig: AIModelConfig;
   private baseUrl = 'https://openrouter.ai/api/v1';
   
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(modelConfig: AIModelConfig) {
+    this.modelConfig = modelConfig;
+  }
+
+  /**
+   * Create AIInterpreter with configuration from KV secrets
+   */
+  static async createFromSecrets(kvDataAccess: any): Promise<AIInterpreter | null> {
+    try {
+      const [apiKey, modelConfigStr] = await Promise.all([
+        kvDataAccess.getSecret('OPENROUTER_API_KEY'),
+        kvDataAccess.getSecret('AI_MODEL_CONFIG')
+      ]);
+
+      if (!apiKey) {
+        console.warn('OpenRouter API key not found in secrets');
+        return null;
+      }
+
+      let modelConfig: AIModelConfig;
+      
+      if (modelConfigStr) {
+        try {
+          const parsedConfig = JSON.parse(modelConfigStr);
+          modelConfig = {
+            apiKey,
+            defaultModel: parsedConfig.default || 'google/gemma-3n-e2b-it:free',
+            fallbackModel1: parsedConfig.fallback1 || 'deepseek/deepseek-v3-base:free',
+            fallbackModel2: parsedConfig.fallback2 || 'deepseek/deepseek-v3-base:free'
+          };
+        } catch (parseError) {
+          console.warn('Failed to parse AI model config, using defaults:', parseError);
+          modelConfig = {
+            apiKey,
+            defaultModel: 'google/gemma-3n-e2b-it:free',
+            fallbackModel1: 'deepseek/deepseek-v3-base:free',
+            fallbackModel2: 'deepseek/deepseek-v3-base:free'
+          };
+        }
+      } else {
+        // Fallback to default configuration
+        modelConfig = {
+          apiKey,
+          defaultModel: 'google/gemma-3n-e2b-it:free',
+          fallbackModel1: 'deepseek/deepseek-v3-base:free',
+          fallbackModel2: 'deepseek/deepseek-v3-base:free'
+        };
+      }
+
+      console.log('AI Interpreter initialized with models:', {
+        default: modelConfig.defaultModel,
+        fallback1: modelConfig.fallbackModel1,
+        fallback2: modelConfig.fallbackModel2
+      });
+
+      return new AIInterpreter(modelConfig);
+    } catch (error) {
+      console.error('Failed to create AI interpreter from secrets:', error);
+      return null;
+    }
   }
 
   /**
@@ -46,24 +113,37 @@ export class AIInterpreter {
     engineName: EngineName,
     readingData: BaseEngineOutput,
     config: Partial<AIInterpretationConfig> = {}
-  ): Promise<AIInterpretationResult> {
+  ): Promise<AIInterpretationResult & { modelUsed?: string; attemptedModels?: string[]; modelSwitches?: number }> {
     const startTime = Date.now();
     
     try {
       const fullConfig = this.buildConfig(engineName, config);
       const prompt = this.buildPrompt(engineName, readingData, fullConfig);
       
-      const response = await this.callOpenRouter(prompt, fullConfig);
+      console.log(`🎯 Starting AI enhancement for ${engineName} engine`);
+      console.log(`📋 Available models: ${[fullConfig.model, fullConfig.fallbackModel1, fullConfig.fallbackModel2].filter(Boolean).join(', ')}`);
+      
+      const { response, modelUsed, attemptedModels, modelSwitches } = await this.callOpenRouterWithMetadata(prompt, fullConfig);
       const interpretation = this.parseAIResponse(response);
       
-      return {
+      const result = {
         ...interpretation,
         confidence: this.calculateConfidence(interpretation, readingData),
-        processingTime: Date.now() - startTime
+        processingTime: Date.now() - startTime,
+        modelUsed,
+        attemptedModels,
+        modelSwitches
       };
       
+      console.log(`✅ AI enhancement completed successfully`);
+      console.log(`📊 Final model used: ${modelUsed}`);
+      console.log(`⏱️ Total processing time: ${result.processingTime}ms`);
+      console.log(`🔄 Model switches: ${modelSwitches}`);
+      
+      return result;
+      
     } catch (error) {
-      console.error('AI interpretation failed:', error);
+      console.error('❌ AI interpretation failed:', error);
       return this.createFallbackInterpretation(readingData, Date.now() - startTime);
     }
   }
@@ -74,31 +154,46 @@ export class AIInterpreter {
   async synthesizeMultipleReadings(
     readings: Array<{ engine: EngineName; data: BaseEngineOutput }>,
     config: Partial<AIInterpretationConfig> = {}
-  ): Promise<AIInterpretationResult> {
+  ): Promise<AIInterpretationResult & { modelUsed?: string; attemptedModels?: string[]; modelSwitches?: number }> {
     const startTime = Date.now();
     
     try {
       const synthesisConfig = this.buildSynthesisConfig(config);
       const prompt = this.buildSynthesisPrompt(readings, synthesisConfig);
       
-      const response = await this.callOpenRouter(prompt, synthesisConfig);
+      console.log(`🔮 Starting AI synthesis for ${readings.length} engines: ${readings.map(r => r.engine).join(', ')}`);
+      console.log(`📋 Available models: ${[synthesisConfig.model, synthesisConfig.fallbackModel1, synthesisConfig.fallbackModel2].filter(Boolean).join(', ')}`);
+      
+      const { response, modelUsed, attemptedModels, modelSwitches } = await this.callOpenRouterWithMetadata(prompt, synthesisConfig);
       const interpretation = this.parseAIResponse(response);
       
-      return {
+      const result = {
         ...interpretation,
         confidence: this.calculateSynthesisConfidence(interpretation, readings),
-        processingTime: Date.now() - startTime
+        processingTime: Date.now() - startTime,
+        modelUsed,
+        attemptedModels,
+        modelSwitches
       };
       
+      console.log(`✅ AI synthesis completed successfully`);
+      console.log(`📊 Final model used: ${modelUsed}`);
+      console.log(`⏱️ Total processing time: ${result.processingTime}ms`);
+      console.log(`🔄 Model switches: ${modelSwitches}`);
+      
+      return result;
+      
     } catch (error) {
-      console.error('AI synthesis failed:', error);
+      console.error('❌ AI synthesis failed:', error);
       return this.createFallbackSynthesis(readings, Date.now() - startTime);
     }
   }
 
   private buildConfig(engineName: EngineName, config: Partial<AIInterpretationConfig>): AIInterpretationConfig {
     const baseConfig = {
-      model: config.model || 'openai/gpt-4-turbo-preview',
+      model: config.model || this.modelConfig.defaultModel,
+      fallbackModel1: config.fallbackModel1 || this.modelConfig.fallbackModel1,
+      fallbackModel2: config.fallbackModel2 || this.modelConfig.fallbackModel2,
       maxTokens: config.maxTokens || 1500,
       temperature: config.temperature || 0.7,
       systemPrompt: this.getSystemPrompt(engineName),
@@ -110,7 +205,9 @@ export class AIInterpreter {
 
   private buildSynthesisConfig(config: Partial<AIInterpretationConfig>): AIInterpretationConfig {
     return {
-      model: config.model || 'openai/gpt-4-turbo-preview',
+      model: config.model || this.modelConfig.defaultModel,
+      fallbackModel1: config.fallbackModel1 || this.modelConfig.fallbackModel1,
+      fallbackModel2: config.fallbackModel2 || this.modelConfig.fallbackModel2,
       maxTokens: config.maxTokens || 2000,
       temperature: config.temperature || 0.8,
       systemPrompt: this.getSynthesisSystemPrompt(),
@@ -305,40 +402,106 @@ Remember: You're creating a singular, coherent consciousness map from multiple p
   }
 
   private async callOpenRouter(prompt: string, config: AIInterpretationConfig): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://witnessos.com',
-        'X-Title': 'WitnessOS Consciousness Platform'
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          {
-            role: 'system',
-            content: config.systemPrompt
+    const result = await this.callOpenRouterWithMetadata(prompt, config);
+    return result.response;
+  }
+
+  private async callOpenRouterWithMetadata(
+    prompt: string, 
+    config: AIInterpretationConfig
+  ): Promise<{ response: string; modelUsed: string; attemptedModels: string[]; modelSwitches: number }> {
+    const models = [config.model, config.fallbackModel1, config.fallbackModel2].filter(Boolean);
+    const attemptedModels: string[] = [];
+    let modelSwitches = 0;
+    
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      if (!model) continue;
+      
+      attemptedModels.push(model);
+      if (i > 0) {
+        modelSwitches++;
+        console.log(`🔄 Switching to fallback model #${i}: ${model}`);
+      }
+      
+      try {
+        const requestStart = Date.now();
+        console.log(`🤖 [${i + 1}/${models.length}] Attempting AI interpretation with model: ${model}`);
+        
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.modelConfig.apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://witnessos.com',
+            'X-Title': 'WitnessOS Consciousness Platform'
           },
-          {
-            role: 'user',
-            content: prompt
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: config.systemPrompt
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            max_tokens: config.maxTokens,
+            temperature: config.temperature,
+            top_p: 0.9,
+            frequency_penalty: 0.1,
+            presence_penalty: 0.1
+          })
+        });
+
+        const requestTime = Date.now() - requestStart;
+        console.log(`⏱️ Request to ${model} took ${requestTime}ms`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(`❌ Model ${model} failed: ${response.status} ${response.statusText} - ${errorText}`);
+          
+          if (i === models.length - 1) {
+            throw new Error(`All AI models failed. Last error: ${response.status} ${response.statusText}`);
           }
-        ],
-        max_tokens: config.maxTokens,
-        temperature: config.temperature,
-        top_p: 0.9,
-        frequency_penalty: 0.1,
-        presence_penalty: 0.1
-      })
-    });
+          continue;
+        }
 
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content || '';
+        
+        if (content) {
+          console.log(`✅ AI interpretation successful with model: ${model}`);
+          console.log(`📊 Response length: ${content.length} characters`);
+          console.log(`💰 Token usage: ${data.usage?.total_tokens || 'unknown'} tokens`);
+          
+          return {
+            response: content,
+            modelUsed: model,
+            attemptedModels,
+            modelSwitches
+          };
+        } else {
+          console.warn(`⚠️ Model ${model} returned empty content`);
+          if (i === models.length - 1) {
+            throw new Error('All models returned empty content');
+          }
+          continue;
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error with model ${model}:`, error);
+        
+        if (i === models.length - 1) {
+          throw error;
+        }
+        continue;
+      }
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
+    
+    throw new Error('No valid models configured');
   }
 
   private parseAIResponse(response: string): Omit<AIInterpretationResult, 'confidence' | 'processingTime'> {
@@ -455,4 +618,39 @@ Remember: You're creating a singular, coherent consciousness map from multiple p
   }
 }
 
-export const createAIInterpreter = (apiKey: string) => new AIInterpreter(apiKey); 
+export const createAIInterpreter = (modelConfig: AIModelConfig) => new AIInterpreter(modelConfig);
+
+/**
+ * Legacy function for backward compatibility
+ */
+export const createAIInterpreterLegacy = (apiKey: string) => {
+  const modelConfig: AIModelConfig = {
+    apiKey,
+    defaultModel: 'openai/gpt-4-turbo-preview',
+    fallbackModel1: 'openai/gpt-3.5-turbo',
+    fallbackModel2: 'anthropic/claude-3-haiku'
+  };
+  return new AIInterpreter(modelConfig);
+};
+
+/**
+ * Setup AI secrets in KV store
+ */
+export async function setupAISecrets(
+  kvDataAccess: any,
+  config: {
+    apiKey: string;
+    defaultModel?: string;
+    fallbackModel1?: string;
+    fallbackModel2?: string;
+  }
+): Promise<void> {
+  await Promise.all([
+    kvDataAccess.setSecret('OPENROUTER_API_KEY', config.apiKey),
+    kvDataAccess.setSecret('AI_DEFAULT_MODEL', config.defaultModel || 'openai/gpt-4-turbo-preview'),
+    kvDataAccess.setSecret('AI_FALLBACK_MODEL_1', config.fallbackModel1 || 'openai/gpt-3.5-turbo'),
+    kvDataAccess.setSecret('AI_FALLBACK_MODEL_2', config.fallbackModel2 || 'anthropic/claude-3-haiku')
+  ]);
+  
+  console.log('✅ AI secrets configured successfully');
+}

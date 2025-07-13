@@ -58,6 +58,9 @@ export interface EngineConfig {
   enableCaching?: boolean;
   cacheTTL?: number;
   enableLogging?: boolean;
+  verboseLogging?: boolean;
+  requestId?: string;
+  debugMode?: boolean;
 }
 
 export interface CalculationResult<T = unknown> {
@@ -111,4 +114,4 @@ export function createEngineInput<T extends BaseEngineInput>(
   data: Partial<T> & { [key: string]: unknown }
 ): T {
   return data as T;
-} 
+}

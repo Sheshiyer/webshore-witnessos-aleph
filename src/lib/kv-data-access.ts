@@ -23,7 +23,8 @@ export class CloudflareKVDataAccess implements KVOperations {
   constructor(
     private engineData: KVNamespace,
     private userProfiles: KVNamespace,
-    private cache: KVNamespace
+    private cache: KVNamespace,
+    private secrets?: KVNamespace
   ) {}
 
   // Engine Data Operations
@@ -509,11 +510,54 @@ export class CloudflareKVDataAccess implements KVOperations {
     };
   }
 
+  // Secret Management Operations
+  async getSecret(key: string): Promise<string | null> {
+    if (!this.secrets) {
+      console.warn('Secrets KV namespace not available');
+      return null;
+    }
+    
+    try {
+      const secret = await this.secrets.get(key, { type: 'text' });
+      return secret;
+    } catch (error) {
+      console.error(`Failed to get secret ${key}:`, error);
+      return null;
+    }
+  }
+
+  async setSecret(key: string, value: string): Promise<void> {
+    if (!this.secrets) {
+      throw new Error('Secrets KV namespace not available');
+    }
+    
+    try {
+      await this.secrets.put(key, value);
+    } catch (error) {
+      console.error(`Failed to set secret ${key}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteSecret(key: string): Promise<void> {
+    if (!this.secrets) {
+      throw new Error('Secrets KV namespace not available');
+    }
+    
+    try {
+      await this.secrets.delete(key);
+    } catch (error) {
+      console.error(`Failed to delete secret ${key}:`, error);
+      throw error;
+    }
+  }
+
   // Helper method to create input hash for caching
   static createInputHash(input: any): string {
     const inputString = typeof input === 'string' ? input : JSON.stringify(input);
     
-    // Simple hash function for deterministic hashing
+    // Simple hash function for demonstration
+    // In production, consider using a more robust hashing algorithm
     let hash = 0;
     for (let i = 0; i < inputString.length; i++) {
       const char = inputString.charCodeAt(i);
@@ -521,7 +565,7 @@ export class CloudflareKVDataAccess implements KVOperations {
       hash = hash & hash; // Convert to 32-bit integer
     }
     
-    return Math.abs(hash).toString(16);
+    return Math.abs(hash).toString(36);
   }
 }
 
@@ -530,10 +574,12 @@ export function createKVDataAccess(bindings: {
   ENGINE_DATA: KVNamespace;
   USER_PROFILES: KVNamespace;
   CACHE: KVNamespace;
+  SECRETS?: KVNamespace;
 }): CloudflareKVDataAccess {
   return new CloudflareKVDataAccess(
     bindings.ENGINE_DATA,
     bindings.USER_PROFILES,
-    bindings.CACHE
+    bindings.CACHE,
+    bindings.SECRETS
   );
-} 
+}

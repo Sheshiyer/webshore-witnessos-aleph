@@ -1,14 +1,16 @@
 /**
  * Gene Keys Compass Engine for WitnessOS
- * 
+ *
  * Provides Gene Keys archetypal analysis based on birth data.
+ * Uses precise astronomical calculations from the Human Design foundation.
  * Calculates Activation, Venus, and Pearl sequences with pathworking guidance.
- * 
+ *
  * Based on the work of Richard Rudd and the Gene Keys system.
  */
 
 import { BaseEngine } from './core/base-engine';
 import type { BaseEngineInput, BaseEngineOutput } from './core/types';
+import { GeneKeysCalculator, type GeneKeysProfile } from './calculators/gene-keys-calculator';
 
 // Gene Keys Input Interface
 export interface GeneKeysInput extends BaseEngineInput {
@@ -273,41 +275,43 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
     // Validate inputs
     this.validateInputs(input);
 
-    // Calculate Gene Keys using simplified astronomical method
-    const geneKeyNumbers = this.calculateGeneKeysFromBirthData(
-      input.birth_date,
-      input.birth_time,
-      input.birth_location
-    );
+    // Use precise astronomical calculations from our Gene Keys calculator
+    const geneKeysCalculator = new GeneKeysCalculator();
+    const birthDate = new Date(input.birth_date + 'T' + input.birth_time + ':00Z');
+    const [latitude, longitude] = input.birth_location;
 
-    // Create sequences
-    const activationSequence = this.createActivationSequence(geneKeyNumbers);
-    const venusSequence = this.createVenusSequence(geneKeyNumbers);
-    const pearlSequence = this.createPearlSequence(geneKeyNumbers);
+    const profile = geneKeysCalculator.calculateProfile(birthDate, latitude, longitude);
 
-    // Get primary Gene Key and programming partner
-    const primaryGeneKey = this.getGeneKeyByNumber(geneKeyNumbers.lifes_work || 1);
-    const programmingPartner = this.getGeneKeyByNumber(primaryGeneKey.programming_partner);
-
-    // Create profile
-    const profile: GeneKeysProfile = {
-      activation_sequence: activationSequence,
-      venus_sequence: venusSequence,
-      pearl_sequence: pearlSequence,
-      birth_date: input.birth_date,
-      primary_gene_key: primaryGeneKey,
-      programming_partner: programmingPartner
+    // Extract key Gene Keys from the precise profile
+    const geneKeyNumbers = {
+      lifes_work: profile.lifeWork.geneKey,
+      evolution: profile.evolution.geneKey,
+      radiance: profile.radiance.geneKey,
+      purpose: profile.purpose.geneKey,
+      iq: profile.iq.geneKey,
+      eq: profile.eq.geneKey,
+      sq: profile.sq.geneKey,
+      vq: profile.vq.geneKey,
+      attraction: profile.attraction.geneKey,
+      creativity: profile.creativity.geneKey,
+      pearl: profile.pearl.geneKey
     };
 
-    // Generate pathworking guidance
+    // Get primary Gene Key data
+    const primaryGeneKey = this.getGeneKeyByNumber(profile.lifeWork.geneKey);
+    const programmingPartner = this.getGeneKeyByNumber(primaryGeneKey.programming_partner);
+
+    // Generate pathworking guidance based on the profile
     const pathworkingGuidance = this.generatePathworkingGuidance(profile, input.pathworking_focus);
 
     return {
-      profile,
+      profile: profile, // Use our precise Gene Keys profile
       pathworking_guidance: pathworkingGuidance,
       gene_key_numbers: geneKeyNumbers,
       focus_sequence: input.focus_sequence || 'activation',
-      include_programming_partner: input.include_programming_partner !== false
+      include_programming_partner: input.include_programming_partner !== false,
+      astronomical_precision: true, // Flag indicating we're using precise calculations
+      calculation_method: 'astronomy-engine' // Indicate the calculation method
     };
   }
 
@@ -503,11 +507,11 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
 
   private generatePathworkingGuidance(profile: GeneKeysProfile, focus?: string): string[] {
     const guidance: string[] = [];
-    const primaryKey = profile.primary_gene_key;
+    const primaryKey = this.getGeneKeyByNumber(profile.lifeWork.geneKey);
 
     // Core pathworking guidance
     guidance.push(`Begin with contemplation of your Life's Work Gene Key ${primaryKey.number}: ${primaryKey.name}`);
-    guidance.push(`Notice when you operate from the Shadow of ${primaryKey.shadow} and practice shifting to the Gift of ${primaryKey.gift}`);
+    guidance.push(`Notice when you operate from the Shadow of ${primaryKey.shadow || primaryKey.states?.shadow} and practice shifting to the Gift of ${primaryKey.gift || primaryKey.states?.gift}`);
     guidance.push(`Your programming partner is Gene Key ${primaryKey.programming_partner}, study both keys together for balance`);
 
     // Sequence-specific guidance
@@ -534,9 +538,12 @@ export class GeneKeysEngine extends BaseEngine<GeneKeysInput, GeneKeysOutput> {
   }
 
   protected _interpret(calculationResults: Record<string, any>, input: GeneKeysInput): string {
-    const profile = calculationResults.profile as GeneKeysProfile;
+    const profile = calculationResults.profile as any; // Our new profile structure
     const focusSequence = calculationResults.focus_sequence as string;
-    const primaryKey = profile.primary_gene_key;
+
+    // Get primary key from Life's Work (our new structure)
+    const primaryKeyNumber = profile.lifeWork?.geneKey || 1;
+    const primaryKey = this.getGeneKeyByNumber(primaryKeyNumber);
 
     return `
 🧬 GENE KEYS COMPASS - ARCHETYPAL BLUEPRINT 🧬
@@ -561,20 +568,28 @@ ${primaryKey.siddhi_description}
 
 ═══ ACTIVATION SEQUENCE - YOUR GENETIC DESTINY ═══
 
-${this.formatSequence(profile.activation_sequence)}
+🧠 IQ: Gene Key ${profile.iq?.geneKey || 'N/A'} - Mental activation
+❤️ EQ: Gene Key ${profile.eq?.geneKey || 'N/A'} - Emotional activation
+🙏 SQ: Gene Key ${profile.sq?.geneKey || 'N/A'} - Spiritual activation
+⚡ VQ: Gene Key ${profile.vq?.geneKey || 'N/A'} - Vital activation
 
 ═══ VENUS SEQUENCE - THE PATH OF THE HEART ═══
 
-${this.formatSequence(profile.venus_sequence)}
+💖 Attraction: Gene Key ${profile.attraction?.geneKey || 'N/A'} - What you attract
+🎨 Creativity: Gene Key ${profile.creativity?.geneKey || 'N/A'} - How you create
+💎 Pearl: Gene Key ${profile.pearl?.geneKey || 'N/A'} - Your relationship wisdom
 
-═══ PEARL SEQUENCE - PROSPERITY PATHWAY ═══
+═══ CORE SPHERES ═══
 
-${this.formatSequence(profile.pearl_sequence)}
+🌟 Life's Work: Gene Key ${profile.lifeWork?.geneKey || 'N/A'} - Your creative purpose
+🌍 Evolution: Gene Key ${profile.evolution?.geneKey || 'N/A'} - Your growth path
+✨ Radiance: Gene Key ${profile.radiance?.geneKey || 'N/A'} - Your natural magnetism
+🎯 Purpose: Gene Key ${profile.purpose?.geneKey || 'N/A'} - Your deeper calling
 
 ═══ PROGRAMMING PARTNER DYNAMICS ═══
 
-Your Programming Partner: Gene Key ${profile.programming_partner.number} - ${profile.programming_partner.name}
-Shadow: ${profile.programming_partner.shadow} | Gift: ${profile.programming_partner.gift}
+Your Programming Partner: Gene Key ${primaryKey.programming_partner || 'N/A'} - ${this.getGeneKeyByNumber(primaryKey.programming_partner || 1)?.name || 'Unknown'}
+Shadow: ${this.getGeneKeyByNumber(primaryKey.programming_partner || 1)?.shadow || 'N/A'} | Gift: ${this.getGeneKeyByNumber(primaryKey.programming_partner || 1)?.gift || 'N/A'}
 
 Programming partners represent complementary patterns that create balance in your genetic expression.
 Study both your primary key and programming partner for deeper understanding.
@@ -608,11 +623,15 @@ Remember: Evolution is a choice. Every moment offers the opportunity to shift fr
     const pathworkingGuidance = calculationResults.pathworking_guidance as string[];
     const recommendations: string[] = [];
 
-    // Primary Gene Key recommendations
-    const primaryKey = profile.primary_gene_key;
-    recommendations.push(`Study Gene Key ${primaryKey.number} (${primaryKey.name}) as your primary life theme`);
-    recommendations.push(`Practice shifting from ${primaryKey.shadow} (shadow) to ${primaryKey.gift} (gift) consciousness`);
-    recommendations.push(`Contemplate the ${primaryKey.siddhi} siddhi as your highest potential`);
+    // Primary Gene Key recommendations (Life's Work)
+    const primaryKeyNumber = profile.lifeWork?.geneKey || 1;
+    const primaryKey = this.getGeneKeyByNumber(primaryKeyNumber);
+
+    if (primaryKey) {
+      recommendations.push(`Study Gene Key ${primaryKey.number} (${primaryKey.name}) as your primary life theme`);
+      recommendations.push(`Practice shifting from ${primaryKey.shadow || primaryKey.states?.shadow} (shadow) to ${primaryKey.gift || primaryKey.states?.gift} (gift) consciousness`);
+      recommendations.push(`Contemplate the ${primaryKey.siddhi || primaryKey.states?.siddhi} siddhi as your highest potential`);
+    }
 
     // Sequence-specific recommendations
     const focusSequence = input.focus_sequence || 'activation';
@@ -642,11 +661,15 @@ Remember: Evolution is a choice. Every moment offers the opportunity to shift fr
     const profile = calculationResults.profile as GeneKeysProfile;
     const patches: string[] = [];
 
-    // Primary Gene Key patches
-    const primaryKey = profile.primary_gene_key;
-    patches.push(`Gene Key ${primaryKey.number} genetic blueprint activated`);
-    patches.push(`${primaryKey.gift} gift frequency enabled`);
-    patches.push(`${primaryKey.siddhi} siddhi potential unlocked`);
+    // Primary Gene Key patches (Life's Work)
+    const primaryKeyNumber = profile.lifeWork?.geneKey || 1;
+    const primaryKey = this.getGeneKeyByNumber(primaryKeyNumber);
+
+    if (primaryKey) {
+      patches.push(`Gene Key ${primaryKey.number} genetic blueprint activated`);
+      patches.push(`${primaryKey.gift || primaryKey.states?.gift} gift frequency enabled`);
+      patches.push(`${primaryKey.siddhi || primaryKey.states?.siddhi} siddhi potential unlocked`);
+    }
 
     // Sequence-based patches
     patches.push(`Activation Sequence archetypal field established`);
@@ -654,7 +677,9 @@ Remember: Evolution is a choice. Every moment offers the opportunity to shift fr
     patches.push(`Pearl Sequence prosperity pathway opened`);
 
     // Programming partner integration
-    patches.push(`Programming Partner ${profile.programming_partner.number} complementary field activated`);
+    if (primaryKey?.programming_partner) {
+      patches.push(`Programming Partner ${primaryKey.programming_partner} complementary field activated`);
+    }
 
     // Consciousness frequency patches
     patches.push('Three-frequency awareness system online');

@@ -21,7 +21,7 @@ import { NumerologyEngine } from './numerology-engine';
 import { HumanDesignEngine } from './human-design-engine';
 import { BaseEngine } from './core/base-engine';
 import type { BaseEngineInput, CalculationResult, BaseEngineOutput } from './core/types';
-import type { EngineName } from '@/types/engines';
+import type { EngineName } from '../types/engines';
 import { TarotEngine } from './tarot-engine';
 import { ichingEngine } from './iching-engine';
 import { enneagramEngine } from './enneagram-engine';
@@ -99,9 +99,9 @@ export function getEngine(engineName: EngineName): any {
        case 'nadabrahman':
          instance = new EngineClass('nadabrahman', 'Bio-responsive raga synthesis and consciousness training', {});
          break;
-       case 'biofield-viewer':
-         instance = new EngineClass('biofield-viewer', 'Energetic signature capture and analysis', {});
-         break;
+       // case 'biofield_viewer':
+       //   instance = new EngineClass('biofield_viewer', 'Energetic signature capture and analysis', {});
+       //   break;
        default:
          instance = new EngineClass(engineName, `${engineName} consciousness engine`, {});
      }
@@ -122,13 +122,22 @@ export function listEngines(): EngineName[] {
 }
 
 /**
- * Calculate using a specific engine
+ * Calculate using a specific engine with optional config
  */
 export async function calculateEngine(
   engineName: EngineName,
-  input: BaseEngineInput
+  input: BaseEngineInput,
+  config?: any
 ): Promise<CalculationResult<BaseEngineOutput>> {
   const engine = getEngine(engineName);
+  
+  // Pass config to engine if it supports it
+  if (config && engine.setConfig) {
+    engine.setConfig(config);
+  } else if (config && engine.config) {
+    engine.config = { ...engine.config, ...config };
+  }
+  
   return engine.calculate(input as any);
 }
 
@@ -177,32 +186,19 @@ export const engineRegistry = {
   sacred_geometry: sacredGeometryEngine,
 };
 
-// Consciousness Engine Types
-export type EngineName = 
-  | 'numerology'
-  | 'human-design'
-  | 'tarot'
-  | 'iching'
-  | 'enneagram'
-  | 'sacred-geometry'
-  | 'vimshottari'
-  | 'gene-keys'
-  | 'sigil-forge'
-  | 'nadabrahman'
-  | 'biofield-viewer';
+
 
 export const AVAILABLE_ENGINES: EngineName[] = [
   'numerology',
-  'human-design', 
+  'human_design',
   'tarot',
   'iching',
   'enneagram',
-  'sacred-geometry',
+  'sacred_geometry',
   'vimshottari',
-  'gene-keys',
-  'sigil-forge',
-  'nadabrahman',
-  'biofield-viewer'
+  'gene_keys',
+  'sigil_forge',
+  'nadabrahman'
 ];
 
 // Engine metadata for discovery
@@ -273,4 +269,4 @@ export const ENGINE_METADATA = {
     category: 'biofield',
     difficulty: 'foundational'
   }
-} as const; 
+} as const;

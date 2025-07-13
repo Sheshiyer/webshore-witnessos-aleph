@@ -1,0 +1,280 @@
+{
+  "reading_info": {
+    "name": "Complete Human Design Reading - Mage Narayan",
+    "birth_data": {
+      "date": "13.08.1991",
+      "time": "13:31",
+      "location": "Bengaluru, India",
+      "coordinates": "12.9716° N, 77.5946° E"
+    },
+    "reading_type": "Complete Human Design Analysis",
+    "generated_date": "2024-12-19",
+    "data_sources": "WitnessOS Human Design Engine",
+    "calculation_note": "WitnessOS uses astronomically precise calculations with Swiss Ephemeris. Results may differ from some online calculators due to different calculation methodologies. Our method follows standard astronomical principles with 88° solar arc for design calculation."
+  },
+  "core_design": {
+    "type": {
+      "name": "Generator",
+      "percentage": "37% of population",
+      "aura": "Open and Enveloping",
+      "strategy": "To Respond",
+      "signature": "Satisfaction",
+      "not_self_theme": "Frustration",
+      "description": "You are the life force of the planet with sustainable energy when engaged in work you love. You're designed to respond to life rather than initiate.",
+      "key_characteristics": [
+        "Sustainable life force energy",
+        "Designed to work and be productive",
+        "Natural builder and creator",
+        "Need to respond rather than initiate",
+        "Satisfaction comes from right work"
+      ]
+    },
+    "authority": {
+      "name": "Sacral Authority",
+      "percentage": "~70% of population",
+      "center": "Sacral",
+      "description": "Your gut response is your inner authority. Trust the immediate sounds and feelings from your sacral center.",
+      "how_it_works": {
+        "mechanism": "Gut response to yes/no questions",
+        "sounds": {
+          "yes": "Uh-huh, mmm-hmm (rising tone)",
+          "no": "Unh-uh, nuh-uh (flat/declining tone)",
+          "maybe": "Hmm, uh... (uncertain tone)"
+        },
+        "timing": "Immediate response, don't think about it"
+      },
+      "decision_process": [
+        "Ask yes/no questions",
+        "Listen for immediate gut response",
+        "Trust the sound/feeling, not the mind",
+        "Don't overthink or rationalize"
+      ]
+    },
+    "profile": {
+      "name": "2/4 - Hermit/Opportunist",
+      "theme": "Natural Talent through Network",
+      "conscious": "Hermit - natural talent that needs calling",
+      "unconscious": "Opportunist - success through network",
+      "description": "You have natural talents that need to be called out and shared through your network and relationships.",
+      "life_purpose": "To develop natural gifts and share them through relationships",
+      "characteristics": [
+        "Natural talents and abilities",
+        "Called out by network",
+        "Shy about abilities initially",
+        "Success through relationships"
+      ],
+      "gifts": [
+        "Natural genius",
+        "Influential through talent",
+        "Strong network support"
+      ]
+    },
+    "definition": {
+      "type": "Split Definition",
+      "percentage": "~46% of population",
+      "description": "You have two separate areas of definition with a gap between them. You naturally seek others who can bridge your split.",
+      "characteristics": [
+        "Two distinct energy areas",
+        "Need bridge between splits",
+        "Seek completion through others",
+        "Natural collaborator"
+      ],
+      "advantages": [
+        "Natural collaboration skills",
+        "Flexibility in energy expression",
+        "Openness to others",
+        "Adaptability"
+      ]
+    }
+  },
+  "incarnation_cross": {
+    "name": "Right Angle Cross of Explanation (4/49 | 23/43)",
+    "type": "Right_Angle",
+    "gates": {
+      "conscious_sun": 4,
+      "conscious_earth": 49,
+      "unconscious_sun": 23,
+      "unconscious_earth": 43
+    },
+    "theme": "Individual Life Purpose",
+    "description": "The Right Angle Cross of Explanation is about understanding and explaining the mysteries of life through personal experience and mental processes. These individuals are natural teachers and explainers who help others understand complex concepts through their own lived experience.",
+    "life_purpose": "To understand life's mysteries through experience and explain them to others in accessible ways",
+    "key_themes": [
+      "Formulization and logical thinking (Gate 4)",
+      "Principles and revolution through values (Gate 49)",
+      "Assimilation and tasting life (Gate 23)",
+      "Insight and breakthrough understanding (Gate 43)"
+    ],
+    "challenges": [
+      "Pressure to have all the answers",
+      "Mental overwhelm from processing complexity",
+      "Difficulty explaining intuitive insights",
+      "Impatience with others' learning pace"
+    ],
+    "gifts": [
+      "Natural teaching and explanation abilities",
+      "Deep understanding through experience",
+      "Ability to make complex things simple",
+      "Breakthrough insights and mental clarity",
+      "Revolutionary thinking and new perspectives"
+    ],
+    "calculation_details": {
+      "personality_sun_longitude": "140.093°",
+      "design_sun_longitude": "52.094°",
+      "solar_arc_difference": "88.0°",
+      "design_date": "1991-05-13 13:59 UTC"
+    }
+  },
+  "centers_analysis": {
+    "defined_centers": [
+      {
+        "name": "Sacral",
+        "function": "Life force and work energy",
+        "description": "You have consistent access to life force energy for work and creativity",
+        "gifts": ["Sustainable energy", "Natural productivity", "Building power"]
+      },
+      {
+        "name": "G-Center",
+        "function": "Identity and direction",
+        "description": "You have a consistent sense of self and direction in life",
+        "gifts": ["Clear identity", "Natural direction", "Self-love"]
+      }
+    ],
+    "undefined_centers": [
+      {
+        "name": "Solar Plexus",
+        "function": "Emotions and feelings",
+        "description": "You sample and amplify emotions from others. Not designed to be emotional authority.",
+        "wisdom": "You can be wise about emotions without being emotional yourself"
+      },
+      {
+        "name": "Throat",
+        "function": "Communication and manifestation",
+        "description": "You sample different ways of communicating and expressing",
+        "wisdom": "You can be wise about communication styles and when to speak"
+      }
+    ]
+  },
+  "variables_analysis": {
+    "note": "Variables require precise birth time calculation - these are examples based on typical Generator patterns",
+    "digestion": {
+      "type": "Appetite (example)",
+      "description": "Eat only when you have clear appetite for specific foods",
+      "practical_tips": [
+        "Wait for genuine hunger signals",
+        "Eat what your body specifically craves",
+        "Don't eat by the clock",
+        "Trust your body's wisdom"
+      ]
+    },
+    "environment": {
+      "type": "Market (example)",
+      "description": "Thrive in busy, active, social environments with lots of activity",
+      "optimal_environments": [
+        "Busy cafes and restaurants",
+        "Active workplaces",
+        "Social gatherings",
+        "Urban environments"
+      ]
+    },
+    "motivation": {
+      "type": "Hope (example)",
+      "description": "Motivated by positive possibilities and future potential",
+      "healthy_expression": [
+        "Inspiring optimism",
+        "Creating positive visions",
+        "Motivating others",
+        "Building toward better futures"
+      ]
+    }
+  },
+  "life_guidance": {
+    "strategy_in_action": {
+      "title": "Living Your Generator Strategy",
+      "guidance": [
+        "Wait for things to respond to - sounds, requests, opportunities",
+        "Trust your gut response (uh-huh/unh-uh) over mental reasoning",
+        "Use your energy fully each day, go to bed tired",
+        "Find work that lights you up and gives you satisfaction"
+      ]
+    },
+    "profile_guidance": {
+      "title": "Living Your 2/4 Profile",
+      "hermit_line": [
+        "Honor your need for alone time to develop your natural gifts",
+        "Don't hide your talents - let others call them out",
+        "Trust that you have natural abilities even if you can't see them",
+        "Allow others to recognize and invite your gifts"
+      ],
+      "opportunist_line": [
+        "Cultivate and maintain your network of relationships",
+        "Share your natural gifts through your connections",
+        "Build deep friendships based on mutual respect",
+        "Let opportunities come through your network"
+      ]
+    },
+    "authority_practice": {
+      "title": "Developing Sacral Authority",
+      "daily_practice": [
+        "Ask yourself yes/no questions throughout the day",
+        "Notice the immediate gut response before your mind kicks in",
+        "Practice with small decisions first",
+        "Have others ask you questions to hear your responses"
+      ]
+    }
+  },
+  "relationship_insights": {
+    "electromagnetic_connections": {
+      "description": "As a Split Definition, you're naturally attracted to others who can bridge your energy gaps",
+      "ideal_connections": [
+        "Others with complementary definition",
+        "People who can bridge your splits temporarily",
+        "Those who appreciate your collaborative nature"
+      ]
+    },
+    "generator_relationships": {
+      "with_other_generators": "Natural collaboration and energy exchange",
+      "with_projectors": "Can be guided by projector insights",
+      "with_manifestors": "Can provide energy for manifestor visions",
+      "with_reflectors": "Can be mirrored by reflector wisdom"
+    }
+  },
+  "career_guidance": {
+    "optimal_work_environment": [
+      "Collaborative team settings",
+      "Work that allows you to respond to requests",
+      "Environments where your natural talents are recognized",
+      "Projects that give you satisfaction and energy"
+    ],
+    "work_approach": [
+      "Wait to be invited or asked before offering your gifts",
+      "Build strong professional networks",
+      "Trust your gut about work opportunities",
+      "Focus on work that energizes rather than drains you"
+    ],
+    "leadership_style": [
+      "Lead through example and natural talent",
+      "Influence through your network connections",
+      "Respond to leadership opportunities rather than forcing them",
+      "Share your gifts when called upon"
+    ]
+  },
+  "integration_summary": {
+    "your_unique_design": "You are a Generator 2/4 with Sacral Authority and Split Definition - a natural collaborator with hidden talents that need to be called out and shared through your network.",
+    "life_theme": "Your life is about discovering and sharing your natural gifts through relationships while following your gut responses and finding work that satisfies you.",
+    "key_success_factors": [
+      "Trust your gut responses above all else",
+      "Allow others to call out your natural talents",
+      "Build and maintain strong networks",
+      "Find work that gives you satisfaction",
+      "Collaborate rather than trying to do everything alone"
+    ],
+    "common_pitfalls_to_avoid": [
+      "Initiating instead of responding",
+      "Hiding your natural talents",
+      "Making decisions with your mind instead of gut",
+      "Working in isolation without network support",
+      "Forcing yourself into work that doesn't satisfy"
+    ]
+  }
+}

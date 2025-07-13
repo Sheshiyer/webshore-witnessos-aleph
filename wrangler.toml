@@ -25,11 +25,25 @@ id = "6df29230ffca4e7c8299decdf0a2121f"
 binding = "CACHE"
 id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
+# SECRETS namespace - configure if needed
+# [[kv_namespaces]]
+# binding = "SECRETS"
+# id = "secrets_namespace_id_placeholder"
+
 [env.production]
 name = "witnessos-backend-prod"
 routes = [
   { pattern = "api.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
 ]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
+
+[[env.production.r2_buckets]]
+binding = "REPORTS"
+bucket_name = "witnessos-reports"
 
 [env.staging]
 name = "witnessos-backend-staging"
@@ -50,6 +64,11 @@ id = "6df29230ffca4e7c8299decdf0a2121f"
 binding = "CACHE"
 id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
+# SECRETS namespace for API keys and sensitive configuration
+[[env.production.kv_namespaces]]
+binding = "SECRETS"
+id = "74748736c9584954b5191d3ebe3300ac"
+
 # KV Namespaces - Staging
 [[env.staging.kv_namespaces]]
 binding = "ENGINE_DATA"
@@ -62,6 +81,10 @@ id = "USER_PROFILES_STAGING_ID"  # Replace with actual KV namespace ID
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
 id = "CACHE_STAGING_ID"  # Replace with actual KV namespace ID
+
+[[env.staging.kv_namespaces]]
+binding = "SECRETS"
+id = "SECRETS_STAGING_ID"  # Replace with actual KV namespace ID
 
 # Environment Variables - Production
 [env.production.vars]
@@ -102,15 +125,15 @@ compatibility_date = "2024-01-15"
 
 [[env.development.kv_namespaces]]
 binding = "ENGINE_DATA"
-preview_id = "ENGINE_DATA_DEV_ID"
+id = "317be7d22ee14e51b1bed3d15145dd51"
 
 [[env.development.kv_namespaces]]
 binding = "USER_PROFILES"
-preview_id = "USER_PROFILES_DEV_ID"
+id = "6df29230ffca4e7c8299decdf0a2121f"
 
 [[env.development.kv_namespaces]]
 binding = "CACHE"
-preview_id = "CACHE_DEV_ID"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 [env.development.vars]
 ENVIRONMENT = "development"
@@ -125,4 +148,4 @@ pages_build_output_dir = "dist"
 
 # Rate Limiting - CPU limits not available on free plan
 # [limits]
-# cpu_ms = 10000 
+# cpu_ms = 10000

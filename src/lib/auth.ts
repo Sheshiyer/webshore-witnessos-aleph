@@ -220,32 +220,76 @@ export class AuthService {
   // User registration
   async register(email: string, password: string, name?: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
+      console.log('🔐 AuthService.register called for email:', email);
+      console.log('📊 Database available:', !!this.db);
+      
       // Check if user already exists
-      const existingUser = await this.db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+      console.log('🔍 Checking if user already exists...');
+      let existingUser;
+      try {
+        existingUser = await this.db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+        console.log('✅ User existence check completed. Existing user:', !!existingUser);
+      } catch (dbError) {
+        console.error('❌ Database error during user existence check:', dbError);
+        return { success: false, error: `Database error: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}` };
+      }
+      
       if (existingUser) {
+        console.log('⚠️ User already exists:', email);
         return { success: false, error: 'User already exists' };
       }
 
       // Hash password
-      const passwordHash = await this.hashPassword(password);
+      console.log('🔒 Hashing password...');
+      let passwordHash;
+      try {
+        passwordHash = await this.hashPassword(password);
+        console.log('✅ Password hashed successfully');
+      } catch (hashError) {
+        console.error('❌ Password hashing error:', hashError);
+        return { success: false, error: 'Password hashing failed' };
+      }
 
       // Create user
-      const result = await this.db.prepare(`
-        INSERT INTO users (email, password_hash, name, verified, preferences)
-        VALUES (?, ?, ?, ?, ?)
-      `).bind(email, passwordHash, name || null, false, '{}').run();
+      console.log('👤 Creating user in database...');
+      let result;
+      try {
+        result = await this.db.prepare(`
+          INSERT INTO users (email, password_hash, name, verified, preferences)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(email, passwordHash, name || null, false, '{}').run();
+        console.log('📝 User creation result:', { success: result.success, lastRowId: result.meta?.last_row_id });
+      } catch (insertError) {
+        console.error('❌ Database error during user creation:', insertError);
+        return { success: false, error: `User creation failed: ${insertError instanceof Error ? insertError.message : 'Unknown database error'}` };
+      }
 
       if (!result.success) {
+        console.error('❌ User creation failed - database returned success: false');
         return { success: false, error: 'Failed to create user' };
       }
 
       // Get created user
-      const user = await this.db.prepare('SELECT * FROM users WHERE id = ?').bind(result.meta.last_row_id).first() as User;
+      console.log('📖 Fetching created user...');
+      let user;
+      try {
+        if (!result.meta?.last_row_id) {
+          console.error('❌ No user ID returned from database');
+          return { success: false, error: 'User created but no ID returned' };
+        }
+        user = await this.db.prepare('SELECT * FROM users WHERE id = ?').bind(result.meta.last_row_id).first() as User;
+        console.log('✅ User fetched successfully:', { id: user?.id, email: user?.email });
+      } catch (fetchError) {
+        console.error('❌ Error fetching created user:', fetchError);
+        return { success: false, error: 'User created but failed to fetch user data' };
+      }
       
+      console.log('🎉 User registration completed successfully for:', email);
       return { success: true, user };
     } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: 'Registration failed' };
+      console.error('💥 Unexpected registration error:', error);
+      console.error('📍 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      return { success: false, error: `Registration failed: ${error instanceof Error ? error.message : 'Unknown error'}` };
     }
   }
 
@@ -388,10 +432,13 @@ export class AuthService {
   // User logout
   async logout(token: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const tokenHash = await crypto.subtle.digest('SHA-256', encoder.encode(token));
-      const tokenHashB64 = btoa(String.fromCharCode(...new Uint8Array(tokenHash)));
+      const tokenHash = await this.hashToken(token);
 
-      await this.db.prepare('DELETE FROM user_sessions WHERE token_hash = ?').bind(tokenHashB64).run();
+      const result = await this.db.prepare('DELETE FROM user_sessions WHERE token_hash = ?').bind(tokenHash).run();
+      
+      if (!result || !result.success) {
+        return { success: false, error: 'Failed to logout' };
+      }
       
       return { success: true };
     } catch (error) {
@@ -405,8 +452,8 @@ export class AuthService {
     try {
       const user = await this.db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
       if (!user) {
-        // Don't reveal if user exists
-        return { success: true };
+        // For development: return error when user doesn't exist
+        return { success: false, error: 'User not found' };
       }
 
       const token = crypto.randomUUID();
@@ -445,9 +492,13 @@ export class AuthService {
       const passwordHash = await this.hashPassword(newPassword);
 
       // Update password
-      await this.db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      const updateResult = await this.db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
         .bind(passwordHash, (resetToken as any).user_id)
         .run();
+
+      if (!updateResult || !updateResult.success) {
+        return { success: false, error: 'Failed to update password' };
+      }
 
       // Mark token as used
       await this.db.prepare('UPDATE password_reset_tokens SET used = TRUE WHERE id = ?')
@@ -552,4 +603,37 @@ export class AuthService {
       return { success: false, error: 'Failed to revoke admin privileges' };
     }
   }
-} 
+
+  async deleteUser(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Prevent deleting hardcoded admin
+      if (this.isHardcodedAdmin(email)) {
+        return { success: false, error: 'Cannot delete hardcoded admin account' };
+      }
+
+      // Get user ID first
+      const user = await this.db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      const userId = (user as any).id;
+
+      // Delete related data in order (foreign key constraints)
+      await this.db.prepare('DELETE FROM user_sessions WHERE user_id = ?').bind(userId).run();
+      await this.db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(userId).run();
+      await this.db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').bind(userId).run();
+      await this.db.prepare('DELETE FROM reading_history WHERE user_id = ?').bind(userId).run();
+      await this.db.prepare('DELETE FROM readings WHERE user_id = ?').bind(userId).run();
+      await this.db.prepare('DELETE FROM consciousness_profiles WHERE user_id = ?').bind(userId).run();
+      
+      // Finally delete the user
+      const result = await this.db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
+      
+      return { success: result.success };
+    } catch (error) {
+      console.error('Delete user error:', error);
+      return { success: false, error: 'Failed to delete user account' };
+    }
+  }
+}

@@ -87,9 +87,9 @@ export abstract class BaseEngine<TInput extends BaseEngineInput = BaseEngineInpu
   }
 
   /**
-   * Log engine activity
+   * Log engine activity with verbose debugging support
    */
-  protected log(level: 'info' | 'warn' | 'error', message: string, data?: unknown): void {
+  protected log(level: 'info' | 'warn' | 'error' | 'debug' | 'verbose', message: string, data?: unknown): void {
     if (!this.config.enableLogging) return;
 
     const logEntry = {
@@ -97,16 +97,64 @@ export abstract class BaseEngine<TInput extends BaseEngineInput = BaseEngineInpu
       engine: this.engineName,
       level,
       message,
-      data
+      data,
+      requestId: this.config.requestId || 'unknown'
     };
 
+    // Always log errors and warnings
     if (level === 'error') {
-      console.error('WitnessOS Engine Error:', logEntry);
+      console.error(`🔴 [${this.engineName.toUpperCase()}] ERROR:`, logEntry);
     } else if (level === 'warn') {
-      console.warn('WitnessOS Engine Warning:', logEntry);
+      console.warn(`🟡 [${this.engineName.toUpperCase()}] WARNING:`, logEntry);
+    } else if (level === 'debug' || level === 'verbose') {
+      // Only log debug/verbose in development or when explicitly enabled
+      if (this.config.verboseLogging || process.env.NODE_ENV === 'development') {
+        console.log(`🔍 [${this.engineName.toUpperCase()}] ${level.toUpperCase()}:`, logEntry);
+      }
     } else {
-      console.log('WitnessOS Engine Info:', logEntry);
+      console.log(`ℹ️ [${this.engineName.toUpperCase()}] INFO:`, logEntry);
     }
+  }
+
+  /**
+   * Log calculation step with timing
+   */
+  protected logStep(stepName: string, startTime: number, data?: unknown): void {
+    const duration = Date.now() - startTime;
+    this.log('verbose', `Step completed: ${stepName}`, {
+      duration: `${duration}ms`,
+      stepData: data
+    });
+  }
+
+  /**
+   * Log input validation details
+   */
+  protected logInputValidation(input: TInput, isValid: boolean, errors?: string[]): void {
+    this.log('debug', 'Input validation', {
+      inputKeys: Object.keys(input),
+      isValid,
+      errors: errors || [],
+      inputSize: JSON.stringify(input).length
+    });
+  }
+
+  /**
+   * Log calculation results summary
+   */
+  protected logCalculationResults(results: Record<string, unknown>, processingTime: number): void {
+    this.log('verbose', 'Calculation completed', {
+      resultKeys: Object.keys(results),
+      processingTime: `${processingTime}ms`,
+      resultSize: JSON.stringify(results).length
+    });
+  }
+
+  /**
+   * Log calculation result summary (alias for compatibility)
+   */
+  protected logCalculationResult(results: Record<string, unknown>, processingTime: number): void {
+    this.logCalculationResults(results, processingTime);
   }
 
   /**
@@ -143,4 +191,4 @@ export abstract class BaseEngine<TInput extends BaseEngineInput = BaseEngineInpu
   protected getOutputSchema(): Record<string, unknown> {
     return {};
   }
-} 
+}

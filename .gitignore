@@ -55,6 +55,7 @@ coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -83,6 +84,16 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+scratch/
+
+# Temporary development files
+test-*.ts
+debug-*.ts
+analyze-*.ts
+comprehensive-*.ts
+final-*.ts
+temp-*.ts
+scratch-*.ts
 
 # Local development files
 .local

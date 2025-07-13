@@ -36,6 +36,7 @@ interface WorkerEnvironment {
   ENGINE_DATA: KVNamespace;
   USER_PROFILES: KVNamespace;
   CACHE: KVNamespace;
+  SECRETS: KVNamespace;
   
   // Environment Variables
   ENVIRONMENT: string;
@@ -197,16 +198,17 @@ export default {
         );
       }
 
-      // Initialize API Handler with optional AI support
+      // Initialize API Handler with KV bindings including secrets
       const apiHandler = new WitnessOSAPIHandler(
         {
           ENGINE_DATA: env.ENGINE_DATA,
           USER_PROFILES: env.USER_PROFILES,
-          CACHE: env.CACHE
+          CACHE: env.CACHE,
+          SECRETS: env.SECRETS
         },
         env.DB,
         env.JWT_SECRET || 'default-jwt-secret',
-        env.OPENROUTER_API_KEY // Optional AI integration
+        env.OPENROUTER_API_KEY // Optional AI integration (legacy)
       );
 
       let response: Response;
@@ -289,7 +291,8 @@ export default {
         {
           ENGINE_DATA: env.ENGINE_DATA,
           USER_PROFILES: env.USER_PROFILES,
-          CACHE: env.CACHE
+          CACHE: env.CACHE,
+          SECRETS: env.SECRETS
         },
         env.DB,
         env.JWT_SECRET || 'default-jwt-secret',
@@ -312,4 +315,4 @@ export default {
 
 // Export types for other modules
 export type { WorkerEnvironment };
-export { RateLimiter, getClientId, createErrorResponse }; 
+export { RateLimiter, getClientId, createErrorResponse };
