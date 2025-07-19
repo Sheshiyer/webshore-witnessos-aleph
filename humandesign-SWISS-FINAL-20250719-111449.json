@@ -1,0 +1,12 @@
+{
+    "success": false,
+    "engine": "human_design",
+    "error": "CRITICAL: Human Design engine requires D1 database for Swiss Ephemeris calculations - no fallbacks allowed",
+    "metadata": {
+        "requestId": "7ffa13df-8054-4abc-8ca1-497b501c9d1f",
+        "calculationTime": 0,
+        "timestamp": "2025-07-19T05:44:51.206Z",
+        "architecture": "enhanced-real",
+        "version": "2.0"
+    }
+}
