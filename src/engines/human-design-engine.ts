@@ -324,7 +324,7 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
     const definedCenters = Object.values(chart.centers).filter(center => center.defined);
     const undefinedCenters = Object.values(chart.centers).filter(center => !center.defined);
 
-    return `🧬 HUMAN DESIGN CHART - ${input.fullName.toUpperCase()} 🧬
+    return `🧬 HUMAN DESIGN CHART - ${(input.full_name || 'INDIVIDUAL').toUpperCase()} 🧬
 
 ═══ CORE DESIGN ═══
 
@@ -360,8 +360,8 @@ ${chart.incarnationCross.description}
 
 ═══ BIRTH DATA ═══
 
-Date: ${input.birthDate} at ${input.birthTime}
-Location: ${input.birthLocation[0].toFixed(6)}, ${input.birthLocation[1].toFixed(6)}
+Date: ${input.birth_date} at ${input.birth_time}
+Location: ${input.birth_location[0].toFixed(6)}, ${input.birth_location[1].toFixed(6)}
 Timezone: ${input.timezone || 'UTC'}
 
 Your Human Design chart reveals your unique energetic blueprint and decision-making strategy.`;
