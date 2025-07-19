@@ -29,8 +29,8 @@ CORS(app, origins=allowed_origins)
 # Get port from environment (Render sets this automatically)
 port = int(os.environ.get('PORT', 5000))
 
-# Optional API key for additional security
-API_KEY = os.environ.get('API_KEY', None)
+# Optional API key for additional security (disabled for now)
+API_KEY = None  # os.environ.get('API_KEY', None)
 
 # Swiss Ephemeris planet constants
 PLANETS = {
