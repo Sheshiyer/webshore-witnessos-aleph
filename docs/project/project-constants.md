@@ -1,8 +1,8 @@
 # 🌊 WitnessOS Project Constants & Vision Guide
 
-**Last Updated:** January 12, 2025  
-**Purpose:** North Star document to maintain project vision and prevent scope drift  
-**Status:** Foundation Complete → Consciousness Technology Implementation
+**Last Updated:** July 19, 2025
+**Purpose:** North Star document to maintain project vision and prevent scope drift
+**Status:** HYBRID ARCHITECTURE PIVOT → Python Engine Integration
 
 ---
 
@@ -23,9 +23,18 @@ WitnessOS Webshore is pioneering **consciousness technology** - a new category w
 
 ---
 
-## 🏗️ **Technical Architecture Constants**
+## 🏗️ **HYBRID ARCHITECTURE CONSTANTS**
 
-### **Cloudflare Infrastructure (Production)**
+### **🚀 STRATEGIC PIVOT: PYTHON ENGINE INTEGRATION**
+**Decision Date:** July 19, 2025
+**Rationale:** Leverage proven Python engines from `/docs/reference/python-engines/` instead of debugging TypeScript implementations
+
+### **Architecture Overview:**
+- **Cloudflare Workers**: API routing, auth, caching, orchestration
+- **Render.com Services**: All consciousness engine calculations (Python)
+- **Hybrid Benefits**: 100% accuracy + faster development + proven codebase
+
+### **Cloudflare Infrastructure (Edge Layer)**
 ```toml
 # Current Bindings (from your dashboard)
 [[d1_databases]]
