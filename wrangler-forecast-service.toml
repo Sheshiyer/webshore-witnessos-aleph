@@ -1,0 +1,58 @@
+# Forecast Service Worker Configuration
+# Specialized worker for forecast generation
+
+name = "witnessos-forecast-service"
+main = "src/workers/forecast-service-worker.ts"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# Service dependencies
+[[services]]
+binding = "ENGINE_SERVICE"
+service = "witnessos-engine-service"
+
+[[services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "your-cache-kv-namespace-id"
+preview_id = "your-cache-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "KV_FORECASTS"
+id = "your-forecasts-kv-namespace-id"
+preview_id = "your-forecasts-kv-preview-id"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "your-database-id"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+SERVICE_NAME = "forecast-service"
+ENABLE_CACHING = "true"
+
+# Secrets (set via wrangler secret put)
+# OPENROUTER_API_KEY
+
+# Development configuration
+[env.development]
+name = "witnessos-forecast-service-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+ENABLE_CACHING = "false"
+
+# Staging configuration
+[env.staging]
+name = "witnessos-forecast-service-staging"
+
+# Production configuration
+[env.production]
+name = "witnessos-forecast-service-prod"

@@ -280,7 +280,7 @@ export const WitnessOSBootSequence: React.FC<WitnessOSBootSequenceProps> = ({
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-4'>
             <div className='text-cyan-400 text-xl font-bold tracking-wider'>WitnessOS</div>
-            <div className='text-gray-500'>Consciousness Exploration Kernel v2.5.0</div>
+            <div className='text-gray-500'>Witness Exploration Kernel v2.5.0</div>
             <div className='text-purple-400 text-xs'>🌀 Sacred Geometry Engine</div>
           </div>
           <div className='text-right text-xs'>

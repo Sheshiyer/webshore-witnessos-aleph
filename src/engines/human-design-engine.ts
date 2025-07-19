@@ -65,13 +65,13 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
   constructor(name: string = 'human_design', description: string = 'Human Design chart calculation', config: any = {}, db?: D1Database) {
     super(name, description, config);
 
-    // Initialize Swiss Ephemeris service if database is available
-    if (db) {
-      this.swissEphemerisService = new SwissEphemerisService(db);
-      console.log('🌟 Human Design Engine: Swiss Ephemeris service initialized for 100% accuracy');
-    } else {
-      console.log('⚠️ Human Design Engine: No database provided, using fallback calculations');
+    // REQUIRE Swiss Ephemeris service - NO FALLBACKS
+    if (!db) {
+      throw new Error('CRITICAL: D1 Database required for Swiss Ephemeris service - no fallback calculations allowed');
     }
+
+    this.swissEphemerisService = new SwissEphemerisService(db);
+    console.log('🌟 Human Design Engine: Swiss Ephemeris service initialized - ONLY accurate calculations allowed');
   }
 
   async calculate(input: HumanDesignInput): Promise<CalculationResult<HumanDesignOutput>> {
@@ -129,52 +129,23 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
         throw new Error('Invalid birth location coordinates');
       }
 
-      // Try Swiss Ephemeris first for maximum accuracy
-      let astronomicalData;
-      let chart;
+      // ONLY USE SWISS EPHEMERIS - NO FALLBACKS ALLOWED
+      console.log('🌟 Human Design: Using Swiss Ephemeris for 100% accuracy - NO FALLBACKS');
 
-      if (this.swissEphemerisService) {
-        console.log('🌟 Human Design: Using Swiss Ephemeris for 100% accuracy');
-
-        try {
-          const swissData = await this.swissEphemerisService.getAccuratePlanetaryPositions(
-            birthDate, latitude, longitude
-          );
-
-          console.log(`✅ Swiss Ephemeris calculation completed`);
-          console.log(`🌟 Personality Sun: Gate ${swissData.personality.SUN?.human_design_gate.gate}.${swissData.personality.SUN?.human_design_gate.line}`);
-          console.log(`🌙 Design Sun: Gate ${swissData.design.SUN?.human_design_gate.gate}.${swissData.design.SUN?.human_design_gate.line}`);
-
-          // Build chart from Swiss Ephemeris data
-          chart = this.buildChartFromSwissEphemerisData(swissData);
-
-        } catch (swissError) {
-          console.warn('⚠️ Swiss Ephemeris failed, falling back to local calculations:', swissError);
-          // Fall through to local calculation
-        }
+      if (!this.swissEphemerisService) {
+        throw new Error('CRITICAL: Swiss Ephemeris service not initialized - cannot proceed without accurate calculations');
       }
 
-      // Fallback to local calculations if Swiss Ephemeris unavailable or failed
-      if (!chart) {
-        console.log('🌟 Human Design: Using local astronomical calculator (fallback)');
+      const swissData = await this.swissEphemerisService.getAccuratePlanetaryPositions(
+        birthDate, latitude, longitude
+      );
 
-        // Run validation tests first
-        if (!preciseAstronomicalCalculator.validateCalculation()) {
-          throw new Error('CRITICAL: Astronomical validation failed - cannot proceed');
-        }
+      console.log(`✅ Swiss Ephemeris calculation completed`);
+      console.log(`🌟 Personality Sun: Gate ${swissData.personality.SUN?.human_design_gate.gate}.${swissData.personality.SUN?.human_design_gate.line}`);
+      console.log(`🌙 Design Sun: Gate ${swissData.design.SUN?.human_design_gate.gate}.${swissData.design.SUN?.human_design_gate.line}`);
 
-        // Calculate using local astronomical algorithms
-        astronomicalData = preciseAstronomicalCalculator.calculateAllGates(
-          birthDate, latitude, longitude
-        );
-
-        console.log(`✅ Local astronomical calculation completed`);
-        console.log(`🌟 Personality Sun: Gate ${astronomicalData.personality.SUN.gate}`);
-        console.log(`🌙 Design Sun: Gate ${astronomicalData.design.SUN.gate}`);
-
-        // Build chart from local astronomical data
-        chart = this.buildChartFromAstronomicalData(astronomicalData);
-      }
+      // Build chart from Swiss Ephemeris data ONLY
+      const chart = this.buildChartFromSwissEphemerisData(swissData);
 
       // Format output
       const output: HumanDesignOutput = {
@@ -310,10 +281,9 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
   }
 
   /**
-   * Build Human Design chart from astronomical data
-   * Uses your validated gate mappings (FALLBACK)
+   * REMOVED: Fallback calculations no longer allowed
+   * Only Swiss Ephemeris calculations are permitted for accuracy
    */
-  private buildChartFromAstronomicalData(astronomicalData: any): any {
     try {
       console.log('🔧 Building chart from astronomical data:', JSON.stringify(astronomicalData, null, 2));
 

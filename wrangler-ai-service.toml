@@ -1,0 +1,50 @@
+# AI Service Worker Configuration
+# Specialized worker for AI-powered synthesis and interpretation
+
+name = "witnessos-ai-service"
+main = "src/workers/ai-service-worker.ts"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "your-cache-kv-namespace-id"
+preview_id = "your-cache-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "KV_AI_CACHE"
+id = "your-ai-cache-kv-namespace-id"
+preview_id = "your-ai-cache-kv-preview-id"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "your-database-id"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+SERVICE_NAME = "ai-service"
+ENABLE_CACHING = "true"
+DEFAULT_AI_MODEL = "anthropic/claude-3-haiku"
+
+# Secrets (set via wrangler secret put)
+# OPENROUTER_API_KEY
+
+# Development configuration
+[env.development]
+name = "witnessos-ai-service-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+ENABLE_CACHING = "false"
+
+# Staging configuration
+[env.staging]
+name = "witnessos-ai-service-staging"
+
+# Production configuration
+[env.production]
+name = "witnessos-ai-service-prod"

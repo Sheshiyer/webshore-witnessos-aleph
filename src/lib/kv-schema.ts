@@ -94,7 +94,15 @@ export interface KVOperations {
   // Cache Operations
   getCached<T = any>(engineName: string, inputHash: string): Promise<T | null>;
   setCached<T = any>(engineName: string, inputHash: string, data: T, ttl?: number): Promise<void>;
-  
+
+  // Timeline Operations
+  createTimelineEntry(entry: any): Promise<void>;
+  getTimelineEntry(userId: string, entryId: string): Promise<any | null>;
+  updateTimelineEntry(entry: any): Promise<void>;
+  deleteTimelineEntry(userId: string, entryId: string, timestamp: string): Promise<void>;
+  getTimelineEntries(query: any): Promise<any>;
+  getTimelineStats(userId: string): Promise<any>;
+
   // Bulk Operations
   bulkSetEngineData(engineName: string, dataMap: Record<string, any>): Promise<void>;
   

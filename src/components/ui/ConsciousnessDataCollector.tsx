@@ -182,30 +182,69 @@ export const ConsciousnessDataCollector: React.FC<ConsciousnessDataCollectorProp
     setCurrentStep('birth_location_story');
   };
 
-  const handleLocationSubmit = (city: string, country: string) => {
+  const handleLocationSubmit = async (city: string, country: string) => {
     setBirthCity(city);
     setBirthCountry(country);
-    // TODO: Geocode city/country to lat/lng
-    setProfile(prev => ({
-      ...prev,
-      location: {
-        city,
-        country,
-        latitude: 0, // Will be geocoded
-        longitude: 0, // Will be geocoded
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      birthData: {
-        birthDate: prev.birthData?.birthDate || '',
-        birthTime: prev.birthData?.birthTime || '',
-        birthLocation: [0, 0], // Will be geocoded
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        date: prev.birthData?.date || '',
-        time: prev.birthData?.time || '',
-        location: [0, 0], // Will be geocoded
-      },
-    }));
-    setCurrentStep('confirmation');
+    setIsTyping(true);
+
+    try {
+      // Import geocoding utility
+      const { geocodeLocation } = await import('@/utils/geocoding');
+
+      // Geocode the location
+      const geocodeResult = await geocodeLocation(city, country);
+
+      if (!geocodeResult.success) {
+        console.warn('Geocoding failed:', geocodeResult.error);
+        // Continue with fallback coordinates but log the issue
+      }
+
+      setProfile(prev => ({
+        ...prev,
+        location: {
+          city: geocodeResult.city,
+          country: geocodeResult.country,
+          latitude: geocodeResult.latitude,
+          longitude: geocodeResult.longitude,
+          timezone: geocodeResult.timezone,
+        },
+        birthData: {
+          birthDate: prev.birthData?.birthDate || '',
+          birthTime: prev.birthData?.birthTime || '',
+          birthLocation: [geocodeResult.latitude, geocodeResult.longitude],
+          timezone: geocodeResult.timezone,
+          date: prev.birthData?.date || '',
+          time: prev.birthData?.time || '',
+          location: [geocodeResult.latitude, geocodeResult.longitude],
+        },
+      }));
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      // Fallback to browser timezone
+      const fallbackTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setProfile(prev => ({
+        ...prev,
+        location: {
+          city,
+          country,
+          latitude: 0,
+          longitude: 0,
+          timezone: fallbackTimezone,
+        },
+        birthData: {
+          birthDate: prev.birthData?.birthDate || '',
+          birthTime: prev.birthData?.birthTime || '',
+          birthLocation: [0, 0],
+          timezone: fallbackTimezone,
+          date: prev.birthData?.date || '',
+          time: prev.birthData?.time || '',
+          location: [0, 0],
+        },
+      }));
+    } finally {
+      setIsTyping(false);
+      setCurrentStep('confirmation');
+    }
   };
 
   // Handle form submission

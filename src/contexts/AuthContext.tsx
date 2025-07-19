@@ -149,11 +149,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initializeAuth = async () => {
       const { token, user } = loadAuthData();
-      
+
       if (token && user) {
         // Set token for API client
         apiClient.setAuthToken(token);
-        
+
         // Validate token with backend
         try {
           const response = await apiClient.getCurrentUser();
@@ -184,13 +184,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'AUTH_LOGOUT' });
     };
 
+    // Handle user refresh events (e.g., after profile upload)
+    const handleUserRefresh = async () => {
+      console.log('🔄 User refresh event received');
+      const { token } = loadAuthData();
+      if (token && state.isAuthenticated) {
+        try {
+          const response = await apiClient.getCurrentUser();
+          if (response.success && response.data) {
+            // Update user data in state and localStorage
+            saveAuthData(token, response.data);
+            dispatch({
+              type: 'AUTH_SUCCESS',
+              payload: { user: response.data, token }
+            });
+            console.log('✅ User data refreshed successfully');
+          }
+        } catch (error) {
+          console.error('User refresh error:', error);
+        }
+      }
+    };
+
     window.addEventListener('auth:token-expired', handleTokenExpired);
+    window.addEventListener('auth:refresh-user', handleUserRefresh);
     initializeAuth();
 
     return () => {
       window.removeEventListener('auth:token-expired', handleTokenExpired);
+      window.removeEventListener('auth:refresh-user', handleUserRefresh);
     };
-  }, []);
+  }, [state.isAuthenticated]);
 
   // Login function
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {

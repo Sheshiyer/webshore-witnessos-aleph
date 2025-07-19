@@ -126,7 +126,7 @@ export const ConsciousnessEnginePortal: React.FC<ConsciousnessEnginePortalProps>
   const ENGINE_DISPLAY_INFO = {
     numerology: {
       name: 'Numerology',
-      description: 'Sacred number consciousness mapping',
+      description: 'Sacred number witness mapping',
       icon: '🔢',
       color: '#FFD700',
       requiredInputs: ['birthDate', 'name'],
@@ -140,7 +140,7 @@ export const ConsciousnessEnginePortal: React.FC<ConsciousnessEnginePortalProps>
     },
     tarot: {
       name: 'Tarot',
-      description: 'Archetypal consciousness reading',
+      description: 'Archetypal witness reading',
       icon: '🃏',
       color: '#9370DB',
       requiredInputs: ['question'],
@@ -260,12 +260,12 @@ export const ConsciousnessEnginePortal: React.FC<ConsciousnessEnginePortalProps>
 
   return (
     <div className="consciousness-engine-portal w-full h-full bg-gradient-to-b from-indigo-950 via-purple-950 to-black text-white p-6">
-      {/* Header - Consciousness Status */}
+      {/* Header - Witness Status */}
       <div className="header mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Consciousness Engine Portal</h1>
+          <h1 className="text-2xl font-bold">Witness Engine Portal</h1>
           <div className="flex items-center space-x-4">
-            <div className="consciousness-status text-sm">
+            <div className="witness-status text-sm">
               <div className="flex items-center space-x-2">
                 <span>{consciousnessDisplay.icon}</span>
                 <span style={{ color: consciousnessDisplay.color }}>

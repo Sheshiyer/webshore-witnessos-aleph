@@ -129,20 +129,35 @@ export const useWitnessOSAPI = (options: UseWitnessOSAPIOptions = {}): UseWitnes
     }
   }, []);
 
-  // Initial connection check on mount
+  // Initial connection check on mount - with graceful failure
   useEffect(() => {
     const checkInitialConnection = async () => {
       try {
         console.log('🔍 Checking initial backend connection...');
         await healthCheck();
+        console.log('✅ Backend connection successful');
       } catch (error) {
-        console.warn('⚠️ Initial connection check failed:', error);
-        // Don't throw - just log the warning
+        // Gracefully handle connection failures during boot
+        console.warn('⚠️ Backend connection failed during boot - will retry later');
+
+        // Set connection status to offline but don't break the app
+        setConnectionStatus({
+          isConnected: false,
+          isHealthy: false,
+          lastChecked: new Date(),
+          error: 'Backend offline during boot',
+          retryCount: 0,
+        });
+
+        // Don't throw - allow app to continue with offline mode
       }
     };
 
-    checkInitialConnection();
-  }, [healthCheck]); // Include healthCheck in dependencies
+    // Add a small delay to avoid overwhelming the boot sequence
+    const timeoutId = setTimeout(checkInitialConnection, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, []); // Remove healthCheck dependency to avoid infinite loops
 
   // Error handling utility
   const handleError = useCallback(

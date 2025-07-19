@@ -40,12 +40,96 @@ export interface AIInterpretationResult {
   processingTime: number;
 }
 
+// Circuit Breaker State Management
+interface CircuitBreakerState {
+  failures: number;
+  lastFailureTime: number;
+  state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+  successCount: number;
+}
+
 export class AIInterpreter {
   private modelConfig: AIModelConfig;
   private baseUrl = 'https://openrouter.ai/api/v1';
-  
+
+  // Phase 1: Circuit Breaker Pattern for OpenRouter Integration
+  private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
+  private readonly FAILURE_THRESHOLD = 5;
+  private readonly RECOVERY_TIMEOUT = 60000; // 1 minute
+  private readonly SUCCESS_THRESHOLD = 3; // Successes needed to close circuit
+
   constructor(modelConfig: AIModelConfig) {
     this.modelConfig = modelConfig;
+  }
+
+  // Circuit Breaker Pattern Implementation
+  private getCircuitBreakerState(model: string): CircuitBreakerState {
+    if (!this.circuitBreakers.has(model)) {
+      this.circuitBreakers.set(model, {
+        failures: 0,
+        lastFailureTime: 0,
+        state: 'CLOSED',
+        successCount: 0
+      });
+    }
+    return this.circuitBreakers.get(model)!;
+  }
+
+  private canAttemptRequest(model: string): boolean {
+    const state = this.getCircuitBreakerState(model);
+    const now = Date.now();
+
+    switch (state.state) {
+      case 'CLOSED':
+        return true;
+      case 'OPEN':
+        if (now - state.lastFailureTime > this.RECOVERY_TIMEOUT) {
+          state.state = 'HALF_OPEN';
+          state.successCount = 0;
+          return true;
+        }
+        return false;
+      case 'HALF_OPEN':
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  private recordSuccess(model: string): void {
+    const state = this.getCircuitBreakerState(model);
+
+    if (state.state === 'HALF_OPEN') {
+      state.successCount++;
+      if (state.successCount >= this.SUCCESS_THRESHOLD) {
+        state.state = 'CLOSED';
+        state.failures = 0;
+      }
+    } else if (state.state === 'CLOSED') {
+      state.failures = Math.max(0, state.failures - 1); // Gradually reduce failure count
+    }
+  }
+
+  private recordFailure(model: string): void {
+    const state = this.getCircuitBreakerState(model);
+    state.failures++;
+    state.lastFailureTime = Date.now();
+
+    if (state.failures >= this.FAILURE_THRESHOLD) {
+      state.state = 'OPEN';
+      console.warn(`🚨 Circuit breaker OPEN for model ${model} after ${state.failures} failures`);
+    } else if (state.state === 'HALF_OPEN') {
+      state.state = 'OPEN';
+      console.warn(`🚨 Circuit breaker OPEN for model ${model} - failed during half-open state`);
+    }
+  }
+
+  private getCircuitBreakerStats(): Record<string, CircuitBreakerState> {
+    const stats: Record<string, CircuitBreakerState> = {};
+    for (const [model, state] of this.circuitBreakers.entries()) {
+      stats[model] = { ...state };
+    }
+    return stats;
   }
 
   /**
@@ -407,17 +491,26 @@ Remember: You're creating a singular, coherent consciousness map from multiple p
   }
 
   private async callOpenRouterWithMetadata(
-    prompt: string, 
+    prompt: string,
     config: AIInterpretationConfig
-  ): Promise<{ response: string; modelUsed: string; attemptedModels: string[]; modelSwitches: number }> {
+  ): Promise<{ response: string; modelUsed: string; attemptedModels: string[]; modelSwitches: number; circuitBreakerStats?: any }> {
     const models = [config.model, config.fallbackModel1, config.fallbackModel2].filter(Boolean);
     const attemptedModels: string[] = [];
+    const skippedModels: string[] = [];
     let modelSwitches = 0;
-    
+
     for (let i = 0; i < models.length; i++) {
       const model = models[i];
       if (!model) continue;
-      
+
+      // Phase 1: Circuit Breaker Pattern - Check if model is available
+      if (!this.canAttemptRequest(model)) {
+        const state = this.getCircuitBreakerState(model);
+        console.warn(`⚡ Circuit breaker OPEN for model ${model} - skipping (failures: ${state.failures}, state: ${state.state})`);
+        skippedModels.push(model);
+        continue;
+      }
+
       attemptedModels.push(model);
       if (i > 0) {
         modelSwitches++;
@@ -462,7 +555,10 @@ Remember: You're creating a singular, coherent consciousness map from multiple p
         if (!response.ok) {
           const errorText = await response.text();
           console.warn(`❌ Model ${model} failed: ${response.status} ${response.statusText} - ${errorText}`);
-          
+
+          // Record failure in circuit breaker
+          this.recordFailure(model);
+
           if (i === models.length - 1) {
             throw new Error(`All AI models failed. Last error: ${response.status} ${response.statusText}`);
           }
@@ -471,29 +567,40 @@ Remember: You're creating a singular, coherent consciousness map from multiple p
 
         const data = await response.json();
         const content = data.choices[0]?.message?.content || '';
-        
+
         if (content) {
           console.log(`✅ AI interpretation successful with model: ${model}`);
           console.log(`📊 Response length: ${content.length} characters`);
           console.log(`💰 Token usage: ${data.usage?.total_tokens || 'unknown'} tokens`);
-          
+
+          // Record success in circuit breaker
+          this.recordSuccess(model);
+
           return {
             response: content,
             modelUsed: model,
             attemptedModels,
-            modelSwitches
+            modelSwitches,
+            circuitBreakerStats: this.getCircuitBreakerStats()
           };
         } else {
           console.warn(`⚠️ Model ${model} returned empty content`);
+
+          // Record failure for empty content
+          this.recordFailure(model);
+
           if (i === models.length - 1) {
             throw new Error('All models returned empty content');
           }
           continue;
         }
-        
+
       } catch (error) {
         console.error(`❌ Error with model ${model}:`, error);
-        
+
+        // Record failure in circuit breaker
+        this.recordFailure(model);
+
         if (i === models.length - 1) {
           throw error;
         }

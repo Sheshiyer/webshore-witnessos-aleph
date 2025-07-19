@@ -3,7 +3,7 @@
  *
  * Features:
  * - Integrated design matching boot sequence aesthetic
- * - Direction-first user journey (compass selection first)
+ * - Progressive data collection (name → birth data → direction selection)
  * - No popup modals - full-screen immersive experience
  * - Smooth transitions with GSAP animations
  * - Sacred geometry and consciousness theming throughout
@@ -18,6 +18,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConsciousnessProfile } from '@/hooks/useConsciousnessProfile';
 import { SPECTRAL_COLORS } from './SacredGeometryForm';
 import { apiClient } from '@/utils/api-client';
+import { MatrixText } from './MatrixText';
+
+
 
 interface IntegratedConsciousnessOnboardingProps {
   onProfileComplete: (profile: ConsciousnessProfile) => void;
@@ -32,15 +35,11 @@ interface IntegratedConsciousnessOnboardingProps {
 }
 
 type OnboardingStep =
-  | 'consciousness_gateway'
-  | 'auth_choice'
-  | 'login_portal'
-  | 'register_portal'
-  | 'direction_selection'
   | 'name_story'
   | 'birth_date_story'
   | 'birth_time_story'
   | 'birth_location_story'
+  | 'direction_selection'
   | 'confirmation';
 
 interface ArchetypalDirection {
@@ -165,8 +164,6 @@ export const IntegratedConsciousnessOnboarding: React.FC<
   const [userName, setUserName] = useState(initialData?.personalData?.fullName || '');
   const [birthDate, setBirthDate] = useState(initialData?.birthData?.birthDate || '');
   const [birthTime, setBirthTime] = useState(initialData?.birthData?.birthTime || '');
-  const [birthCity, setBirthCity] = useState(initialData?.location?.city || '');
-  const [birthCountry, setBirthCountry] = useState(initialData?.location?.country || '');
 
   const [profile, setProfile] = useState<ConsciousnessProfile>(() => {
     // Initialize with saved data or defaults
@@ -288,7 +285,7 @@ export const IntegratedConsciousnessOnboarding: React.FC<
   const handleDirectionSelect = (direction: ArchetypalDirection) => {
     setSelectedDirection(direction);
 
-    // Initialize profile card with selected direction
+    // Initialize profile card with selected direction (1/6 steps complete)
     setProfileCardData({
       direction,
       completionPercentage: 16.67, // 1/6 steps complete
@@ -322,7 +319,7 @@ export const IntegratedConsciousnessOnboarding: React.FC<
     };
     setProfile(updatedProfile);
 
-    // Update profile card with name (Pokemon evolution style)
+    // Update profile card with name (2/6 steps complete)
     setProfileCardData(prev => ({
       ...prev,
       name,
@@ -402,34 +399,38 @@ export const IntegratedConsciousnessOnboarding: React.FC<
     setCurrentStep('birth_location_story');
   };
 
-  const handleLocationSubmit = (city: string, country: string) => {
-    setBirthCity(city);
-    setBirthCountry(country);
+  const handleLocationSubmit = (latitude: number, longitude: number) => {
+    // Validate coordinate ranges
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      console.error('Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180');
+      return;
+    }
+
     const updatedProfile = {
       ...profile,
       location: {
-        city,
-        country,
-        latitude: 0,
-        longitude: 0,
+        city: '', // Will be populated by reverse geocoding if needed
+        country: '', // Will be populated by reverse geocoding if needed
+        latitude,
+        longitude,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
       birthData: {
         birthDate: profile.birthData?.birthDate || '',
         birthTime: profile.birthData?.birthTime || '',
-        birthLocation: [0, 0] as [number, number],
+        birthLocation: [latitude, longitude] as [number, number],
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         date: profile.birthData?.date || '',
         time: profile.birthData?.time || '',
-        location: [0, 0] as [number, number],
+        location: [latitude, longitude] as [number, number],
       },
     };
     setProfile(updatedProfile);
 
-    // Update profile card with location
+    // Update profile card with coordinates
     setProfileCardData(prev => ({
       ...prev,
-      location: `${city}, ${country}`,
+      location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       completionPercentage: 83.33, // 5/6 steps complete
     }));
 
@@ -461,10 +462,24 @@ export const IntegratedConsciousnessOnboarding: React.FC<
 
     // Upload final profile to cloud if authenticated
     if (isAuthenticated) {
-      await uploadToCloud(finalProfile);
-    }
+      console.log('🔄 Uploading consciousness profile...');
+      const uploadSuccess = await uploadToCloud(finalProfile);
 
-    onProfileComplete(finalProfile);
+      if (uploadSuccess) {
+        console.log('✅ Profile uploaded successfully - onboarding complete');
+        // Small delay to allow user refresh to complete
+        setTimeout(() => {
+          onProfileComplete(finalProfile);
+        }, 500);
+      } else {
+        console.error('❌ Profile upload failed');
+        // Still complete onboarding locally even if upload fails
+        onProfileComplete(finalProfile);
+      }
+    } else {
+      // Not authenticated, just complete locally
+      onProfileComplete(finalProfile);
+    }
   };
 
   return (
@@ -602,9 +617,14 @@ export const IntegratedConsciousnessOnboarding: React.FC<
       <div className='relative z-10 p-6 border-t border-cyan-500/30'>
         <div className='flex items-center justify-between mb-4'>
           <div className='text-cyan-400 text-sm'>
-            {selectedDirection && (
+            {selectedDirection && currentStep !== 'direction_selection' && (
               <span className={selectedDirection.color}>
                 {selectedDirection.symbol} {selectedDirection.name}
+              </span>
+            )}
+            {currentStep === 'direction_selection' && (
+              <span className='text-pink-500'>
+                ⚡ Select Your Archetypal Direction
               </span>
             )}
           </div>
@@ -800,17 +820,33 @@ const DirectionSelectionStep: React.FC<{
   };
 
   return (
-    <div className='w-full min-h-screen flex flex-col px-4 py-6 md:py-8'>
-      {/* Cyberpunk Header */}
-      <div className='text-center mb-8 md:mb-12 z-10 flex-shrink-0'>
-        <h1 className='text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 tracking-wider font-mono'>
-          <span className='text-pink-500'>&gt;</span> ARCHETYPAL_SELECTION.exe
-        </h1>
-        <p className='text-gray-300 text-sm md:text-base max-w-xl mx-auto leading-relaxed font-mono'>
-          // Initialize consciousness matrix. Select your archetypal vector.
-        </p>
-        <div className='mt-2 text-xs text-cyan-500 font-mono opacity-70'>
-          [NEURAL_INTERFACE_ACTIVE] Choose wisely, traveler...
+    <div className='w-full min-h-screen flex flex-col px-4 py-4 md:py-6'>
+      {/* Matrix-style Header positioned on the "mat" above cards */}
+      <div className='text-center mb-6 md:mb-8 z-20 flex-shrink-0 relative'>
+        {/* Subtle glow background for header */}
+        <div className='absolute inset-0 bg-gradient-to-b from-cyan-500/5 via-transparent to-transparent rounded-lg blur-xl' />
+
+        <div className='relative'>
+          <h1 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 tracking-wider font-mono drop-shadow-lg'>
+            <span className='text-pink-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.5)]'>&gt;</span>{' '}
+            <MatrixText
+              text="ARCHETYPAL_SELECTION.exe"
+              className="text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              delay={200}
+            />
+          </h1>
+          <p className='text-gray-300 text-sm md:text-base lg:text-lg max-w-2xl mx-auto leading-relaxed font-mono mb-2 drop-shadow-md'>
+            <MatrixText
+              text="// Initialize consciousness matrix. Select your archetypal vector."
+              delay={800}
+            />
+          </p>
+          <div className='text-xs md:text-sm text-cyan-500 font-mono opacity-70 drop-shadow-sm'>
+            <MatrixText
+              text="[NEURAL_INTERFACE_ACTIVE] Choose wisely, traveler..."
+              delay={1400}
+            />
+          </div>
         </div>
       </div>
 
@@ -1512,32 +1548,83 @@ const CyberpunkBirthTimeStep: React.FC<{
 const CyberpunkLocationStep: React.FC<{
   direction: ArchetypalDirection;
   userName: string;
-  onSubmit: (city: string, country: string) => void;
+  onSubmit: (latitude: number, longitude: number) => void;
   profileCardRef: React.RefObject<HTMLDivElement>;
 }> = ({ direction, userName, onSubmit, profileCardRef }) => {
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [latDirection, setLatDirection] = useState<'N' | 'S'>('N');
+  const [lngDirection, setLngDirection] = useState<'E' | 'W'>('E');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checklist, setChecklist] = useState({
+    step1: false, // Type your closest city name in Google Maps
+    step2: false, // Find the latitude/longitude coordinates
+    step3: false, // Copy the latitude value (with direction)
+    step4: false, // Copy the longitude value (with direction)
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (city.trim() && country.trim() && !isSubmitting) {
-      setIsSubmitting(true);
 
-      if (profileCardRef.current) {
-        gsap.to(profileCardRef.current, {
-          scale: 1.05,
-          duration: 0.3,
-          yoyo: true,
-          repeat: 1,
-          ease: 'power2.inOut',
-        });
-      }
-
-      setTimeout(() => {
-        onSubmit(city.trim(), country.trim());
-      }, 600);
+    if (!isValidCoordinates() || isSubmitting) {
+      return;
     }
+
+    const coordinates = convertToSignedCoordinates();
+    if (!coordinates) {
+      alert('Invalid coordinate format. Please check your input.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    if (profileCardRef.current) {
+      gsap.to(profileCardRef.current, {
+        scale: 1.05,
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        ease: 'power2.inOut',
+      });
+    }
+
+    setTimeout(() => {
+      onSubmit(coordinates.lat, coordinates.lng);
+    }, 600);
+  };
+
+  const toggleChecklistItem = (step: keyof typeof checklist) => {
+    setChecklist(prev => ({
+      ...prev,
+      [step]: !prev[step],
+    }));
+  };
+
+  // Helper function to convert coordinates to signed decimal format
+  const convertToSignedCoordinates = () => {
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lng)) return null;
+
+    // Convert to signed format based on direction
+    const signedLat = latDirection === 'S' ? -Math.abs(lat) : Math.abs(lat);
+    const signedLng = lngDirection === 'W' ? -Math.abs(lng) : Math.abs(lng);
+
+    return { lat: signedLat, lng: signedLng };
+  };
+
+  // Helper function to validate coordinates
+  const isValidCoordinates = () => {
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    if (!latitude.trim() || !longitude.trim() || isNaN(lat) || isNaN(lng)) {
+      return false;
+    }
+
+    // Validate ranges (always positive input, direction handled separately)
+    return lat >= 0 && lat <= 90 && lng >= 0 && lng <= 180;
   };
 
   return (
@@ -1553,46 +1640,133 @@ const CyberpunkLocationStep: React.FC<{
           [USER: {userName.toUpperCase()}] Where did your consciousness first interface with this
           reality matrix?
         </div>
+        <div className='mt-4 text-xs text-gray-400 font-mono bg-black/30 rounded p-3 max-w-md mx-auto'>
+          <div className='text-cyan-400 mb-2'>EXAMPLE: Bengaluru, India</div>
+          <div className='text-pink-400'>Google Maps shows: 12.9629, 77.5775</div>
+          <div className='text-yellow-400'>Enter: 12.9629°N, 77.5775°E</div>
+        </div>
+      </div>
+
+      {/* Gamified Checklist */}
+      <div className='mb-8 max-w-md mx-auto'>
+        <div className='text-left bg-black/40 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-4'>
+          <h3 className='text-cyan-400 font-mono text-sm mb-3 text-center'>
+            [COORDINATE_ACQUISITION_PROTOCOL]
+          </h3>
+          <div className='space-y-2 text-sm font-mono'>
+            {[
+              { key: 'step1', text: 'Type your closest city name in Google Maps' },
+              { key: 'step2', text: 'Right-click on your city → "What\'s here?"' },
+              { key: 'step3', text: 'Copy latitude (first number) + select N/S' },
+              { key: 'step4', text: 'Copy longitude (second number) + select E/W' },
+            ].map(({ key, text }) => (
+              <div
+                key={key}
+                className='flex items-center space-x-3 cursor-pointer hover:text-cyan-300 transition-colors'
+                onClick={() => toggleChecklistItem(key as keyof typeof checklist)}
+              >
+                <div
+                  className={`w-4 h-4 border border-cyan-500 rounded flex items-center justify-center transition-all duration-200 ${
+                    checklist[key as keyof typeof checklist]
+                      ? 'bg-cyan-500 text-black'
+                      : 'bg-transparent text-cyan-500'
+                  }`}
+                >
+                  {checklist[key as keyof typeof checklist] && '✓'}
+                </div>
+                <span className={checklist[key as keyof typeof checklist] ? 'text-cyan-300' : 'text-gray-400'}>
+                  {text}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-6'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <div className='relative'>
-            <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
-              <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+          {/* Latitude Input with Direction */}
+          <div className='space-y-2'>
+            <div className='text-xs font-mono text-cyan-400 text-center'>LATITUDE</div>
+            <div className='flex gap-2'>
+              <div className='relative flex-1'>
+                <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
+                  <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+                </div>
+                <input
+                  type='number'
+                  step='any'
+                  min='0'
+                  max='90'
+                  value={latitude}
+                  onChange={e => setLatitude(e.target.value)}
+                  placeholder='0.0000'
+                  className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg placeholder-gray-500 border-none outline-none'
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className='relative w-16'>
+                <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
+                  <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+                </div>
+                <select
+                  value={latDirection}
+                  onChange={e => setLatDirection(e.target.value as 'N' | 'S')}
+                  className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg border-none outline-none appearance-none cursor-pointer'
+                  disabled={isSubmitting}
+                >
+                  <option value='N' className='bg-black text-cyan-300'>N</option>
+                  <option value='S' className='bg-black text-cyan-300'>S</option>
+                </select>
+              </div>
             </div>
-            <input
-              type='text'
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              placeholder='City coordinates...'
-              className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg placeholder-gray-500 border-none outline-none'
-              disabled={isSubmitting}
-            />
           </div>
 
-          <div className='relative'>
-            <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
-              <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+          {/* Longitude Input with Direction */}
+          <div className='space-y-2'>
+            <div className='text-xs font-mono text-cyan-400 text-center'>LONGITUDE</div>
+            <div className='flex gap-2'>
+              <div className='relative flex-1'>
+                <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
+                  <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+                </div>
+                <input
+                  type='number'
+                  step='any'
+                  min='0'
+                  max='180'
+                  value={longitude}
+                  onChange={e => setLongitude(e.target.value)}
+                  placeholder='0.0000'
+                  className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg placeholder-gray-500 border-none outline-none'
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className='relative w-16'>
+                <div className='absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500'>
+                  <div className='w-full h-full rounded-lg bg-black/90 backdrop-blur-xl' />
+                </div>
+                <select
+                  value={lngDirection}
+                  onChange={e => setLngDirection(e.target.value as 'E' | 'W')}
+                  className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg border-none outline-none appearance-none cursor-pointer'
+                  disabled={isSubmitting}
+                >
+                  <option value='E' className='bg-black text-cyan-300'>E</option>
+                  <option value='W' className='bg-black text-cyan-300'>W</option>
+                </select>
+              </div>
             </div>
-            <input
-              type='text'
-              value={country}
-              onChange={e => setCountry(e.target.value)}
-              placeholder='Nation state...'
-              className='relative z-10 w-full p-4 bg-transparent text-cyan-300 font-mono text-lg placeholder-gray-500 border-none outline-none'
-              disabled={isSubmitting}
-            />
           </div>
         </div>
 
         <button
           type='submit'
-          disabled={!city.trim() || !country.trim() || isSubmitting}
+          disabled={!isValidCoordinates() || isSubmitting}
           className={`
             relative px-8 py-3 font-mono font-bold tracking-wider transition-all duration-300
             ${
-              city.trim() && country.trim() && !isSubmitting
+              isValidCoordinates() && !isSubmitting
                 ? 'text-black bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500 hover:scale-105'
                 : 'text-gray-500 bg-gray-800 cursor-not-allowed'
             }
@@ -1606,8 +1780,21 @@ const CyberpunkLocationStep: React.FC<{
       </form>
 
       <div className='mt-8 text-xs font-mono text-gray-500'>
-        [STATUS] {city.trim() && country.trim() ? 'COORDINATES_READY' : 'AWAITING_MAPPING'} |
+        [STATUS] {isValidCoordinates() ? 'COORDINATES_READY' : 'AWAITING_MAPPING'} |
         NEURAL_SYNC: {isSubmitting ? 'PROCESSING' : 'STANDBY'}
+        {latitude && longitude && (
+          <div className='mt-1 text-cyan-400'>
+            INPUT: {parseFloat(latitude).toFixed(4)}°{latDirection} | {parseFloat(longitude).toFixed(4)}°{lngDirection}
+            {(() => {
+              const coords = convertToSignedCoordinates();
+              return coords ? (
+                <div className='text-pink-400'>
+                  SIGNED: {coords.lat.toFixed(4)} | {coords.lng.toFixed(4)}
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
       </div>
     </div>
   );

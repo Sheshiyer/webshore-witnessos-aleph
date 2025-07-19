@@ -22,9 +22,9 @@ interface NavigationItem {
   color: string;
 }
 
-const CONSCIOUSNESS_PATHS: NavigationItem[] = [
+const WITNESS_PATHS: NavigationItem[] = [
   {
-    name: 'Consciousness Engines',
+    name: 'Witness Engines',
     path: '/consciousness-engines',
     icon: '🧠',
     description: 'Engine unlock and testing interface',
@@ -35,7 +35,7 @@ const CONSCIOUSNESS_PATHS: NavigationItem[] = [
     name: 'Cosmic Temple',
     path: '/cosmic-temple',
     icon: '🌌',
-    description: 'Sacred portal for deep consciousness exploration',
+    description: 'Sacred portal for deep witness exploration',
     requiresAuth: true,
     color: 'indigo',
   },
@@ -215,9 +215,9 @@ export default function ConsciousnessNavigation() {
 
               {/* Navigation Items */}
               <div className="mb-8">
-                <h3 className="text-xl font-bold text-white mb-4">🌟 Consciousness Spaces</h3>
+                <h3 className="text-xl font-bold text-white mb-4">🌟 Witness Spaces</h3>
                 <div className="grid gap-4">
-                  {CONSCIOUSNESS_PATHS.map((item) => (
+                  {WITNESS_PATHS.map((item) => (
                     <NavigationCard
                       key={item.path}
                       item={item}

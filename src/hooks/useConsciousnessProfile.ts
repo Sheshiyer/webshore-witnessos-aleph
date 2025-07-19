@@ -110,11 +110,20 @@ export const useConsciousnessProfile = (): ConsciousnessProfileState => {
     setSyncError(null);
 
     try {
+      console.log('🔄 Uploading consciousness profile to cloud...');
       const response = await apiClient.uploadConsciousnessProfile(targetProfile);
+
       if (response.success) {
+        console.log('✅ Consciousness profile uploaded successfully');
+
+        // Trigger a user data refresh to get the updated has_completed_onboarding flag
+        // This will cause the auth context to re-fetch user data
+        window.dispatchEvent(new CustomEvent('auth:refresh-user'));
+
         return true;
       } else {
-        setSyncError('Upload failed');
+        console.error('❌ Upload failed:', response.error);
+        setSyncError(response.error || 'Upload failed');
         return false;
       }
     } catch (error) {

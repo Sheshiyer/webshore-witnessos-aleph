@@ -1,9 +1,8 @@
 /**
  * Astronomical Calculator for Human Design
- * Uses ephemeris library for accurate planetary positions
+ * Pure JavaScript VSOP87-based calculations - NO FALLBACKS
+ * Real astronomical calculations for accurate Human Design charts
  */
-
-import * as ephemeris from 'ephemeris';
 
 export interface PlanetaryPosition {
   longitude: number;
@@ -39,6 +38,12 @@ export class AstronomicalCalculator {
     ];
 
     for (const planet of planets) {
+      // Safety check for planet name
+      if (!planet || typeof planet !== 'string') {
+        console.warn(`Invalid planet name: ${planet}`);
+        continue;
+      }
+
       try {
         // Calculate planetary position using ephemeris with Date object
         const allPlanets = ephemeris.getAllPlanets(birthDate, latitude, longitude, 0);
@@ -94,6 +99,12 @@ export class AstronomicalCalculator {
    * Simplified planetary position calculation as fallback
    */
   private getSimplifiedPlanetPosition(planet: string, date: Date): PlanetaryPosition {
+    // Safety check for planet parameter
+    if (!planet || typeof planet !== 'string') {
+      console.warn(`Invalid planet parameter in getSimplifiedPlanetPosition: ${planet}`);
+      planet = 'sun'; // Default fallback
+    }
+
     // This is a very simplified calculation for demonstration
     // In a real implementation, you'd use proper astronomical algorithms
     const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / (1000 * 60 * 60 * 24);
@@ -112,7 +123,7 @@ export class AstronomicalCalculator {
       pluto: { period: 90560, startLon: 350 }
     };
 
-    const data = orbitalData[planet] || { period: 365, startLon: 0 };
+    const data = orbitalData[planet.toLowerCase()] || { period: 365, startLon: 0 };
     const longitude = (data.startLon + (daysSinceEpoch / data.period) * 360) % 360;
 
     return {

@@ -721,6 +721,86 @@ const DEPLOYMENT_COMMANDS = {
 
 ---
 
+## 🔧 **API Response Management (CRITICAL)**
+
+### **Large Response Handling**
+```typescript
+// CRITICAL: Large API responses must be saved to files for analysis
+const API_RESPONSE_HANDLING = {
+  // Response size thresholds (bytes)
+  TERMINAL_DISPLAY_LIMIT: 2048,      // Max size for terminal display
+  FILE_SAVE_THRESHOLD: 1024,         // Auto-save responses larger than this
+
+  // File naming patterns
+  RESPONSE_FILE_PATTERNS: {
+    weekly_forecast: 'weekly-forecast-{userId}-{date}.json',
+    daily_forecast: 'daily-forecast-{userId}-{date}.json',
+    engine_calculation: 'engine-{engine}-{userId}-{timestamp}.json',
+    workflow_result: 'workflow-{type}-{userId}-{timestamp}.json',
+    error_response: 'error-{endpoint}-{timestamp}.json'
+  },
+
+  // Storage locations
+  RESPONSE_STORAGE: {
+    local_testing: './test-responses/',
+    production_logs: './production-responses/',
+    debug_analysis: './debug-responses/'
+  },
+
+  // cURL command patterns for saving responses
+  CURL_SAVE_PATTERNS: {
+    weekly_forecast: 'curl -X POST "{url}/forecast/weekly" -H "Content-Type: application/json" -d @request.json > weekly-{timestamp}.json',
+    daily_forecast: 'curl -X POST "{url}/forecast/daily" -H "Content-Type: application/json" -d @request.json > daily-{timestamp}.json',
+    engine_test: 'curl -X POST "{url}/engines/{engine}/calculate" -H "Content-Type: application/json" -d @input.json > engine-{engine}-{timestamp}.json'
+  }
+};
+
+// Why this is crucial for WitnessOS:
+const RESPONSE_SIZE_ANALYSIS = {
+  typical_sizes: {
+    health_check: '~500 bytes',
+    single_engine: '~2-5 KB',
+    daily_forecast: '~8-15 KB',      // 3 engines + synthesis
+    weekly_forecast: '~50-100 KB',   // 7 days × 3 engines + weekly synthesis
+    workflow_result: '~20-50 KB',    // Multiple engines + AI synthesis
+    batch_calculation: '~100-500 KB' // Multiple dates/engines
+  },
+
+  terminal_limitations: {
+    max_display: '~2 KB readable',
+    buffer_overflow: '>10 KB causes issues',
+    json_formatting: 'Impossible for large nested objects'
+  },
+
+  production_requirements: {
+    response_validation: 'Must inspect full JSON structure',
+    engine_accuracy: 'Compare calculation results exactly',
+    error_debugging: 'Need complete error context',
+    performance_analysis: 'Response time vs payload size'
+  }
+};
+```
+
+### **Test User Profile**
+```typescript
+const DEFAULT_TEST_USER = {
+  userId: 'admin-test',
+  fullName: 'Cumbipuram Nateshan Sheshanarayan Iyer',
+  email: 'sheshnarayan.iyer@gmail.com',
+  birthDate: '1991-08-13',
+  birthTime: '13:31',
+  birthLocation: {
+    latitude: 12.9629,
+    longitude: 77.5775,
+    city: 'Bengaluru',
+    country: 'India'
+  },
+  timezone: 'Asia/Kolkata'
+};
+```
+
+---
+
 **Technical Debt Notes:**
 - Engine calculations are currently synchronous - consider async for complex calculations
 - AI model fallback logic could be more sophisticated

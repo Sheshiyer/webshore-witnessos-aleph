@@ -8,6 +8,25 @@
 
 ## 🔥 Phase 1: Fractal Foundation (Critical)
 
+### **Tiered Onboarding UI Implementation**
+- [ ] **Create Progressive Onboarding Flow Components**
+  - **Components:** `TierOnboarding` in `src/components/onboarding/TierOnboarding.tsx`
+  - **Target:** 3-step progressive onboarding UI (Tier 1: auth, Tier 2: birth data, Tier 3: preferences)
+  - **Dependencies:** Backend tiered onboarding API endpoints (✅ COMPLETED)
+  - **Acceptance:** Users progress through tiers with clear guidance and engine unlock notifications
+
+- [ ] **Implement Tier 2 Birth Data Collection**
+  - **Component:** `BirthDataCollection` in `src/components/onboarding/BirthDataCollection.tsx`
+  - **Target:** Gamified birth data input (DOB, time, lat/long coordinates, timezone)
+  - **Reference:** Existing location quest concept with coordinate validation
+  - **Acceptance:** Multiple input methods with validation and "engines unlocked" celebration
+
+- [ ] **Create Tier 3 Preferences Selection**
+  - **Component:** `PreferencesSelection` in `src/components/onboarding/PreferencesSelection.tsx`
+  - **Target:** Card selection (alchemist, etc.), direction (east, etc.), consciousness preferences
+  - **Dependencies:** Backend preference validation and storage
+  - **Acceptance:** Visual preference selection with consciousness-themed UI
+
 ### **267-Character Nishitsuji Fractal Implementation**
 - [ ] **Create Core Fractal Component**
   - **Component:** `FractalRenderer` in `src/components/fractal/FractalRenderer.tsx`

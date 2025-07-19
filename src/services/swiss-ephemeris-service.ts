@@ -49,6 +49,7 @@ export class SwissEphemerisService {
   /**
    * Get accurate planetary positions using Swiss Ephemeris
    * This is the REAL astronomical calculation that replaces all approximations
+   * Handles Render.com free tier cold starts with robust retry logic
    */
   async getAccuratePlanetaryPositions(
     birthDate: Date,
@@ -57,7 +58,7 @@ export class SwissEphemerisService {
     timezoneOffset: number = 0
   ): Promise<SwissEphemerisResponse> {
     console.log('🌟 SwissEphemerisService: Getting REAL astronomical data from Swiss Ephemeris');
-    
+
     // Check cache first for performance
     const cached = await this.getCachedPositions(birthDate, latitude, longitude);
     if (cached) {
@@ -65,55 +66,98 @@ export class SwissEphemerisService {
       return cached;
     }
 
-    try {
-      // Format date and time for Swiss Ephemeris service
-      const birthDateStr = birthDate.toISOString().split('T')[0]; // "1991-08-13"
-      const birthTimeStr = birthDate.toISOString().split('T')[1].substring(0, 5); // "08:01"
+    // Format date and time for Swiss Ephemeris service
+    const birthDateStr = birthDate.toISOString().split('T')[0]; // "1991-08-13"
+    const birthTimeStr = birthDate.toISOString().split('T')[1].substring(0, 5); // "08:01"
 
-      const requestData = {
-        birth_date: birthDateStr,
-        birth_time: birthTimeStr,
-        latitude,
-        longitude,
-        timezone_offset: timezoneOffset
-      };
+    const requestData = {
+      birth_date: birthDateStr,
+      birth_time: birthTimeStr,
+      latitude,
+      longitude,
+      timezone_offset: timezoneOffset
+    };
 
-      console.log('📡 Calling Swiss Ephemeris service:', this.serviceUrl);
-      console.log('📊 Request data:', requestData);
+    console.log('📡 Calling Swiss Ephemeris service:', this.serviceUrl);
+    console.log('📊 Request data:', requestData);
 
-      // Call Swiss Ephemeris service on Render.com
-      const response = await fetch(`${this.serviceUrl}/calculate-positions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'WitnessOS-Cloudflare-Worker'
-        },
-        body: JSON.stringify(requestData)
-      });
+    // Robust API call with retries for Render.com free tier cold starts
+    const astronomicalData = await this.callSwissEphemerisWithRetries(requestData);
 
-      if (!response.ok) {
-        throw new Error(`Swiss Ephemeris service error: ${response.status} ${response.statusText}`);
+    console.log('✅ Swiss Ephemeris calculation successful');
+    console.log(`🌟 Personality Sun: Gate ${astronomicalData.personality.SUN.human_design_gate.gate}.${astronomicalData.personality.SUN.human_design_gate.line}`);
+    console.log(`🌙 Design Sun: Gate ${astronomicalData.design.SUN.human_design_gate.gate}.${astronomicalData.design.SUN.human_design_gate.line}`);
+
+    // Cache the results for future use
+    await this.cachePositions(birthDate, latitude, longitude, astronomicalData);
+
+    return astronomicalData;
+  }
+
+  /**
+   * Call Swiss Ephemeris service with robust retry logic for Render.com free tier
+   * Handles cold starts that can take 50+ seconds
+   */
+  private async callSwissEphemerisWithRetries(requestData: any): Promise<SwissEphemerisResponse> {
+    const maxRetries = 3;
+    const timeouts = [60000, 90000, 120000]; // 60s, 90s, 120s - accommodate cold starts
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Swiss Ephemeris attempt ${attempt + 1}/${maxRetries} (timeout: ${timeouts[attempt]/1000}s)`);
+
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeouts[attempt]);
+
+        const response = await fetch(`${this.serviceUrl}/calculate-positions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'WitnessOS-Cloudflare-Worker'
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const astronomicalData: SwissEphemerisResponse = await response.json();
+
+        if (!astronomicalData.success) {
+          throw new Error(`Swiss Ephemeris calculation failed: ${astronomicalData.error}`);
+        }
+
+        console.log(`✅ Swiss Ephemeris succeeded on attempt ${attempt + 1}`);
+        return astronomicalData;
+
+      } catch (error) {
+        const isLastAttempt = attempt === maxRetries - 1;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        if (errorMessage.includes('aborted')) {
+          console.warn(`⏰ Swiss Ephemeris timeout on attempt ${attempt + 1} (${timeouts[attempt]/1000}s)`);
+        } else {
+          console.warn(`⚠️ Swiss Ephemeris error on attempt ${attempt + 1}: ${errorMessage}`);
+        }
+
+        if (isLastAttempt) {
+          console.error('❌ Swiss Ephemeris failed after all retries');
+          throw new Error(`Swiss Ephemeris service unavailable after ${maxRetries} attempts: ${errorMessage}`);
+        }
+
+        // Wait before retry (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(2, attempt), 5000);
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-
-      const astronomicalData: SwissEphemerisResponse = await response.json();
-
-      if (!astronomicalData.success) {
-        throw new Error(`Swiss Ephemeris calculation failed: ${astronomicalData.error}`);
-      }
-
-      console.log('✅ Swiss Ephemeris calculation successful');
-      console.log(`🌟 Personality Sun: Gate ${astronomicalData.personality.SUN.human_design_gate.gate}.${astronomicalData.personality.SUN.human_design_gate.line}`);
-      console.log(`🌙 Design Sun: Gate ${astronomicalData.design.SUN.human_design_gate.gate}.${astronomicalData.design.SUN.human_design_gate.line}`);
-
-      // Cache the results for future use
-      await this.cachePositions(birthDate, latitude, longitude, astronomicalData);
-
-      return astronomicalData;
-
-    } catch (error) {
-      console.error('❌ Swiss Ephemeris service error:', error);
-      throw new Error(`Swiss Ephemeris calculation failed: ${error}`);
     }
+
+    throw new Error('Swiss Ephemeris service failed - this should never be reached');
   }
 
   /**

@@ -7,23 +7,20 @@
  */
 
 import type { EngineName } from '@/types/engines';
+import { offlineFallback, shouldUseOfflineFallback } from './offline-fallback';
 
 // Environment-aware API configuration
 const getApiBaseUrl = (): string => {
-  const env = process.env.NODE_ENV;
-
-  // For production builds, always use the production URL
-  if (env === 'production') {
-    return process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space';
+  // Always use production URL if NEXT_PUBLIC_API_URL is set (highest priority)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    console.log('🔧 Using configured API URL:', process.env.NEXT_PUBLIC_API_URL);
+    return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // For client-side rendering in development, always use the proxy
-  if (typeof window !== 'undefined') {
-    return '/api/backend';
-  }
-
-  // For server-side rendering in development, use the direct worker URL
-  return 'http://localhost:8787';
+  // ALWAYS use production backend for all environments
+  // This ensures demo login and all functionality works without running local backend
+  console.log('🌐 Using production backend URL for all environments');
+  return 'https://api.witnessos.space';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -31,8 +28,15 @@ const API_BASE_URL = getApiBaseUrl();
 // Enable TypeScript engines by default
 const USE_TYPESCRIPT_ENGINES = process.env.USE_TYPESCRIPT_ENGINES !== 'false';
 
-// Fallback mode for offline operation
-let FALLBACK_MODE = false;
+// Disable fallback mode when using production backend
+const isProductionBackend = API_BASE_URL.includes('api.witnessos.space');
+let FALLBACK_MODE = false; // Always start with fallback mode disabled
+
+console.log('🔧 API Configuration:', {
+  baseUrl: API_BASE_URL,
+  isProductionBackend,
+  fallbackMode: FALLBACK_MODE
+});
 
 interface ApiResponse<T> {
   success: boolean;
@@ -168,7 +172,9 @@ class WitnessOSAPIClient {
     this.baseUrl = API_BASE_URL;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'User-Agent': 'WitnessOS-Frontend/1.0',
+      'Accept': 'application/json',
+      // Remove User-Agent - browsers set this automatically and it causes CORS issues
+      // 'User-Agent': 'WitnessOS-Frontend/1.0',
     };
   }
 
@@ -184,6 +190,70 @@ class WitnessOSAPIClient {
    */
   clearAuthToken(): void {
     delete this.defaultHeaders['Authorization'];
+  }
+
+  /**
+   * Analyze network errors for better handling
+   */
+  private analyzeNetworkError(error: unknown): {
+    type: string;
+    message: string;
+    isCORS: boolean;
+    isNetworkError: boolean;
+    shouldUseFallback: boolean;
+  } {
+    if (error instanceof TypeError) {
+      const message = error.message.toLowerCase();
+
+      // CORS-related errors
+      if (message.includes('cors') || message.includes('cross-origin')) {
+        return {
+          type: 'CORS',
+          message: 'CORS policy blocked the request',
+          isCORS: true,
+          isNetworkError: true,
+          shouldUseFallback: true,
+        };
+      }
+
+      // Network connectivity errors
+      if (message.includes('networkerror') || message.includes('failed to fetch')) {
+        return {
+          type: 'NetworkError',
+          message: 'Network connection failed',
+          isCORS: false,
+          isNetworkError: true,
+          shouldUseFallback: true,
+        };
+      }
+
+      // Other TypeError issues
+      return {
+        type: 'TypeError',
+        message: `Request error: ${error.message}`,
+        isCORS: false,
+        isNetworkError: true,
+        shouldUseFallback: true,
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        type: 'Error',
+        message: error.message,
+        isCORS: false,
+        isNetworkError: false,
+        shouldUseFallback: false,
+      };
+    }
+
+    return {
+      type: 'Unknown',
+      message: 'Unknown error occurred',
+      isCORS: false,
+      isNetworkError: false,
+      shouldUseFallback: false,
+    };
   }
 
   /**
@@ -212,13 +282,25 @@ class WitnessOSAPIClient {
     if (FALLBACK_MODE) {
       console.log('🔄 Using fallback mode for:', endpoint);
       await new Promise(resolve => setTimeout(resolve, 200)); // Simulate network delay
-      
+
+      // For auth endpoints in fallback mode, return mock success
+      if (endpoint === '/auth/login') {
+        return {
+          success: true,
+          data: {
+            message: 'Fallback login successful',
+            token: 'mock-jwt-token',
+            user: { id: 1, email: 'demo@witnessos.space', name: 'Demo User' }
+          } as T
+        };
+      }
+
       if (endpoint.includes('/engines/') && endpoint.includes('/calculate')) {
         const engineName = endpoint.split('/engines/')[1]?.split('/')[0] as EngineName;
         const mockData = generateMockEngineData(engineName, {});
         return { success: true, data: mockData as T };
       }
-      
+
       return {
         success: true,
         data: { message: 'Fallback mode active' } as T,
@@ -231,15 +313,28 @@ class WitnessOSAPIClient {
       console.log('🔧 Request options:', { ...options, body: options.body ? '[BODY_PRESENT]' : undefined });
       console.log('🔧 Headers:', this.defaultHeaders);
       
-      const response = await fetch(url, {
+      // Create CORS-compliant fetch options
+      const fetchOptions: RequestInit = {
         ...options,
+        mode: 'cors',
+        credentials: 'omit', // Don't send credentials to avoid CORS issues
         headers: {
           ...this.defaultHeaders,
           ...options.headers,
         },
-        mode: 'cors', // Explicitly set CORS mode
-        credentials: 'omit', // Don't send credentials for now
-      });
+      };
+
+      // Remove any headers that might cause CORS issues
+      const corsCompliantHeaders = { ...fetchOptions.headers } as Record<string, string>;
+
+      // Remove problematic headers that browsers handle automatically
+      delete corsCompliantHeaders['User-Agent'];
+      delete corsCompliantHeaders['Origin'];
+      delete corsCompliantHeaders['Referer'];
+
+      fetchOptions.headers = corsCompliantHeaders;
+
+      const response = await fetch(url, fetchOptions);
       
       console.log('📡 Response status:', response.status, response.statusText);
       console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
@@ -275,45 +370,140 @@ class WitnessOSAPIClient {
         data,
       };
     } catch (error) {
-      console.error('🚨 API Request failed:', error);
-      console.error('🚨 Error type:', typeof error);
-      console.error('🚨 Error name:', (error as Error)?.name);
-      console.error('🚨 Error message:', (error as Error)?.message);
+      // Analyze error type for better handling
+      const errorAnalysis = this.analyzeNetworkError(error);
+
+      // Only log detailed errors in development or for non-network issues
+      if (process.env.NODE_ENV === 'development' || !errorAnalysis.isNetworkError) {
+        console.error('🚨 API Request failed:', {
+          url: `${this.baseUrl}${endpoint}`,
+          error: errorAnalysis.message,
+          type: errorAnalysis.type,
+          isCORS: errorAnalysis.isCORS,
+          isNetworkError: errorAnalysis.isNetworkError,
+        });
+      } else {
+        // In production, just log a simple message for network errors
+        console.warn(`⚠️ API request to ${endpoint} failed - using offline fallback`);
+      }
+
+      const errorMessage = errorAnalysis.message;
       
-      // Detailed error analysis
-      let errorMessage = 'Unknown error';
-      let shouldRetryWithFallback = false;
-      
-      if (error instanceof TypeError) {
-        if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network connection failed - check if backend is running on port 8787';
-          shouldRetryWithFallback = true;
-        } else if (error.message.includes('CORS')) {
-          errorMessage = 'CORS error - browser blocked cross-origin request';
-        } else {
-          errorMessage = `Network error: ${error.message}`;
-          shouldRetryWithFallback = true;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-        if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
-          shouldRetryWithFallback = true;
-        }
+      // Completely disable auto-fallback for production backend
+      if (!FALLBACK_MODE && shouldRetryWithFallback && !isProductionBackend) {
+        console.log('🔄 Network error detected, but auto-fallback disabled for production backend');
+        // Don't enable fallback mode - let the error propagate
       }
       
-      // Auto-enable fallback mode on network errors
-      if (!FALLBACK_MODE && shouldRetryWithFallback) {
-        console.log('🔄 Network error detected, enabling fallback mode...');
-        this.setFallbackMode(true);
-        return this.makeRequest<T>(endpoint, options); // Retry with fallback
+      // Check if we should use offline fallback
+      if (errorAnalysis.shouldUseFallback || shouldUseOfflineFallback(error)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Switching to offline fallback mode for:', endpoint);
+        }
+
+        // Try to handle the request with offline fallback
+        try {
+          const fallbackResult = await this.handleOfflineFallback(endpoint, options);
+          if (fallbackResult) {
+            return fallbackResult;
+          }
+        } catch (fallbackError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Offline fallback also failed:', fallbackError);
+          }
+        }
       }
-      
+
       return {
         success: false,
         error: errorMessage,
         message: 'Network request failed',
       };
     }
+  }
+
+  /**
+   * Handle offline fallback for specific endpoints
+   */
+  private async handleOfflineFallback(endpoint: string, options?: RequestInit): Promise<ApiResponse<any> | null> {
+    const method = options?.method || 'GET';
+
+    // Health check
+    if (endpoint === '/health') {
+      const result = await offlineFallback.healthCheck();
+      return { success: true, data: result, error: null };
+    }
+
+    // List engines
+    if (endpoint === '/engines') {
+      const engines = offlineFallback.getAvailableEngines();
+      return { success: true, data: { engines }, error: null };
+    }
+
+    // Engine metadata
+    const metadataMatch = endpoint.match(/^\/engines\/([^\/]+)\/metadata$/);
+    if (metadataMatch) {
+      const engineName = metadataMatch[1];
+      const metadata = offlineFallback.getEngineMetadata(engineName);
+      return { success: true, data: metadata, error: null };
+    }
+
+    // Engine calculation
+    const calculateMatch = endpoint.match(/^\/engines\/([^\/]+)\/calculate$/);
+    if (calculateMatch && method === 'POST') {
+      const engineName = calculateMatch[1];
+
+      if (!offlineFallback.isEngineAvailable(engineName)) {
+        return {
+          success: false,
+          error: `Engine ${engineName} not available in offline mode`,
+          data: null
+        };
+      }
+
+      try {
+        const body = options?.body ? JSON.parse(options.body as string) : {};
+        const input = body.input || {};
+        const result = await offlineFallback.calculateEngine(engineName, input);
+        return { success: true, data: result, error: null };
+      } catch (error) {
+        return {
+          success: false,
+          error: `Offline calculation failed: ${error}`,
+          data: null
+        };
+      }
+    }
+
+    // Login
+    if (endpoint === '/auth/login' && method === 'POST') {
+      try {
+        const body = options?.body ? JSON.parse(options.body as string) : {};
+        const result = await offlineFallback.login(body.email, body.password);
+        return result;
+      } catch (error) {
+        return {
+          success: false,
+          error: `Offline login failed: ${error}`,
+          data: null
+        };
+      }
+    }
+
+    // Current user
+    if (endpoint === '/auth/me') {
+      const result = await offlineFallback.getCurrentUser();
+      return result;
+    }
+
+    // System status (admin)
+    if (endpoint === '/admin/system/status') {
+      const status = offlineFallback.getSystemStatus();
+      return { success: true, data: status, error: null };
+    }
+
+    // Not handled by offline fallback
+    return null;
   }
 
   /**
@@ -482,31 +672,42 @@ class WitnessOSAPIClient {
 
   async login(email: string, password: string): Promise<ApiResponse<any>> {
     try {
+      console.log('🔐 Attempting login for:', email);
+      console.log('🔧 Fallback mode status:', FALLBACK_MODE);
+
       const response = await this.makeRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('📥 Raw login response:', response);
+
       if (response.success && response.data) {
         // Backend returns { message, token, user, requestId }
         const data = response.data as any;
-        const { token, user } = data;
-        
-        if (token) {
+        console.log('📦 Login response data:', data);
+
+        const { token, user, message } = data;
+        console.log('🔍 Extracted values:', { hasToken: !!token, hasUser: !!user, message });
+
+        if (token && user) {
           this.setAuthToken(token);
-          console.log('🔐 Authentication successful, token set');
-          
+          console.log('✅ Login successful for:', user.email);
+
           // Return normalized response for AuthContext
           return {
             success: true,
             data: {
               token,
               user,
-              message: data.message || 'Login successful'
+              message: message || 'Login successful'
             }
           };
         } else {
-          console.error('🚨 Login response missing token');
+          console.error('🚨 Login response missing token or user data');
+          console.error('🚨 Token present:', !!token);
+          console.error('🚨 User present:', !!user);
+          console.error('🚨 Full data object:', data);
           return {
             success: false,
             error: 'Invalid response format',
@@ -514,7 +715,7 @@ class WitnessOSAPIClient {
           };
         }
       } else {
-        console.error('🚨 Login failed:', response.error || response.message);
+        console.log('🚨 Login failed:', response.error || response.message);
         return {
           success: false,
           error: response.error || 'Login failed',

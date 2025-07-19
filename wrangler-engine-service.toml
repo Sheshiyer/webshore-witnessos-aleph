@@ -1,0 +1,51 @@
+# Engine Service Worker Configuration
+# Specialized worker for consciousness engine calculations
+
+name = "witnessos-engine-service"
+main = "src/workers/engine-service-worker.ts"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# Service dependencies
+[[services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "your-cache-kv-namespace-id"
+preview_id = "your-cache-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "KV_USER_PROFILES"
+id = "your-profiles-kv-namespace-id"
+preview_id = "your-profiles-kv-preview-id"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "your-database-id"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+SERVICE_NAME = "engine-service"
+ENABLE_CACHING = "true"
+
+# Development configuration
+[env.development]
+name = "witnessos-engine-service-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+ENABLE_CACHING = "false"
+
+# Staging configuration
+[env.staging]
+name = "witnessos-engine-service-staging"
+
+# Production configuration
+[env.production]
+name = "witnessos-engine-service-prod"

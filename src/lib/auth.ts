@@ -1,9 +1,13 @@
 /**
  * WitnessOS Authentication System
- * 
+ *
  * Handles user registration, login, JWT token management, and session handling
  * Built for Cloudflare Workers with D1 database
+ *
+ * UPDATED: Now uses the `jose` library following Cloudflare's recommended patterns
  */
+
+import * as jose from 'jose';
 
 // D1Database type - simplified for compatibility
 interface D1Database {
@@ -16,7 +20,7 @@ interface D1PreparedStatement {
   run(): Promise<{ success: boolean; meta: { last_row_id: number } }>;
 }
 
-// JWT Implementation for Workers (no external dependencies)
+// JWT Implementation using jose library (Cloudflare recommended)
 const encoder = new TextEncoder();
 
 interface JWTPayload {
@@ -38,6 +42,16 @@ interface User {
   preferences: any;
   is_admin: boolean;
   has_completed_onboarding: boolean;
+  // Tiered onboarding completion flags
+  tier1_completed: boolean; // name, email, password
+  tier2_completed: boolean; // birth data (DOB, location, time)
+  tier3_completed: boolean; // preferences (cards, direction, etc)
+  // Birth data fields
+  birth_date?: string;
+  birth_time?: string;
+  birth_latitude?: number;
+  birth_longitude?: number;
+  birth_timezone?: string;
 }
 
 interface Session {
@@ -52,7 +66,7 @@ export class AuthService {
   constructor(private db: D1Database, private jwtSecret: string = 'witnessos-jwt-secret') {}
 
   // Hashing for session tokens
-  private async hashToken(token: string): Promise<string> {
+  async hashToken(token: string): Promise<string> {
     const hash = await crypto.subtle.digest('SHA-256', encoder.encode(token));
     return btoa(String.fromCharCode(...new Uint8Array(hash)));
   }
@@ -143,74 +157,37 @@ export class AuthService {
     }
   }
 
-  // JWT token creation and verification
+  // JWT token creation using jose library (Cloudflare recommended)
   private async createJWT(payload: JWTPayload): Promise<string> {
-    const header = { alg: 'HS256', typ: 'JWT' };
-    
-    const headerB64 = btoa(JSON.stringify(header)).replace(/[+/=]/g, (match) => {
-      return { '+': '-', '/': '_', '=': '' }[match] || match;
-    });
-    
-    const payloadB64 = btoa(JSON.stringify(payload)).replace(/[+/=]/g, (match) => {
-      return { '+': '-', '/': '_', '=': '' }[match] || match;
-    });
-    
-    const message = `${headerB64}.${payloadB64}`;
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(this.jwtSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
-    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
-      .replace(/[+/=]/g, (match) => {
-        return { '+': '-', '/': '_', '=': '' }[match] || match;
-      });
-    
-    return `${message}.${signature}`;
+    // Import the secret key for HMAC signing
+    const secret = encoder.encode(this.jwtSecret);
+
+    // Create and sign JWT using jose library
+    const jwt = await new jose.SignJWT({
+      sub: payload.sub,
+      email: payload.email,
+      jti: payload.jti,
+      is_admin: payload.is_admin
+    })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setIssuedAt()
+      .setExpirationTime(new Date(payload.exp * 1000)) // Convert Unix timestamp to Date
+      .sign(secret);
+
+    return jwt;
   }
 
-  private async verifyJWT(token: string): Promise<JWTPayload | null> {
+  async verifyJWT(token: string): Promise<JWTPayload | null> {
     try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      
-      const headerB64 = parts[0];
-      const payloadB64 = parts[1];
-      const signatureB64 = parts[2];
-      
-      if (!headerB64 || !payloadB64 || !signatureB64) return null;
-      
-      // Verify signature
-      const message = `${headerB64}.${payloadB64}`;
-      const key = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(this.jwtSecret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['verify']
-      );
-      
-      const signature = new Uint8Array(
-        atob(signatureB64.replace(/[-_]/g, (match) => ({ '-': '+', '_': '/' }[match] || match)) + '=='.slice(0, (4 - signatureB64.length % 4) % 4))
-          .split('')
-          .map(c => c.charCodeAt(0))
-      );
-      
-      const isValid = await crypto.subtle.verify('HMAC', key, signature, encoder.encode(message));
-      if (!isValid) return null;
-      
-      // Parse payload
-      const payloadStr = atob(payloadB64.replace(/[-_]/g, (match) => ({ '-': '+', '_': '/' }[match] || match)) + '=='.slice(0, (4 - payloadB64.length % 4) % 4));
-      const payload = JSON.parse(payloadStr) as JWTPayload;
-      
-      // Check expiration
-      if (payload.exp < Date.now() / 1000) return null;
-      
-      return payload;
+      // Import the secret key for HMAC verification
+      const secret = encoder.encode(this.jwtSecret);
+
+      // Verify and decode JWT using jose library
+      const { payload } = await jose.jwtVerify(token, secret, {
+        algorithms: ['HS256']
+      });
+
+      return payload as JWTPayload;
     } catch (error) {
       console.error('JWT verification error:', error);
       return null;
@@ -324,10 +301,24 @@ export class AuthService {
       // Create session record
       const tokenHash = await this.hashToken(token);
       const expiresAt = new Date(payload.exp * 1000).toISOString();
-      
-      await this.db.prepare(
-        'INSERT INTO user_sessions (user_id, token_hash, expires_at, device_info) VALUES (?, ?, ?, ?)'
-      ).bind(user.id, tokenHash, expiresAt, JSON.stringify(deviceInfo || {})).run();
+
+      console.log(`Creating session for user ${user.id}, tokenHash: ${tokenHash.substring(0, 20)}..., expires: ${expiresAt}`);
+
+      try {
+        const sessionResult = await this.db.prepare(
+          'INSERT INTO user_sessions (user_id, token_hash, expires_at, device_info) VALUES (?, ?, ?, ?)'
+        ).bind(user.id, tokenHash, expiresAt, JSON.stringify(deviceInfo || {})).run();
+
+        console.log(`Session creation result:`, sessionResult);
+
+        if (!sessionResult.success) {
+          console.error('Session creation failed:', sessionResult);
+          return { success: false, error: 'Failed to create session' };
+        }
+      } catch (sessionError) {
+        console.error('Session creation error:', sessionError);
+        return { success: false, error: 'Session creation failed' };
+      }
 
       // Omit password_hash from the returned user object
       const { password_hash, ...safeUser } = user;
@@ -364,41 +355,110 @@ export class AuthService {
     return { valid: true, user: safeUser as User };
   }
 
-  // Update User Profile
+  // Update User Profile with Tiered Onboarding Support
   async updateUserProfile(userId: string, profileData: any): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      const { personalData, preferences, hasCompletedOnboarding } = profileData;
+      const {
+        personalData,
+        birthData,
+        preferences,
+        hasCompletedOnboarding,
+        tier1Data,
+        tier2Data,
+        tier3Data
+      } = profileData;
 
       // Ensure we have something to update
-      if (!personalData && !preferences && hasCompletedOnboarding === undefined) {
+      if (!personalData && !birthData && !preferences && !tier1Data && !tier2Data && !tier3Data && hasCompletedOnboarding === undefined) {
         return { success: false, error: 'No profile data provided for update' };
       }
 
       // Dynamically build the SET part of the query
       const fieldsToUpdate: string[] = [];
       const valuesToBind: any[] = [];
-      
-      if (personalData?.fullName) {
+
+      // Handle Tier 1 data (name, email - email is immutable after registration)
+      if (tier1Data?.fullName || personalData?.fullName) {
+        const fullName = tier1Data?.fullName || personalData?.fullName;
         fieldsToUpdate.push('name = ?');
-        valuesToBind.push(personalData.fullName);
+        valuesToBind.push(fullName);
+
+        // Store tier1_completed in preferences since database column doesn't exist yet
+        const existingResult: { preferences: string | null } | null = await this.db.prepare('SELECT preferences FROM users WHERE id = ?').bind(userId).first();
+        let existingPrefs = {};
+        if (existingResult && typeof existingResult.preferences === 'string') {
+          existingPrefs = JSON.parse(existingResult.preferences);
+        }
+        existingPrefs.tier1_completed = true;
+
+        fieldsToUpdate.push('preferences = ?');
+        valuesToBind.push(JSON.stringify(existingPrefs));
       }
-      
-      if (preferences) {
+
+      // Handle Tier 2 data (birth information) - store in preferences for now
+      if (tier2Data || birthData) {
+        const birthInfo = tier2Data || birthData;
+
+        // Fetch existing preferences and merge with birth data
+        const existingResult: { preferences: string | null } | null = await this.db.prepare('SELECT preferences FROM users WHERE id = ?').bind(userId).first();
+        let existingPrefs = {};
+        if (existingResult && typeof existingResult.preferences === 'string') {
+          existingPrefs = JSON.parse(existingResult.preferences);
+        }
+
+        // Add birth data to preferences
+        const birthData = {
+          birthDate: birthInfo.birthDate || birthInfo.date,
+          birthTime: birthInfo.birthTime || birthInfo.time,
+          birthLocation: birthInfo.birthLocation || birthInfo.location,
+          timezone: birthInfo.timezone || 'UTC'
+        };
+
+        const newPrefs = JSON.stringify({
+          ...existingPrefs,
+          birthData,
+          tier2_completed: true
+        });
+
+        fieldsToUpdate.push('preferences = ?');
+        valuesToBind.push(newPrefs);
+      }
+
+      // Handle Tier 3 data (preferences)
+      if (tier3Data || preferences) {
+        const prefs = tier3Data || preferences;
+
         // Fetch existing preferences and merge
         const existingResult: { preferences: string | null } | null = await this.db.prepare('SELECT preferences FROM users WHERE id = ?').bind(userId).first();
         let existingPrefs = {};
         if (existingResult && typeof existingResult.preferences === 'string') {
           existingPrefs = JSON.parse(existingResult.preferences);
         }
-        const newPrefs = JSON.stringify({ ...existingPrefs, ...preferences });
-        
+        const newPrefs = JSON.stringify({ ...existingPrefs, ...prefs, tier3_completed: true });
+
         fieldsToUpdate.push('preferences = ?');
         valuesToBind.push(newPrefs);
       }
-      
+
+      // Handle legacy onboarding completion
       if (hasCompletedOnboarding !== undefined) {
         fieldsToUpdate.push('has_completed_onboarding = ?');
         valuesToBind.push(hasCompletedOnboarding ? 1 : 0);
+
+        // If marking as completed, also mark all tiers as completed in preferences
+        if (hasCompletedOnboarding) {
+          const existingResult: { preferences: string | null } | null = await this.db.prepare('SELECT preferences FROM users WHERE id = ?').bind(userId).first();
+          let existingPrefs = {};
+          if (existingResult && typeof existingResult.preferences === 'string') {
+            existingPrefs = JSON.parse(existingResult.preferences);
+          }
+          existingPrefs.tier1_completed = true;
+          existingPrefs.tier2_completed = true;
+          existingPrefs.tier3_completed = true;
+
+          fieldsToUpdate.push('preferences = ?');
+          valuesToBind.push(JSON.stringify(existingPrefs));
+        }
       }
 
       if (fieldsToUpdate.length === 0) {
@@ -518,21 +578,48 @@ export class AuthService {
   }
 
   // Session cleanup (remove expired sessions)
+  // Note: Optimized for Cloudflare D1 without partial indexes using datetime()
   async cleanupExpiredSessions(): Promise<void> {
     try {
+      const now = new Date().toISOString();
+
+      // Use the expires_at index for efficient cleanup
+      // The idx_user_sessions_user_expires index will help with this query
       await this.db.prepare('DELETE FROM user_sessions WHERE expires_at < ?')
-        .bind(new Date().toISOString())
+        .bind(now)
         .run();
-      
+
       await this.db.prepare('DELETE FROM password_reset_tokens WHERE expires_at < ?')
-        .bind(new Date().toISOString())
+        .bind(now)
         .run();
-      
+
       await this.db.prepare('DELETE FROM email_verification_tokens WHERE expires_at < ?')
-        .bind(new Date().toISOString())
+        .bind(now)
         .run();
+
+      console.log('✅ Expired sessions cleaned up successfully');
     } catch (error) {
       console.error('Session cleanup error:', error);
+    }
+  }
+
+  // Get active sessions count (optimized without partial index)
+  async getActiveSessionsCount(userId?: string): Promise<number> {
+    try {
+      const now = new Date().toISOString();
+      let query = 'SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > ?';
+      const params = [now];
+
+      if (userId) {
+        query += ' AND user_id = ?';
+        params.push(userId);
+      }
+
+      const result = await this.db.prepare(query).bind(...params).first() as { count: number };
+      return result?.count || 0;
+    } catch (error) {
+      console.error('Get active sessions count error:', error);
+      return 0;
     }
   }
 
@@ -634,6 +721,182 @@ export class AuthService {
     } catch (error) {
       console.error('Delete user error:', error);
       return { success: false, error: 'Failed to delete user account' };
+    }
+  }
+
+  // Phase 1: Reading History Optimization
+  // Paginated reading history with efficient filtering for 1000+ readings per user
+  async getUserReadingHistory(
+    userId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      timeRange?: string; // '7d', '30d', '90d', 'all'
+      engineFilter?: string;
+      readingType?: string;
+      sortBy?: 'created_at' | 'accessed_at';
+      sortOrder?: 'ASC' | 'DESC';
+    } = {}
+  ): Promise<{
+    success: boolean;
+    readings?: any[];
+    total?: number;
+    hasMore?: boolean;
+    error?: string;
+  }> {
+    try {
+      const {
+        limit = 20,
+        offset = 0,
+        timeRange = '30d',
+        engineFilter,
+        readingType,
+        sortBy = 'created_at',
+        sortOrder = 'DESC'
+      } = options;
+
+      // Build WHERE clause conditions
+      const conditions: string[] = ['r.user_id = ?'];
+      const params: any[] = [userId];
+
+      // Add time range filter
+      if (timeRange !== 'all') {
+        const days = parseInt(timeRange.replace('d', ''));
+        conditions.push('r.created_at >= datetime("now", "-' + days + ' days")');
+      }
+
+      // Add engine filter
+      if (engineFilter) {
+        conditions.push('r.engines_used LIKE ?');
+        params.push(`%"${engineFilter}"%`);
+      }
+
+      // Add reading type filter
+      if (readingType) {
+        conditions.push('r.reading_type = ?');
+        params.push(readingType);
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Get total count for pagination
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM readings r
+        WHERE ${whereClause}
+      `;
+
+      const countResult = await this.db.prepare(countQuery).bind(...params).first() as { total: number };
+      const total = countResult?.total || 0;
+
+      // Get paginated results with optimized query using indexes
+      const dataQuery = `
+        SELECT
+          r.id,
+          r.reading_type,
+          r.engines_used,
+          r.input_data,
+          r.results,
+          r.created_at,
+          r.shared,
+          r.share_token,
+          MAX(rh.accessed_at) as last_accessed
+        FROM readings r
+        LEFT JOIN reading_history rh ON r.id = rh.reading_id
+        WHERE ${whereClause}
+        GROUP BY r.id
+        ORDER BY r.${sortBy} ${sortOrder}
+        LIMIT ? OFFSET ?
+      `;
+
+      params.push(limit, offset);
+      const readings = await this.db.prepare(dataQuery).bind(...params).all();
+
+      const hasMore = offset + limit < total;
+
+      return {
+        success: true,
+        readings: readings || [],
+        total,
+        hasMore
+      };
+
+    } catch (error) {
+      console.error('Get user reading history error:', error);
+      return {
+        success: false,
+        error: 'Failed to retrieve reading history'
+      };
+    }
+  }
+
+  // Get reading statistics for dashboard
+  async getUserReadingStats(userId: string): Promise<{
+    success: boolean;
+    stats?: {
+      totalReadings: number;
+      readingsThisMonth: number;
+      favoriteEngines: string[];
+      recentActivity: any[];
+    };
+    error?: string;
+  }> {
+    try {
+      // Total readings count
+      const totalResult = await this.db.prepare(
+        'SELECT COUNT(*) as total FROM readings WHERE user_id = ?'
+      ).bind(userId).first() as { total: number };
+
+      // Readings this month
+      const monthlyResult = await this.db.prepare(
+        'SELECT COUNT(*) as total FROM readings WHERE user_id = ? AND created_at >= datetime("now", "start of month")'
+      ).bind(userId).first() as { total: number };
+
+      // Most used engines (top 5)
+      const engineStats = await this.db.prepare(`
+        SELECT engines_used, COUNT(*) as usage_count
+        FROM readings
+        WHERE user_id = ?
+        GROUP BY engines_used
+        ORDER BY usage_count DESC
+        LIMIT 5
+      `).bind(userId).all();
+
+      // Recent activity (last 10 readings)
+      const recentActivity = await this.db.prepare(`
+        SELECT reading_type, engines_used, created_at
+        FROM readings
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 10
+      `).bind(userId).all();
+
+      // Extract favorite engines from usage stats
+      const favoriteEngines = engineStats.map((stat: any) => {
+        try {
+          const engines = JSON.parse(stat.engines_used);
+          return Array.isArray(engines) ? engines[0] : engines;
+        } catch {
+          return stat.engines_used;
+        }
+      }).filter(Boolean);
+
+      return {
+        success: true,
+        stats: {
+          totalReadings: totalResult?.total || 0,
+          readingsThisMonth: monthlyResult?.total || 0,
+          favoriteEngines,
+          recentActivity: recentActivity || []
+        }
+      };
+
+    } catch (error) {
+      console.error('Get user reading stats error:', error);
+      return {
+        success: false,
+        error: 'Failed to retrieve reading statistics'
+      };
     }
   }
 }

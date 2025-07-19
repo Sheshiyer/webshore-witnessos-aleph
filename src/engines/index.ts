@@ -56,8 +56,10 @@ const ENGINE_INSTANCES = new Map<EngineName, any>();
 
 /**
  * Get an engine instance by name
+ * @param engineName - Name of the engine to get
+ * @param db - Optional D1 database for engines that require it (like Human Design)
  */
-export function getEngine(engineName: EngineName): any {
+export function getEngine(engineName: EngineName, db?: D1Database): any {
   if (!ENGINE_INSTANCES.has(engineName)) {
     // Check if it's a pre-instantiated engine
     if (engineName in ENGINE_INSTANCES_STATIC) {
@@ -79,7 +81,11 @@ export function getEngine(engineName: EngineName): any {
          instance = new EngineClass('numerology', 'Calculates numerological patterns and life path analysis', {});
          break;
        case 'human_design':
-         instance = new EngineClass('human_design', 'Calculates complete Human Design charts with personality/design activations', {});
+         // CRITICAL: Human Design requires D1 database for Swiss Ephemeris service
+         if (!db) {
+           throw new Error('CRITICAL: Human Design engine requires D1 database for Swiss Ephemeris calculations - no fallbacks allowed');
+         }
+         instance = new EngineClass('human_design', 'Calculates complete Human Design charts with personality/design activations', {}, db);
          break;
        case 'tarot':
          instance = new EngineClass('tarot', 'Performs tarot card readings using traditional spreads', {});
@@ -127,9 +133,10 @@ export function listEngines(): EngineName[] {
 export async function calculateEngine(
   engineName: EngineName,
   input: BaseEngineInput,
-  config?: any
+  config?: any,
+  db?: D1Database
 ): Promise<CalculationResult<BaseEngineOutput>> {
-  const engine = getEngine(engineName);
+  const engine = getEngine(engineName, db);
   
   // Pass config to engine if it supports it
   if (config && engine.setConfig) {

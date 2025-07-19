@@ -66,11 +66,8 @@ export const BackendConnectionTest: React.FC = () => {
           fallbackMode: apiClient.isInFallbackMode(),
         }));
         
-        // Auto-enable fallback mode on connection failure
-        if (!apiClient.isInFallbackMode()) {
-          apiClient.setFallbackMode(true);
-          console.log('🔄 Auto-enabled fallback mode due to backend connection failure');
-        }
+        // Disable auto-fallback for production backend
+        console.log('🔄 Connection failure detected, but auto-fallback disabled for production backend');
       }
     } catch (error) {
       const currentTime = new Date().toLocaleTimeString();
@@ -83,11 +80,8 @@ export const BackendConnectionTest: React.FC = () => {
         fallbackMode: apiClient.isInFallbackMode(),
       }));
       
-      // Auto-enable fallback mode on connection error
-      if (!apiClient.isInFallbackMode()) {
-        apiClient.setFallbackMode(true);
-        console.log('🔄 Auto-enabled fallback mode due to connection error');
-      }
+      // Disable auto-fallback for production backend
+      console.log('🔄 Connection error detected, but auto-fallback disabled for production backend');
     }
   };
 

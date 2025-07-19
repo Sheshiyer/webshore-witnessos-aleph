@@ -13,6 +13,7 @@
 
 import { gsap } from 'gsap';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 
 interface EnhancedWitnessOSBootSequenceProps {
   onBootComplete?: () => void;
@@ -509,6 +510,12 @@ export const EnhancedWitnessOSBootSequence: React.FC<EnhancedWitnessOSBootSequen
           <span>{Math.round(bootProgress)}% complete</span>
         </div>
       </div>
+
+      {/* Connection Status Indicator */}
+      <ConnectionStatusIndicator
+        showDuringBoot={true}
+        position="bottom-right"
+      />
 
       {/* Hide scrollbars */}
       <style jsx>{`

@@ -100,4 +100,25 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token_hash ON password_reset_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user_id ON email_verification_tokens(user_id);
-CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_token_hash ON email_verification_tokens(token_hash); 
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_token_hash ON email_verification_tokens(token_hash);
+
+-- Phase 1 Performance Indexes for Infrastructure Scaling
+-- Composite indexes for common query patterns
+
+-- Readings table performance indexes
+CREATE INDEX IF NOT EXISTS idx_readings_user_created ON readings(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_readings_user_type ON readings(user_id, reading_type);
+CREATE INDEX IF NOT EXISTS idx_readings_engines_used ON readings(engines_used); -- For engine_type filtering
+CREATE INDEX IF NOT EXISTS idx_readings_user_engines ON readings(user_id, engines_used);
+
+-- Consciousness profiles performance indexes
+CREATE INDEX IF NOT EXISTS idx_consciousness_profiles_user_created ON consciousness_profiles(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_consciousness_profiles_user_updated ON consciousness_profiles(user_id, updated_at DESC);
+
+-- User sessions performance indexes
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_expires ON user_sessions(user_id, expires_at DESC);
+-- Note: Removed partial index with datetime('now') due to SQLite non-deterministic function restriction
+
+-- Reading history performance indexes for pagination
+CREATE INDEX IF NOT EXISTS idx_reading_history_user_accessed ON reading_history(user_id, accessed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reading_history_reading_accessed ON reading_history(reading_id, accessed_at DESC);

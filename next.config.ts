@@ -44,21 +44,13 @@ const nextConfig: NextConfig = {
 
   // Environment-specific configuration
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NODE_ENV === 'production'
-      ? 'https://api.witnessos.space'
-      : process.env.NODE_ENV === 'development'
-      ? 'http://localhost:8787'
-      : 'https://api-staging.witnessos.space',
+    // Always use production backend for all environments to ensure demo login works
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space',
   },
 
-  // API proxy to avoid CORS issues in development
+  // API proxy disabled - using production backend directly
   async rewrites() {
-    return [
-      {
-        source: '/api/backend/:path*',
-        destination: 'http://localhost:8787/:path*',
-      },
-    ];
+    return [];
   },
 
   // Cross-origin configuration

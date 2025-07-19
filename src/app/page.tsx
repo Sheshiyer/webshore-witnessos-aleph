@@ -3,12 +3,15 @@
 import { type ConsciousnessProfile } from '@/components/ui/ConsciousnessDataCollector';
 import EnhancedWitnessOSBootSequence from '@/components/ui/EnhancedWitnessOSBootSequence';
 import IntegratedConsciousnessOnboarding from '@/components/ui/IntegratedConsciousnessOnboarding';
-import { ConsciousnessAuthOnboarding } from '@/components/ui/ConsciousnessAuthOnboarding';
 import BiofieldViewerEngine from '@/components/consciousness-engines/BiofieldViewerEngine';
+import { PortalGateway } from '@/components/ui/PortalGateway';
+import { ShaderPortalGateway } from '@/components/ui/ShaderPortalGateway';
+import { CyberpunkAuthModal } from '@/components/auth/CyberpunkAuthModal';
+import { OfflineModeBanner } from '@/components/ui/ConnectionStatusIndicator';
+import APIConnectionTest, { useAPIConnectionTest } from '@/components/debug/APIConnectionTest';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { BiofieldViewerOutput } from '@/engines/biofield-viewer-engine';
-import FractalGateway from '@/components/ui/FractalGateway';
 import PsyShaderLanding from '@/components/ui/PsyShaderLanding';
 
 // Import simplified consciousness profile hook
@@ -17,14 +20,14 @@ import { useOnboardingFlow, useConsciousnessProfile } from '@/hooks/useConscious
 export default function Home() {
   const onboardingFlow = useOnboardingFlow();
   const profileState = useConsciousnessProfile();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const apiTest = useAPIConnectionTest();
 
   const [bootComplete, setBootComplete] = useState(false);
-  const [authComplete, setAuthComplete] = useState(false);
+  const [showPortalGateway, setShowPortalGateway] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentBiofield, setCurrentBiofield] = useState<BiofieldViewerOutput | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [showGateway, setShowGateway] = useState(true);
-  const [gatewayFade, setGatewayFade] = useState(false);
   const [focusedPanel, setFocusedPanel] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [biofieldActive, setBiofieldActive] = useState(false);
@@ -45,15 +48,28 @@ export default function Home() {
       hasCompletedOnboarding: profileState.hasCompletedOnboarding,
       isAuthenticated,
     });
-
-    // Auto-complete auth if already authenticated
-    if (isAuthenticated) {
-      setAuthComplete(true);
-    }
   }, [profileState.isLoaded, profileState.hasCompletedOnboarding, isAuthenticated]);
 
   const handleBootComplete = () => {
     setBootComplete(true);
+    // Show portal gateway after boot
+    setTimeout(() => {
+      setShowPortalGateway(true);
+    }, 500);
+  };
+
+  const handleEnterGateway = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    setShowPortalGateway(false);
+    // Profile check will happen automatically via useEffect
+  };
+
+  const handleAuthModalClose = () => {
+    setShowAuthModal(false);
   };
 
   const handleProfileComplete = (profile: ConsciousnessProfile) => {
@@ -197,11 +213,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [profileState]);
 
-  // Handler for entering the gateway
-  const handleEnterGateway = () => {
-    setGatewayFade(true);
-    setTimeout(() => setShowGateway(false), 900); // match fade duration
-  };
+
 
   // Show loading while checking profile
   if (profileState.isLoading) {
@@ -215,35 +227,34 @@ export default function Home() {
     return <EnhancedWitnessOSBootSequence onBootComplete={handleBootComplete} />;
   }
 
-  // Show auth after boot if not authenticated
-  if (!authComplete && !isAuthenticated) {
+  // Show portal gateway after boot (if not authenticated)
+  if (showPortalGateway && !isAuthenticated) {
+    console.log('🌀 Showing portal gateway...');
     return (
-      <ConsciousnessAuthOnboarding
-        onAuthComplete={() => setAuthComplete(true)}
-        onSkipAuth={() => setAuthComplete(true)}
-      />
+      <>
+        {/* Use ShaderPortalGateway for pure shader-based background */}
+        <ShaderPortalGateway onEnterGateway={handleEnterGateway} />
+
+        {/* Alternative: Use PortalGateway for hybrid geometric + shader */}
+        {/* <PortalGateway onEnterGateway={handleEnterGateway} /> */}
+
+        <CyberpunkAuthModal
+          isOpen={showAuthModal}
+          onClose={handleAuthModalClose}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </>
     );
   }
 
-  // Show data collection after auth (unless profile exists)
-  if (!profileState.hasCompletedOnboarding) {
-    console.log('📝 Showing onboarding...');
+  // Show onboarding after authentication (unless profile exists)
+  if (isAuthenticated && !profileState.hasCompletedOnboarding) {
+    console.log('📝 Showing onboarding... hasCompletedOnboarding:', profileState.hasCompletedOnboarding, 'user.has_completed_onboarding:', user?.has_completed_onboarding);
     return (
       <IntegratedConsciousnessOnboarding
         onProfileComplete={handleProfileComplete}
         onStepChange={() => {}}
       />
-    );
-  }
-
-  // Show Fractal Gateway Overlay
-  if (showGateway) {
-    return (
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-900 ${gatewayFade ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-      >
-        <FractalGateway onEnter={handleEnterGateway} />
-      </div>
     );
   }
 
@@ -259,12 +270,18 @@ export default function Home() {
   // Landing state: show user's shader as background, overlays/panels on top
   if (!biofieldActive) {
     return (
-      <div 
+      <div
         className="min-h-screen bg-black relative overflow-hidden"
         onMouseMove={handleMouseMove}
       >
+        {/* Offline Mode Banner */}
+        <OfflineModeBanner />
+
         {/* Quantum Shader Background */}
         <PsyShaderLanding />
+
+        {/* API Connection Test (Development Only) */}
+        <APIConnectionTest isVisible={apiTest.isVisible} />
 
         {/* Glassmorphic Navigation Pill - Always Visible */}
         <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
@@ -334,10 +351,13 @@ export default function Home() {
 
   // Biofield active: show webcam-powered engine (unchanged)
   return (
-    <div 
+    <div
       className="min-h-screen bg-black relative overflow-hidden"
       onMouseMove={handleMouseMove}
     >
+      {/* Offline Mode Banner */}
+      <OfflineModeBanner />
+
       {/* Main Biofield Interface - Full Screen */}
       <div className="absolute inset-0">
         <BiofieldViewerEngine
@@ -346,6 +366,9 @@ export default function Home() {
           className="w-full h-full"
         />
       </div>
+
+      {/* API Connection Test (Development Only) */}
+      <APIConnectionTest isVisible={apiTest.isVisible} />
 
       {/* Glassmorphic Navigation Pill - Always Visible */}
       <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
