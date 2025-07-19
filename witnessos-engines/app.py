@@ -1,0 +1,288 @@
+"""
+WitnessOS Consolidated Consciousness Engines Service
+Single FastAPI service containing all consciousness engines with integrated Swiss Ephemeris
+"""
+
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+import logging
+import time
+import sys
+import os
+from datetime import datetime
+
+# Add current directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Import Swiss Ephemeris service
+from swiss_ephemeris.ephemeris import SwissEphemerisService
+
+# Import proven consciousness engines
+from engines.human_design import HumanDesignScanner
+from engines.human_design_models import HumanDesignInput
+from engines.numerology import NumerologyEngine
+from engines.numerology_models import NumerologyInput
+from engines.biorhythm import BiorhythmEngine
+from engines.biorhythm_models import BiorhythmInput
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="WitnessOS Consciousness Engines",
+    description="Consolidated consciousness technology calculation service with integrated Swiss Ephemeris",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global services
+swiss_ephemeris = None
+engines = {}
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize all engines and services on startup"""
+    global swiss_ephemeris, engines
+    
+    logger.info("🚀 Initializing WitnessOS Consolidated Consciousness Engines...")
+    
+    try:
+        # Initialize Swiss Ephemeris service first
+        swiss_ephemeris = SwissEphemerisService()
+        logger.info("✅ Swiss Ephemeris service initialized")
+        
+        # Test Swiss Ephemeris with admin user data
+        logger.info("🧪 Testing Swiss Ephemeris accuracy...")
+        test_result = swiss_ephemeris.test_admin_user_calculation()
+        logger.info(f"🎯 Test completed - Personality Sun: Gate {test_result['personality']['SUN']['human_design_gate']['gate']}.{test_result['personality']['SUN']['human_design_gate']['line']}")
+        
+        # Initialize proven consciousness engines
+        logger.info("🔧 Initializing proven consciousness engines...")
+        engines = {
+            "human_design": HumanDesignScanner(),
+            "numerology": NumerologyEngine(),
+            "biorhythm": BiorhythmEngine(),
+            # Additional engines will be added as needed
+        }
+        
+        logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize services: {e}")
+        raise
+
+# Common request/response models
+class EngineRequest(BaseModel):
+    input: Dict[str, Any]
+    options: Optional[Dict[str, Any]] = {}
+
+class EngineResponse(BaseModel):
+    success: bool
+    data: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    processing_time: float
+    timestamp: str
+    engine: str
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check for the entire consolidated service"""
+    return {
+        "status": "healthy",
+        "service": "witnessos-engines",
+        "engines_available": list(engines.keys()),
+        "swiss_ephemeris": swiss_ephemeris is not None,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# Swiss Ephemeris endpoint
+@app.post("/swiss_ephemeris/calculate", response_model=EngineResponse)
+async def calculate_swiss_ephemeris(request: EngineRequest):
+    """Calculate planetary positions using integrated Swiss Ephemeris"""
+    start_time = time.time()
+    
+    try:
+        if not swiss_ephemeris:
+            raise HTTPException(status_code=503, detail="Swiss Ephemeris service not available")
+        
+        result = swiss_ephemeris.calculate_positions(
+            request.input.get("birth_date"),
+            request.input.get("birth_time"),
+            request.input.get("birth_location"),
+            **request.options
+        )
+        
+        processing_time = time.time() - start_time
+        
+        return EngineResponse(
+            success=True,
+            data=result,
+            processing_time=processing_time,
+            timestamp=datetime.utcnow().isoformat(),
+            engine="swiss_ephemeris"
+        )
+        
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(f"❌ Swiss Ephemeris calculation failed: {e}")
+        
+        return EngineResponse(
+            success=False,
+            error=str(e),
+            processing_time=processing_time,
+            timestamp=datetime.utcnow().isoformat(),
+            engine="swiss_ephemeris"
+        )
+
+# Test endpoint for admin user Human Design
+@app.get("/test/admin-user")
+async def test_admin_user():
+    """Test proven Human Design engine with admin user birth data"""
+    try:
+        if "human_design" not in engines:
+            raise HTTPException(status_code=503, detail="Human Design engine not available")
+
+        # Test Swiss Ephemeris first
+        swiss_result = swiss_ephemeris.test_admin_user_calculation()
+
+        # Test Human Design engine with admin user data
+        from datetime import date, time as dt_time
+        admin_input = HumanDesignInput(
+            birth_date=date(1991, 8, 13),
+            birth_time=dt_time(13, 31, 0),  # 13:31 local time (08:01 UTC)
+            birth_location=(12.9716, 77.5946),  # Bengaluru, India
+            timezone="Asia/Kolkata"
+        )
+
+        hd_engine = engines["human_design"]
+        hd_result = hd_engine.calculate(admin_input)
+
+        return {
+            "success": True,
+            "message": "Admin user test completed with proven engines",
+            "swiss_ephemeris": {
+                "personality_sun": f"Gate {swiss_result['personality']['SUN']['human_design_gate']['gate']}.{swiss_result['personality']['SUN']['human_design_gate']['line']}",
+                "design_sun": f"Gate {swiss_result['design']['SUN']['human_design_gate']['gate']}.{swiss_result['design']['SUN']['human_design_gate']['line']}"
+            },
+            "human_design_engine": {
+                "type": hd_result.chart.type_info.type_name if hasattr(hd_result, 'chart') else "Unknown",
+                "strategy": hd_result.chart.type_info.strategy if hasattr(hd_result, 'chart') else "Unknown",
+                "authority": hd_result.chart.type_info.authority if hasattr(hd_result, 'chart') else "Unknown",
+                "profile": hd_result.chart.profile.profile_name if hasattr(hd_result, 'chart') else "Unknown",
+                "confidence": hd_result.confidence_score,
+                "calculation_time": hd_result.calculation_time
+            },
+            "validation": {
+                "expected_type": "Generator (2/4 profile)",
+                "matches_expected": "TBD - needs validation"
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Admin user test failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Proven engine calculation endpoint
+@app.post("/engines/{engine_name}/calculate", response_model=EngineResponse)
+async def calculate_engine(engine_name: str, request: EngineRequest):
+    """Calculate using proven consciousness engine"""
+    start_time = time.time()
+
+    try:
+        if engine_name not in engines:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Engine '{engine_name}' not found. Available: {list(engines.keys())}"
+            )
+
+        engine = engines[engine_name]
+        logger.info(f"🔮 Running {engine_name} calculation with proven engine")
+
+        # Create appropriate input model based on engine
+        if engine_name == "human_design":
+            from datetime import date, time as dt_time
+            input_obj = HumanDesignInput(
+                birth_date=date.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
+                timezone=request.input.get("timezone", "UTC")
+            )
+        elif engine_name == "numerology":
+            input_obj = NumerologyInput(
+                full_name=request.input["full_name"],
+                birth_date=date.fromisoformat(request.input["birth_date"])
+            )
+        elif engine_name == "biorhythm":
+            input_obj = BiorhythmInput(
+                birth_date=date.fromisoformat(request.input["birth_date"]),
+                target_date=date.fromisoformat(request.input.get("target_date", datetime.now().date().isoformat()))
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
+
+        # Run the proven engine calculation
+        result = engine.calculate(input_obj)
+
+        processing_time = time.time() - start_time
+
+        return EngineResponse(
+            success=True,
+            data={
+                "engine_name": result.engine_name,
+                "calculation_time": result.calculation_time,
+                "confidence_score": result.confidence_score,
+                "field_signature": result.field_signature,
+                "formatted_output": result.formatted_output,
+                "chart": result.chart.dict() if hasattr(result, 'chart') and result.chart else None,
+                "interpretation": result.interpretation if hasattr(result, 'interpretation') else None,
+                "recommendations": result.recommendations if hasattr(result, 'recommendations') else None
+            },
+            processing_time=processing_time,
+            timestamp=datetime.utcnow().isoformat(),
+            engine=engine_name
+        )
+
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(f"❌ Engine {engine_name} calculation failed: {e}")
+
+        return EngineResponse(
+            success=False,
+            error=str(e),
+            processing_time=processing_time,
+            timestamp=datetime.utcnow().isoformat(),
+            engine=engine_name
+        )
+
+# Engine list endpoint
+@app.get("/engines")
+async def list_engines():
+    """List all available consciousness engines"""
+    return {
+        "engines": list(engines.keys()),
+        "count": len(engines),
+        "swiss_ephemeris_available": swiss_ephemeris is not None,
+        "service": "witnessos-engines"
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
