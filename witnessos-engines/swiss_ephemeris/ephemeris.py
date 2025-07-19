@@ -1,15 +1,34 @@
 """
 Integrated Swiss Ephemeris Service for WitnessOS Consolidated Engine
 Direct pyswisseph integration for 100% accurate astronomical calculations
+With Skyfield fallback for deployment compatibility
 """
 
-import swisseph as swe
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 import logging
 import pytz
 
 logger = logging.getLogger(__name__)
+
+# Try to import Swiss Ephemeris, fallback to Skyfield if not available
+try:
+    import swisseph as swe
+    SWISS_EPHEMERIS_AVAILABLE = True
+    logger.info("✅ Swiss Ephemeris (pyswisseph) loaded successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Swiss Ephemeris not available: {e}")
+    logger.info("🔄 Falling back to Skyfield for astronomical calculations")
+    SWISS_EPHEMERIS_AVAILABLE = False
+
+    try:
+        from skyfield.api import load, Topos
+        from skyfield.almanac import find_discrete, sunrise_sunset
+        SKYFIELD_AVAILABLE = True
+        logger.info("✅ Skyfield loaded successfully as fallback")
+    except ImportError as e2:
+        logger.error(f"❌ Neither Swiss Ephemeris nor Skyfield available: {e2}")
+        SKYFIELD_AVAILABLE = False
 
 class SwissEphemerisService:
     """
@@ -19,9 +38,20 @@ class SwissEphemerisService:
     
     def __init__(self):
         """Initialize Swiss Ephemeris with proper configuration."""
-        # Set ephemeris path (uses built-in data)
-        swe.set_ephe_path('')
-        logger.info("✅ Swiss Ephemeris service initialized")
+        self.use_swiss_ephemeris = SWISS_EPHEMERIS_AVAILABLE
+
+        if self.use_swiss_ephemeris:
+            # Set ephemeris path (uses built-in data)
+            swe.set_ephe_path('')
+            logger.info("✅ Swiss Ephemeris service initialized")
+        elif SKYFIELD_AVAILABLE:
+            # Initialize Skyfield as fallback
+            self.ts = load.timescale()
+            self.planets = load('de421.bsp')  # JPL ephemeris
+            logger.info("✅ Skyfield service initialized as fallback")
+        else:
+            logger.error("❌ No astronomical calculation engine available")
+            raise ImportError("Neither Swiss Ephemeris nor Skyfield available")
     
     def calculate_positions(self, birth_date: str, birth_time: str, birth_location: List[float], **options) -> Dict[str, Any]:
         """
