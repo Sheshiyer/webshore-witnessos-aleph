@@ -174,11 +174,11 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
       return output;
 
     } catch (error) {
-      console.error('Human Design calculation error:', error);
-      console.log('Human Design: Using fallback calculation');
+      console.error('❌ Human Design calculation error:', error);
+      console.error('🚨 NO FALLBACKS ALLOWED - Swiss Ephemeris is required for accuracy');
 
-      // Return fallback calculation
-      return this.createFallbackCalculation(input);
+      // Re-throw the error - no fallbacks allowed
+      throw new Error(`Human Design calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Swiss Ephemeris service is required for accurate calculations.`);
     }
   }
 
@@ -285,117 +285,9 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
    * Only Swiss Ephemeris calculations are permitted for accuracy
    */
 
-  /**
-   * Determine Human Design type from gate activations
-   */
-  private determineTypeFromGates(personalityGates: any, designGates: any): string {
-    // Check for Sacral center activation (gates 5, 14, 29, 59, 9, 3, 27, 42, 34)
-    const sacralGates = [5, 14, 29, 59, 9, 3, 27, 42, 34];
-    const hasSacralActivation = this.hasGateActivation(personalityGates, designGates, sacralGates);
 
-    // Check for Motor center connections
-    const hasMotorConnection = this.hasMotorConnection(personalityGates, designGates);
 
-    if (hasSacralActivation) {
-      if (hasMotorConnection) {
-        return 'Manifesting Generator';
-      } else {
-        return 'Generator';
-      }
-    }
 
-    // Check for Throat to Motor connection (Manifestor)
-    if (this.hasThroatToMotorConnection(personalityGates, designGates)) {
-      return 'Manifestor';
-    }
-
-    // Check for defined centers (Projector vs Reflector)
-    const definedCenters = this.countDefinedCenters(personalityGates, designGates);
-
-    if (definedCenters === 0) {
-      return 'Reflector';
-    } else {
-      return 'Projector';
-    }
-  }
-
-  /**
-   * Check if any gates from a list are activated
-   */
-  private hasGateActivation(personalityGates: any, designGates: any, gateList: number[]): boolean {
-    try {
-      const allGates = [...Object.values(personalityGates), ...Object.values(designGates)];
-      return allGates.some((gateData: any) => {
-        if (!gateData || typeof gateData.gate !== 'number') {
-          console.warn('Invalid gate data:', gateData);
-          return false;
-        }
-        return gateList.includes(gateData.gate);
-      });
-    } catch (error) {
-      console.error('Error in hasGateActivation:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Check for motor center connections (simplified)
-   */
-  private hasMotorConnection(personalityGates: any, designGates: any): boolean {
-    // Simplified check - in real implementation would check for specific channel connections
-    const motorGates = [19, 49, 37, 40, 34, 57, 20, 10, 7, 31];
-    return this.hasGateActivation(personalityGates, designGates, motorGates);
-  }
-
-  /**
-   * Check for Throat to Motor connection
-   */
-  private hasThroatToMotorConnection(personalityGates: any, designGates: any): boolean {
-    // Simplified check for Manifestor patterns
-    const throatGates = [62, 23, 56, 35, 12, 45, 33, 8, 31, 7, 1, 13, 10, 20, 34, 57, 16, 48];
-    return this.hasGateActivation(personalityGates, designGates, throatGates);
-  }
-
-  /**
-   * Count defined centers (simplified)
-   */
-  private countDefinedCenters(personalityGates: any, designGates: any): number {
-    // Simplified count - in real implementation would check for complete channels
-    const allGates = [...Object.values(personalityGates), ...Object.values(designGates)];
-    return Math.min(allGates.length, 9); // Max 9 centers
-  }
-
-  /**
-   * Calculate centers from gates (simplified)
-   */
-  private calculateCentersFromGates(personalityGates: any, designGates: any): Record<string, boolean> {
-    console.log('🏛️ Calculating centers from gates...');
-
-    // Sacral gates: 5, 14, 29, 59, 9, 3, 27, 42, 34
-    const sacralGates = [5, 14, 29, 59, 9, 3, 27, 42, 34];
-    const hasSacralActivation = this.hasGateActivation(personalityGates, designGates, sacralGates);
-    console.log('🔥 Sacral activation check:', hasSacralActivation);
-
-    // G Center gates: 1, 2, 7, 13, 15, 10, 25, 46
-    const gCenterGates = [1, 2, 7, 13, 15, 10, 25, 46];
-    const hasGCenterActivation = this.hasGateActivation(personalityGates, designGates, gCenterGates);
-    console.log('💎 G Center activation check:', hasGCenterActivation);
-
-    const centers = {
-      head: false,
-      ajna: false,
-      throat: false,
-      g: hasGCenterActivation,
-      heart: false,
-      spleen: false,
-      sacral: hasSacralActivation,
-      solar_plexus: false,
-      root: false
-    };
-
-    console.log('🏛️ Final centers:', centers);
-    return centers;
-  }
 
   /**
    * Calculate authority from centers
@@ -424,81 +316,9 @@ export class HumanDesignEngine extends BaseEngine<HumanDesignInput, HumanDesignO
   }
 
   /**
-   * Create fallback Human Design calculation when astronomical calculations fail
+   * REMOVED: No fallback calculations allowed
+   * Swiss Ephemeris service is required for accurate Human Design calculations
    */
-  private createFallbackCalculation(input: HumanDesignInput): HumanDesignOutput {
-    console.log('Creating fallback Human Design calculation');
-
-    // Generate deterministic but simplified Human Design based on birth data
-    const birthDate = new Date(`${input.birth_date}T${input.birth_time}:00`);
-    const [latitude, longitude] = input.birth_location;
-    const seed = birthDate.getTime() + latitude * 1000 + longitude * 1000;
-
-    // Generate simplified gates
-    const generateGate = (offset: number) => ({
-      gate: ((Math.abs(seed + offset) % 64) + 1),
-      line: ((Math.abs(seed + offset * 2) % 6) + 1)
-    });
-
-    const personalitySun = generateGate(1);
-    const personalityEarth = generateGate(2);
-    const designSun = generateGate(3);
-    const designEarth = generateGate(4);
-
-    // Simplified centers (some defined, some undefined)
-    const centers = {
-      head: Math.abs(seed) % 2 === 0,
-      ajna: Math.abs(seed + 1) % 2 === 0,
-      throat: Math.abs(seed + 2) % 2 === 0,
-      g: Math.abs(seed + 3) % 2 === 0,
-      heart: Math.abs(seed + 4) % 2 === 0,
-      spleen: Math.abs(seed + 5) % 2 === 0,
-      sacral: Math.abs(seed + 6) % 2 === 0,
-      solar_plexus: Math.abs(seed + 7) % 2 === 0,
-      root: Math.abs(seed + 8) % 2 === 0
-    };
-
-    // Determine type based on centers
-    let type = 'Reflector';
-    if (centers.sacral) {
-      type = centers.throat ? 'Manifesting Generator' : 'Generator';
-    } else if (centers.throat && (centers.heart || centers.g || centers.spleen)) {
-      type = 'Manifestor';
-    } else if (centers.g && centers.throat) {
-      type = 'Projector';
-    }
-
-    return {
-      // Base engine output
-      success: true,
-      data: {},
-      interpretation: `Fallback Human Design calculation for ${type}`,
-      recommendations: [`Focus on your ${type} strategy`, 'Trust your inner authority'],
-      realityPatches: ['Simplified Human Design guidance'],
-      archetypalThemes: [type, 'Self-discovery'],
-      confidence: 0.6,
-      processingTime: 0,
-      timestamp: new Date().toISOString(),
-
-      // Human Design specific data
-      type,
-      strategy: type === 'Generator' ? 'To Respond' : type === 'Manifestor' ? 'To Inform' : type === 'Projector' ? 'To Wait for Invitation' : 'To Wait a Lunar Cycle',
-      authority: centers.solar_plexus ? 'Emotional' : centers.sacral ? 'Sacral' : centers.spleen ? 'Splenic' : 'Mental',
-      profile: `${personalitySun.line}/${designSun.line}`,
-      centers,
-      definedChannels: [],
-      incarnationCross: `Fallback Cross (${personalitySun.gate}/${personalityEarth.gate})`,
-      personalityGates: {
-        SUN: personalitySun,
-        EARTH: personalityEarth
-      },
-      designGates: {
-        SUN: designSun,
-        EARTH: designEarth
-      },
-      definition: 'Simplified'
-    };
-  }
 
   private formatHumanDesignOutput(chart: HumanDesignChart, input: HumanDesignInput): string {
     const definedCenters = Object.values(chart.centers).filter(center => center.defined);
