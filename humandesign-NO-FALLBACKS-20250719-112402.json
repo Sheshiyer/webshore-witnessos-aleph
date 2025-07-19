@@ -1,1 +1,37 @@
-{"success":true,"engine":"human_design","data":{"success":false,"error":{"code":"CALCULATION_FAILED","message":"Human Design calculation failed: Cannot read properties of undefined (reading 'toUpperCase'). Swiss Ephemeris service is required for accurate calculations.","context":{},"suggestions":["Check your input data","Ensure all required fields are provided","Try again in a moment"],"timestamp":"2025-07-19T05:54:04.868Z"},"processingTime":642,"timestamp":"2025-07-19T05:54:04.868Z"},"error":{"code":"CALCULATION_FAILED","message":"Human Design calculation failed: Cannot read properties of undefined (reading 'toUpperCase'). Swiss Ephemeris service is required for accurate calculations.","context":{},"suggestions":["Check your input data","Ensure all required fields are provided","Try again in a moment"],"timestamp":"2025-07-19T05:54:04.868Z"},"metadata":{"requestId":"2d83eed2-8708-491b-947b-aa131766e61c","calculationTime":642,"timestamp":"2025-07-19T05:54:04.868Z","architecture":"enhanced-real","version":"2.0"}}
+{
+    "success": true,
+    "engine": "human_design",
+    "data": {
+        "success": false,
+        "error": {
+            "code": "CALCULATION_FAILED",
+            "message": "Human Design calculation failed: Cannot read properties of undefined (reading 'toUpperCase'). Swiss Ephemeris service is required for accurate calculations.",
+            "context": {},
+            "suggestions": [
+                "Check your input data",
+                "Ensure all required fields are provided",
+                "Try again in a moment"
+            ],
+            "timestamp": "2025-07-19T05:54:04.868Z"
+        },
+        "processingTime": 642,
+        "timestamp": "2025-07-19T05:54:04.868Z"
+    },
+    "error": {
+        "code": "CALCULATION_FAILED",
+        "message": "Human Design calculation failed: Cannot read properties of undefined (reading 'toUpperCase'). Swiss Ephemeris service is required for accurate calculations.",
+        "context": {},
+        "suggestions": [
+            "Check your input data",
+            "Ensure all required fields are provided",
+            "Try again in a moment"
+        ],
+        "timestamp": "2025-07-19T05:54:04.868Z"
+    },
+    "metadata": {
+        "requestId": "2d83eed2-8708-491b-947b-aa131766e61c",
+        "calculationTime": 642,
+        "timestamp": "2025-07-19T05:54:04.868Z",
+        "architecture": "enhanced-real",
+        "version": "2.0"
+    }
