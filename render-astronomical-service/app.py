@@ -18,10 +18,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for Cloudflare Workers
+
+# Configure CORS with optional environment variable
+allowed_origins = os.environ.get('ALLOWED_ORIGINS', '*')
+if allowed_origins != '*':
+    allowed_origins = allowed_origins.split(',')
+
+CORS(app, origins=allowed_origins)
 
 # Get port from environment (Render sets this automatically)
 port = int(os.environ.get('PORT', 5000))
+
+# Optional API key for additional security
+API_KEY = os.environ.get('API_KEY', None)
 
 # Swiss Ephemeris planet constants
 PLANETS = {
@@ -50,11 +59,19 @@ def health_check():
         'accuracy': '100% professional grade'
     })
 
+def check_api_key():
+    """Check API key if configured"""
+    if API_KEY:
+        provided_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+        if provided_key != API_KEY:
+            return jsonify({'error': 'Invalid or missing API key'}), 401
+    return None
+
 @app.route('/calculate-positions', methods=['POST'])
 def calculate_positions():
     """
     Calculate accurate planetary positions using Swiss Ephemeris
-    
+
     Expected JSON payload:
     {
         "birth_date": "1991-08-13",
@@ -63,7 +80,15 @@ def calculate_positions():
         "longitude": 77.5946,
         "timezone_offset": 5.5  # Optional, defaults to UTC
     }
+
+    Optional headers:
+    X-API-Key: your-api-key (if API_KEY environment variable is set)
     """
+    # Check API key if configured
+    auth_error = check_api_key()
+    if auth_error:
+        return auth_error
+
     try:
         data = request.get_json()
         
@@ -243,6 +268,10 @@ def longitude_to_human_design_gate(longitude):
 @app.route('/test-sheshnarayan', methods=['GET'])
 def test_sheshnarayan():
     """Test endpoint with Sheshnarayan's birth data"""
+    # Check API key if configured
+    auth_error = check_api_key()
+    if auth_error:
+        return auth_error
     test_data = {
         'birth_date': '1991-08-13',
         'birth_time': '08:01',  # UTC time
