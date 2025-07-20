@@ -1,0 +1,14 @@
+[phases.setup]
+# Install system packages needed for Swiss Ephemeris compilation
+aptPkgs = ['build-essential', 'gcc', 'g++', 'make']
+
+[phases.install]
+# Use pip with optimizations for faster builds
+cmds = ['pip install --no-cache-dir --upgrade pip setuptools wheel', 'pip install --no-cache-dir -r requirements.txt']
+
+[variables]
+# Optimize Python for production
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+# Enable parallel compilation for packages that support it
+MAX_JOBS = "4"
