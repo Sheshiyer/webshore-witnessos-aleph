@@ -9,7 +9,7 @@ from datetime import date
 from typing import Optional, Dict, List, Any
 from pydantic import Field, field_validator
 
-from ..base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 
 
 class NumerologyInput(BaseEngineInput):

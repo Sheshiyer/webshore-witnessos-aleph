@@ -15,9 +15,9 @@ from datetime import datetime
 from typing import Dict, List, Any, Type, Optional, Tuple
 from pathlib import Path
 
-from ..base.engine_interface import BaseEngine
-from ..base.data_models import BaseEngineInput, BaseEngineOutput
-from ..calculations.sigil_generation import SigilGenerator, SigilComposition, SigilElement
+from shared.base.engine_interface import BaseEngine
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.calculations.sigil_generation import SigilGenerator, SigilComposition, SigilElement
 from .sigil_forge_models import (
     SigilForgeInput, SigilForgeOutput, SigilAnalysis, ActivationGuidance,
     GENERATION_METHODS, VISUAL_STYLES, COLOR_SCHEMES, 

@@ -9,7 +9,7 @@ from datetime import date
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
 
-from ..base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 
 
 class SacredGeometryInput(BaseEngineInput):

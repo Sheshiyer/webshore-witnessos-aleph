@@ -10,8 +10,8 @@ from datetime import date
 from typing import Dict, List, Any, Optional
 import logging
 
-from ..base.engine_interface import BaseEngine
-from ..calculations.numerology import NumerologyCalculator
+from shared.base.engine_interface import BaseEngine
+from shared.calculations.numerology import NumerologyCalculator
 from .numerology_models import NumerologyInput, NumerologyOutput
 
 
@@ -326,7 +326,7 @@ Remember: These are not predictions—they are pattern recognitions for consciou
         """
         Override the base calculate method to properly create NumerologyOutput.
         """
-        from ..base.data_models import start_timer, end_timer, create_field_signature
+        from shared.base.data_models import start_timer, end_timer, create_field_signature
         from datetime import datetime
 
         start_time = start_timer()
@@ -415,7 +415,7 @@ Remember: These are not predictions—they are pattern recognitions for consciou
         except Exception as e:
             calculation_time = end_timer(start_time)
             self.logger.error(f"Calculation failed after {calculation_time:.4f}s: {str(e)}")
-            from ..base.data_models import EngineError
+            from shared.base.data_models import EngineError
             raise EngineError(f"Calculation failed for {self.engine_name}: {str(e)}")
 
 

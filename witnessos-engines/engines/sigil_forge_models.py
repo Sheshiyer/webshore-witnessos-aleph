@@ -9,7 +9,7 @@ from datetime import date
 from typing import Optional, List, Dict, Any, Literal, Tuple
 from pydantic import BaseModel, Field
 
-from ..base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 
 
 class SigilForgeInput(BaseEngineInput):

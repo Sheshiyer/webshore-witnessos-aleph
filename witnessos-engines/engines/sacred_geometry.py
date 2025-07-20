@@ -15,9 +15,9 @@ from datetime import datetime
 from typing import Dict, List, Any, Type, Optional, Tuple
 from pathlib import Path
 
-from ..base.engine_interface import BaseEngine
-from ..base.data_models import BaseEngineInput, BaseEngineOutput
-from ..calculations.sacred_geometry import SacredGeometryCalculator, Point, Circle, Polygon
+from shared.base.engine_interface import BaseEngine
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.calculations.sacred_geometry import SacredGeometryCalculator, Point, Circle, Polygon
 from .sacred_geometry_models import (
     SacredGeometryInput, SacredGeometryOutput, GeometricPattern,
     SacredRatio, SymmetryGroup, MeditationPoint, EnergyFlow,

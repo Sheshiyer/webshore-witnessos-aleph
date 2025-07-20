@@ -10,8 +10,8 @@ from datetime import date, timedelta
 from typing import Dict, List, Any, Optional
 import logging
 
-from ..base.engine_interface import BaseEngine
-from ..calculations.biorhythm import BiorhythmCalculator
+from shared.base.engine_interface import BaseEngine
+from shared.calculations.biorhythm import BiorhythmCalculator
 from .biorhythm_models import BiorhythmInput, BiorhythmOutput
 
 
@@ -369,7 +369,7 @@ embodiment and optimal energy management in your reality field.
         """
         Override the base calculate method to properly create BiorhythmOutput.
         """
-        from ..base.data_models import start_timer, end_timer, create_field_signature
+        from shared.base.data_models import start_timer, end_timer, create_field_signature
         from datetime import datetime
 
         start_time = start_timer()
@@ -489,7 +489,7 @@ embodiment and optimal energy management in your reality field.
         except Exception as e:
             calculation_time = end_timer(start_time)
             self.logger.error(f"Calculation failed after {calculation_time:.4f}s: {str(e)}")
-            from ..base.data_models import EngineError
+            from shared.base.data_models import EngineError
             raise EngineError(f"Calculation failed for {self.engine_name}: {str(e)}")
 
     def _get_energy_optimization(self, snapshot) -> Dict[str, str]:
