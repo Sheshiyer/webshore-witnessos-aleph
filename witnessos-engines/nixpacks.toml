@@ -1,6 +1,5 @@
-[providers]
 # Force Python provider only (ignore Node.js in parent directory)
-python = "3.11"
+providers = ["python"]
 
 [phases.setup]
 # Install system packages needed for Swiss Ephemeris compilation
