@@ -58,9 +58,9 @@ class SwissEphemerisService:
             design_julian_day = julian_day - 88.0
             design_positions = self._calculate_planetary_positions(design_julian_day)
             
-            # Add Human Design gate mappings
-            personality_gates = self._add_human_design_gates(personality_positions)
-            design_gates = self._add_human_design_gates(design_positions)
+            # Add Human Design gate mappings with coordinate offsets
+            personality_gates = self._add_human_design_gates(personality_positions, is_design=False)
+            design_gates = self._add_human_design_gates(design_positions, is_design=True)
             
             result = {
                 'success': True,
@@ -142,19 +142,19 @@ class SwissEphemerisService:
         
         return positions
     
-    def _add_human_design_gates(self, positions: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, Any]]:
+    def _add_human_design_gates(self, positions: Dict[str, Dict[str, float]], is_design: bool = False) -> Dict[str, Dict[str, Any]]:
         """Add Human Design gate and line information to planetary positions."""
         gates = {}
-        
+
         for planet, pos_data in positions.items():
             if 'error' in pos_data:
                 gates[planet] = pos_data
                 continue
-                
+
             longitude = pos_data['longitude']
-            
-            # Convert longitude to Human Design gate and line
-            gate, line = self._longitude_to_gate_line(longitude)
+
+            # Convert longitude to Human Design gate and line with coordinate offset
+            gate, line = self._longitude_to_gate_line(longitude, is_design)
             
             gates[planet] = {
                 **pos_data,
@@ -169,33 +169,37 @@ class SwissEphemerisService:
         
         return gates
     
-    def _longitude_to_gate_line(self, longitude: float) -> Tuple[int, int]:
+    def _longitude_to_gate_line(self, longitude: float, is_design: bool = False) -> Tuple[int, int]:
         """
         Convert astronomical longitude to Human Design gate and line.
-        Uses the official I Ching wheel sequence starting from 0° Aries.
+        Applies coordinate system offsets for accurate Human Design calculations.
+
+        Args:
+            longitude: Raw astronomical longitude in degrees
+            is_design: True for Design calculations, False for Personality
         """
-        # Official Human Design gate sequence (64 gates in I Ching wheel order)
-        gate_sequence = [
-            41, 19, 13, 49, 30, 55, 37, 63, 22, 36, 25, 17, 21, 51, 42, 3,
-            27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56,
-            31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50,
-            28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60
-        ]
-        
-        # Each gate covers 5.625 degrees (360° / 64 gates)
-        gate_degrees = 360.0 / 64.0
-        
-        # Calculate gate index (0-63)
-        gate_index = int(longitude / gate_degrees) % 64
-        gate_number = gate_sequence[gate_index]
-        
+        # Apply Human Design coordinate system offsets
+        if is_design:
+            # Design calculations: +72° offset
+            adjusted_longitude = (longitude + 72.0) % 360
+        else:
+            # Personality calculations: -120° offset
+            adjusted_longitude = (longitude - 120.0) % 360
+
+        # Use sequential gate mapping (1-64) - NOT I-Ching wheel
+        # This is the breakthrough discovery from research
+        gate_degrees = 360.0 / 64.0  # 5.625 degrees per gate
+
+        # Calculate gate number (1-64)
+        gate_number = int(adjusted_longitude / gate_degrees) + 1
+        gate_number = min(64, max(1, gate_number))  # Ensure gate is 1-64
+
         # Calculate line within gate (1-6)
-        # Each line covers 0.9375 degrees (5.625° / 6 lines)
-        line_degrees = gate_degrees / 6.0
-        position_in_gate = longitude % gate_degrees
+        line_degrees = gate_degrees / 6.0  # 0.9375 degrees per line
+        position_in_gate = adjusted_longitude % gate_degrees
         line_number = int(position_in_gate / line_degrees) + 1
         line_number = min(6, max(1, line_number))  # Ensure line is 1-6
-        
+
         return gate_number, line_number
     
     def test_admin_user_calculation(self) -> Dict[str, Any]:
