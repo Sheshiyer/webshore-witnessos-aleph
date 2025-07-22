@@ -13,7 +13,7 @@ import logging
 from shared.base.engine_interface import BaseEngine
 from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 from shared.calculations.astrology import AstrologyCalculator, validate_coordinates, validate_datetime
-from swiss_ephemeris.ephemeris import SwissEphemerisCalculator
+from swiss_ephemeris.ephemeris import SwissEphemerisService
 from .human_design_models import (
     HumanDesignInput, HumanDesignOutput, HumanDesignChart, HumanDesignType,
     HumanDesignProfile, HumanDesignGate, HumanDesignCenter,
@@ -37,7 +37,7 @@ class HumanDesignScanner(BaseEngine):
         """Initialize the Human Design Scanner."""
         super().__init__(config)
         # Use Swiss Ephemeris for precise astronomical calculations
-        self.swiss_calc = SwissEphemerisCalculator()
+        self.swiss_calc = SwissEphemerisService()
         # Keep AstrologyCalculator for fallback
         self.astro_calc = AstrologyCalculator()
         self._load_human_design_data()
@@ -102,9 +102,16 @@ class HumanDesignScanner(BaseEngine):
 
         # Calculate Human Design astronomical data using Swiss Ephemeris
         try:
-            hd_data = self.swiss_calc.calculate_human_design_data(
-                birth_datetime, lat, lon, validated_input.timezone
+            # Convert datetime to string format for Swiss Ephemeris
+            birth_date_str = birth_datetime.strftime("%Y-%m-%d")
+            birth_time_str = birth_datetime.strftime("%H:%M")
+
+            swiss_data = self.swiss_calc.calculate_positions(
+                birth_date_str, birth_time_str, [lat, lon]
             )
+
+            # Convert Swiss Ephemeris format to expected format
+            hd_data = self._convert_swiss_to_hd_format(swiss_data)
             logger.info("✅ Using Swiss Ephemeris for astronomical calculations")
         except Exception as e:
             logger.warning(f"⚠️ Swiss Ephemeris failed, falling back to AstrologyCalculator: {e}")
@@ -221,6 +228,14 @@ class HumanDesignScanner(BaseEngine):
                 )
 
         return processed_gates
+
+    def _convert_swiss_to_hd_format(self, swiss_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert Swiss Ephemeris data format to Human Design engine expected format."""
+        return {
+            'personality': swiss_data.get('personality', {}),
+            'design': swiss_data.get('design', {}),
+            'success': swiss_data.get('success', True)
+        }
 
     def _process_swiss_gates(self, swiss_data: Dict[str, Dict], gate_type: str) -> Dict[str, HumanDesignGate]:
         """Process Swiss Ephemeris gate data into HumanDesignGate objects."""
