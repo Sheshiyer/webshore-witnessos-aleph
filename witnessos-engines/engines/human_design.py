@@ -13,6 +13,7 @@ import logging
 from shared.base.engine_interface import BaseEngine
 from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 from shared.calculations.astrology import AstrologyCalculator, validate_coordinates, validate_datetime
+from swiss_ephemeris.ephemeris import SwissEphemerisCalculator
 from .human_design_models import (
     HumanDesignInput, HumanDesignOutput, HumanDesignChart, HumanDesignType,
     HumanDesignProfile, HumanDesignGate, HumanDesignCenter,
@@ -35,6 +36,9 @@ class HumanDesignScanner(BaseEngine):
     def __init__(self, config=None):
         """Initialize the Human Design Scanner."""
         super().__init__(config)
+        # Use Swiss Ephemeris for precise astronomical calculations
+        self.swiss_calc = SwissEphemerisCalculator()
+        # Keep AstrologyCalculator for fallback
         self.astro_calc = AstrologyCalculator()
         self._load_human_design_data()
 
@@ -96,24 +100,33 @@ class HumanDesignScanner(BaseEngine):
         validate_coordinates(lat, lon)
         validate_datetime(birth_datetime)
 
-        # Calculate Human Design astronomical data
-        hd_data = self.astro_calc.calculate_human_design_data(
-            birth_datetime, lat, lon, validated_input.timezone
-        )
+        # Calculate Human Design astronomical data using Swiss Ephemeris
+        try:
+            hd_data = self.swiss_calc.calculate_human_design_data(
+                birth_datetime, lat, lon, validated_input.timezone
+            )
+            logger.info("✅ Using Swiss Ephemeris for astronomical calculations")
+        except Exception as e:
+            logger.warning(f"⚠️ Swiss Ephemeris failed, falling back to AstrologyCalculator: {e}")
+            hd_data = self.astro_calc.calculate_human_design_data(
+                birth_datetime, lat, lon, validated_input.timezone
+            )
 
-        # Process personality gates
-        personality_gates = self._process_gates(
-            hd_data['personality_gates'],
-            hd_data['personality_positions'],
-            "personality"
-        )
-
-        # Process design gates
-        design_gates = self._process_gates(
-            hd_data['design_gates'],
-            hd_data['design_positions'],
-            "design"
-        )
+        # Process personality gates - handle both Swiss Ephemeris and AstrologyCalculator formats
+        if 'personality' in hd_data:  # Swiss Ephemeris format
+            personality_gates = self._process_swiss_gates(hd_data['personality'], "personality")
+            design_gates = self._process_swiss_gates(hd_data['design'], "design")
+        else:  # AstrologyCalculator format
+            personality_gates = self._process_gates(
+                hd_data['personality_gates'],
+                hd_data['personality_positions'],
+                "personality"
+            )
+            design_gates = self._process_gates(
+                hd_data['design_gates'],
+                hd_data['design_positions'],
+                "design"
+            )
 
         # Determine type, strategy, and authority
         type_info = self._determine_type(personality_gates, design_gates)
@@ -206,6 +219,43 @@ class HumanDesignScanner(BaseEngine):
                     gift=gate_data['gift'],
                     shadow=gate_data['shadow']
                 )
+
+        return processed_gates
+
+    def _process_swiss_gates(self, swiss_data: Dict[str, Dict], gate_type: str) -> Dict[str, HumanDesignGate]:
+        """Process Swiss Ephemeris gate data into HumanDesignGate objects."""
+        processed_gates = {}
+
+        for planet, planet_data in swiss_data.items():
+            if 'human_design_gate' in planet_data:
+                gate_info = planet_data['human_design_gate']
+                gate_num = gate_info['gate']
+                line_num = gate_info['line']
+
+                if gate_num in self.gate_data:
+                    # Use Swiss Ephemeris calculated values directly
+                    longitude = planet_data['longitude']
+
+                    # Calculate color, tone, base from longitude (simplified)
+                    color = self._calculate_color(longitude, gate_num)
+                    tone = self._calculate_tone(longitude, gate_num)
+                    base = self._calculate_base(longitude, gate_num)
+
+                    gate_data = self.gate_data[gate_num]
+
+                    processed_gates[planet.lower()] = HumanDesignGate(
+                        number=gate_num,
+                        name=gate_data['name'],
+                        planet=planet.lower(),
+                        line=line_num,  # Use Swiss Ephemeris line calculation
+                        color=color,
+                        tone=tone,
+                        base=base,
+                        keynote=gate_data['keynote'],
+                        description=gate_data['description'],
+                        gift=gate_data['gift'],
+                        shadow=gate_data['shadow']
+                    )
 
         return processed_gates
 
