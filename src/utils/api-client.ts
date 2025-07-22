@@ -17,10 +17,10 @@ const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // ALWAYS use production backend for all environments
-  // This ensures demo login and all functionality works without running local backend
-  console.log('🌐 Using production backend URL for all environments');
-  return 'https://api.witnessos.space';
+  // ALWAYS use custom domain for Railway consciousness engines
+  // This ensures proper CORS and accessibility from witnessos.space frontend
+  console.log('🚀 Using Railway consciousness engines via custom domain');
+  return 'https://engines.witnessos.space';
 };
 
 const API_BASE_URL = getApiBaseUrl();
