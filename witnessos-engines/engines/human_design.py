@@ -210,19 +210,16 @@ class HumanDesignScanner(BaseEngine):
         return processed_gates
 
     def _calculate_line(self, longitude: float, gate_num: int) -> int:
-        """Calculate line number (1-6) from longitude."""
+        """Calculate line number (1-6) from longitude - FIXED VERSION."""
         # Each gate covers 5.625 degrees, each line covers 0.9375 degrees
-        gate_size = 360.0 / 64.0
-        line_size = gate_size / 6.0
+        gate_degrees = 360.0 / 64.0  # 5.625 degrees per gate
+        line_degrees = gate_degrees / 6.0  # 0.9375 degrees per line
 
-        # Position within the gate
-        gate_start = (gate_num - 1) * gate_size
-        position_in_gate = longitude - gate_start
-        if position_in_gate < 0:
-            position_in_gate += 360
-
-        line = int(position_in_gate / line_size) + 1
-        return min(max(line, 1), 6)
+        # FIXED: Use modulo to get position within current gate (Swiss Ephemeris method)
+        # This works correctly with the I-Ching wheel sequence
+        position_in_gate = longitude % gate_degrees
+        line_number = int(position_in_gate / line_degrees) + 1
+        return min(6, max(1, line_number))  # Clamp to 1-6
 
     def _calculate_color(self, longitude: float, gate_num: int) -> int:
         """Calculate color (1-6) from longitude."""
