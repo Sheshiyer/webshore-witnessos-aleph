@@ -14,6 +14,9 @@ from shared.base.engine_interface import BaseEngine
 from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 from shared.calculations.astrology import AstrologyCalculator, validate_coordinates, validate_datetime
 
+# Initialize logger
+logger = logging.getLogger(__name__)
+
 # Try to import Swiss Ephemeris, fallback gracefully if not available
 try:
     from swiss_ephemeris.ephemeris import SwissEphemerisService
