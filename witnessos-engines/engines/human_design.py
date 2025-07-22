@@ -151,6 +151,10 @@ class HumanDesignScanner(BaseEngine):
         if 'personality' in hd_data:  # Swiss Ephemeris format
             personality_gates = self._process_swiss_gates(hd_data['personality'], "personality")
             design_gates = self._process_swiss_gates(hd_data['design'], "design")
+
+            # Calculate design datetime (88 days before birth)
+            design_datetime = birth_datetime - timedelta(days=88)
+            hd_data['design_datetime'] = design_datetime
         else:  # AstrologyCalculator format
             personality_gates = self._process_gates(
                 hd_data['personality_gates'],
@@ -162,6 +166,10 @@ class HumanDesignScanner(BaseEngine):
                 hd_data['design_positions'],
                 "design"
             )
+
+            # Calculate design datetime (88 days before birth) for AstrologyCalculator too
+            design_datetime = birth_datetime - timedelta(days=88)
+            hd_data['design_datetime'] = design_datetime
 
         # Determine type, strategy, and authority
         type_info = self._determine_type(personality_gates, design_gates)
