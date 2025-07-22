@@ -13,7 +13,15 @@ import logging
 from shared.base.engine_interface import BaseEngine
 from shared.base.data_models import BaseEngineInput, BaseEngineOutput
 from shared.calculations.astrology import AstrologyCalculator, validate_coordinates, validate_datetime
-from swiss_ephemeris.ephemeris import SwissEphemerisService
+
+# Try to import Swiss Ephemeris, fallback gracefully if not available
+try:
+    from swiss_ephemeris.ephemeris import SwissEphemerisService
+    SWISS_EPHEMERIS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ Swiss Ephemeris not available: {e}")
+    SwissEphemerisService = None
+    SWISS_EPHEMERIS_AVAILABLE = False
 from .human_design_models import (
     HumanDesignInput, HumanDesignOutput, HumanDesignChart, HumanDesignType,
     HumanDesignProfile, HumanDesignGate, HumanDesignCenter,
@@ -36,10 +44,20 @@ class HumanDesignScanner(BaseEngine):
     def __init__(self, config=None):
         """Initialize the Human Design Scanner."""
         super().__init__(config)
-        # Use Swiss Ephemeris for precise astronomical calculations
-        self.swiss_calc = SwissEphemerisService()
-        # Keep AstrologyCalculator for fallback
+        # Initialize calculators with graceful fallback
         self.astro_calc = AstrologyCalculator()
+
+        # Use Swiss Ephemeris for precise astronomical calculations if available
+        if SWISS_EPHEMERIS_AVAILABLE:
+            try:
+                self.swiss_calc = SwissEphemerisService()
+                logger.info("✅ Swiss Ephemeris initialized successfully")
+            except Exception as e:
+                logger.warning(f"⚠️ Swiss Ephemeris initialization failed: {e}")
+                self.swiss_calc = None
+        else:
+            self.swiss_calc = None
+            logger.info("ℹ️ Using AstrologyCalculator (Swiss Ephemeris not available)")
         self._load_human_design_data()
 
     @property
@@ -100,21 +118,28 @@ class HumanDesignScanner(BaseEngine):
         validate_coordinates(lat, lon)
         validate_datetime(birth_datetime)
 
-        # Calculate Human Design astronomical data using Swiss Ephemeris
-        try:
-            # Convert datetime to string format for Swiss Ephemeris
-            birth_date_str = birth_datetime.strftime("%Y-%m-%d")
-            birth_time_str = birth_datetime.strftime("%H:%M")
+        # Calculate Human Design astronomical data
+        if self.swiss_calc is not None:
+            try:
+                # Use Swiss Ephemeris for precise calculations
+                birth_date_str = birth_datetime.strftime("%Y-%m-%d")
+                birth_time_str = birth_datetime.strftime("%H:%M")
 
-            swiss_data = self.swiss_calc.calculate_positions(
-                birth_date_str, birth_time_str, [lat, lon]
-            )
+                swiss_data = self.swiss_calc.calculate_positions(
+                    birth_date_str, birth_time_str, [lat, lon]
+                )
 
-            # Convert Swiss Ephemeris format to expected format
-            hd_data = self._convert_swiss_to_hd_format(swiss_data)
-            logger.info("✅ Using Swiss Ephemeris for astronomical calculations")
-        except Exception as e:
-            logger.warning(f"⚠️ Swiss Ephemeris failed, falling back to AstrologyCalculator: {e}")
+                # Convert Swiss Ephemeris format to expected format
+                hd_data = self._convert_swiss_to_hd_format(swiss_data)
+                logger.info("✅ Using Swiss Ephemeris for astronomical calculations")
+            except Exception as e:
+                logger.warning(f"⚠️ Swiss Ephemeris failed, falling back to AstrologyCalculator: {e}")
+                hd_data = self.astro_calc.calculate_human_design_data(
+                    birth_datetime, lat, lon, validated_input.timezone
+                )
+        else:
+            # Use AstrologyCalculator as primary method
+            logger.info("ℹ️ Using AstrologyCalculator for astronomical calculations")
             hd_data = self.astro_calc.calculate_human_design_data(
                 birth_datetime, lat, lon, validated_input.timezone
             )
