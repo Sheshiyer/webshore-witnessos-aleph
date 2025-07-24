@@ -1,7 +1,79 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { NadaBrahmanInput, NadaBrahmanOutput } from '@/engines/nadabrahman-engine';
+// Simple card components
+const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>
+    {children}
+  </h3>
+);
+
+const CardContent = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`p-6 pt-0 ${className}`}>
+    {children}
+  </div>
+);
+import type { BaseEngineInput, BaseEngineOutput } from '@/engines/core/types';
+
+// NadaBrahman-specific types
+interface NadaBrahmanInput extends BaseEngineInput {
+  heartRateVariability: number;
+  breathPattern: {
+    rate: number;
+    depth: number;
+    coherence: number;
+  };
+  stressLevel: number;
+  energyLevel: number;
+  consciousnessLevel: number;
+  mousePosition?: { x: number; y: number };
+  trainingMode: 'awareness' | 'influence' | 'mastery';
+  timeOfDay: string;
+}
+
+interface NadaBrahmanOutput extends BaseEngineOutput {
+  ragaRecommendation?: string;
+  harmonicAnalysis?: Record<string, unknown>;
+  biometricMapping?: Record<string, unknown>;
+  ragaName?: string;
+  ragaFamily?: string;
+  baseFrequency?: number;
+  tempo?: number;
+  duration?: number;
+  biometricSync?: boolean;
+  spatialAudio?: boolean;
+  coherenceLevel?: number;
+  heartCoherence?: number;
+  breathCoherence?: number;
+  masteryProgress?: number;
+  heartRhythm?: {
+    instrument?: string;
+    intensity?: number;
+    pattern?: number[];
+  };
+  breathMelody?: {
+    instrument?: string;
+    expression?: number;
+    phrase?: string[];
+  };
+  currentPhase?: string;
+  achievements?: string[];
+  nextSteps?: string[];
+  biologicalPatterns?: string[];
+  consciousnessObservations?: string[];
+}
 
 interface Props {
   onCalculation: (input: NadaBrahmanInput) => Promise<NadaBrahmanOutput>;
@@ -269,12 +341,12 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="text-2xl font-bold text-orange-200">{result.ragaName}</div>
+                    <div className="text-2xl font-bold text-orange-200">{result.ragaName || 'Unknown Raga'}</div>
                     <div className="text-sm text-orange-300/80">
-                      Family: {result.ragaFamily} • {Math.round(result.baseFrequency)}Hz • {result.tempo} BPM
+                      Family: {result.ragaFamily || 'Unknown'} • {Math.round(result.baseFrequency || 440)}Hz • {result.tempo || 120} BPM
                     </div>
                     <div className="text-sm text-orange-300/60">
-                      Duration: {result.duration.toFixed(1)}s • 
+                      Duration: {(result.duration || 0).toFixed(1)}s • 
                       {result.biometricSync ? ' Biometric Sync' : ' Static'} • 
                       {result.spatialAudio ? ' Spatial Audio' : ' Mono'}
                     </div>
@@ -294,29 +366,29 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
                     <div className="flex justify-between items-center">
                       <span className="text-orange-200">Overall Coherence</span>
                       <span className="text-xl font-bold text-orange-300">
-                        {Math.round(result.coherenceLevel * 100)}%
+                        {Math.round((result.coherenceLevel || 0) * 100)}%
                       </span>
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-orange-600 to-yellow-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${result.coherenceLevel * 100}%` }}
+                        style={{ width: `${(result.coherenceLevel || 0) * 100}%` }}
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-orange-300/80">Heart:</span>
-                        <span className="text-orange-200">{Math.round(result.heartCoherence * 100)}%</span>
+                        <span className="text-orange-200">{Math.round((result.heartCoherence || 0) * 100)}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-orange-300/80">Breath:</span>
-                        <span className="text-orange-200">{Math.round(result.breathCoherence * 100)}%</span>
+                        <span className="text-orange-200">{Math.round((result.breathCoherence || 0) * 100)}%</span>
                       </div>
                     </div>
                     
                     <div className="text-sm text-orange-300/80">
-                      Training Progress: {Math.round(result.masteryProgress * 100)}%
+                      Training Progress: {Math.round((result.masteryProgress || 0) * 100)}%
                     </div>
                   </div>
                 </CardContent>
@@ -331,21 +403,21 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
                   <div className="space-y-3">
                     <div className="border-l-2 border-orange-600/50 pl-3">
                       <div className="font-medium text-orange-200">
-                        {result.heartRhythm.instrument} (Heart Rhythm)
+                        {result.heartRhythm?.instrument || 'Unknown'} (Heart Rhythm)
                       </div>
                       <div className="text-sm text-orange-300/70">
-                        Intensity: {Math.round(result.heartRhythm.intensity * 100)}% • 
-                        Pattern: [{result.heartRhythm.pattern.slice(0, 4).map(p => p.toFixed(1)).join(', ')}...]
+                        Intensity: {Math.round((result.heartRhythm?.intensity || 0) * 100)}% • 
+                        Pattern: [{(result.heartRhythm?.pattern || []).slice(0, 4).map((p: any) => p.toFixed(1)).join(', ')}...]
                       </div>
                     </div>
                     
                     <div className="border-l-2 border-orange-600/50 pl-3">
                       <div className="font-medium text-orange-200">
-                        {result.breathMelody.instrument} (Breath Melody)
+                        {result.breathMelody?.instrument || 'Unknown'} (Breath Melody)
                       </div>
                       <div className="text-sm text-orange-300/70">
-                        Expression: {Math.round(result.breathMelody.expression * 100)}% • 
-                        Phrase: [{result.breathMelody.phrase.slice(0, 4).join(', ')}...]
+                        Expression: {Math.round((result.breathMelody?.expression || 0) * 100)}% • 
+                        Phrase: [{(result.breathMelody?.phrase || []).slice(0, 4).join(', ')}...]
                       </div>
                     </div>
                   </div>
@@ -364,11 +436,11 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
                       <div className="text-orange-300/80 capitalize">{result.currentPhase}</div>
                     </div>
                     
-                    {result.achievements.length > 0 && (
+                    {(result.achievements?.length || 0) > 0 && (
                       <div>
                         <div className="text-sm font-medium text-orange-200 mb-1">Achievements</div>
                         <ul className="space-y-1">
-                          {result.achievements.map((achievement, i) => (
+                          {(result.achievements || []).map((achievement, i) => (
                             <li key={i} className="text-sm text-green-400 flex items-center gap-2">
                               ✓ {achievement}
                             </li>
@@ -380,7 +452,7 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
                     <div>
                       <div className="text-sm font-medium text-orange-200 mb-1">Next Steps</div>
                       <ul className="space-y-1">
-                        {result.nextSteps.slice(0, 3).map((step, i) => (
+                        {(result.nextSteps || []).slice(0, 3).map((step, i) => (
                           <li key={i} className="text-sm text-orange-300/80 flex items-start gap-2">
                             <span className="text-orange-500 mt-1">•</span>
                             {step}
@@ -393,17 +465,17 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
               </Card>
 
               {/* Insights */}
-              {(result.biologicalPatterns.length > 0 || result.consciousnessObservations.length > 0) && (
+              {((result.biologicalPatterns?.length || 0) > 0 || (result.consciousnessObservations?.length || 0) > 0) && (
                 <Card className="bg-gray-900/50 border-orange-600/20">
                   <CardHeader>
                     <CardTitle className="text-lg text-orange-300">🔍 Consciousness Insights</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3 text-sm">
-                      {result.biologicalPatterns.map((pattern, i) => (
+                      {(result.biologicalPatterns || []).map((pattern, i) => (
                         <div key={i} className="text-orange-300/80">• {pattern}</div>
                       ))}
-                      {result.consciousnessObservations.map((observation, i) => (
+                      {(result.consciousnessObservations || []).map((observation, i) => (
                         <div key={i} className="text-orange-300/80">• {observation}</div>
                       ))}
                     </div>
@@ -447,4 +519,4 @@ export function NadaBrahmanEngine({ onCalculation, isCalculating, result }: Prop
       `}</style>
     </div>
   );
-} 
+}

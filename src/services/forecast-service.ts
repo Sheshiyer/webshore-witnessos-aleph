@@ -272,13 +272,13 @@ export class ForecastService {
     // Create guidance object
     const guidance: ForecastGuidance = {
       iching: ichingResult ? {
-        hexagram: ichingResult.hexagram,
-        interpretation: ichingResult.interpretation || ichingResult.meaning,
-        changingLines: ichingResult.changingLines
+        hexagram: ichingResult.data?.rawData?.hexagram || ichingResult.data?.hexagram,
+             interpretation: ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput,
+             changingLines: ichingResult.data?.rawData?.changingLines || ichingResult.data?.changingLines
       } : undefined,
       tarot: tarotResult ? {
-        card: tarotResult.card,
-        interpretation: tarotResult.interpretation || tarotResult.meaning,
+        card: tarotResult.data?.rawData?.card || tarotResult.data?.card,
+             interpretation: tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput,
         focusArea: 'daily_guidance'
       } : undefined,
       synthesis,

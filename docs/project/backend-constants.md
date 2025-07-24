@@ -41,6 +41,7 @@ id = "production-SECRETS"  # Configure as needed
 
 ### **API Endpoints (Production)**
 - **Base URL**: `https://api.witnessos.space`
+- **Railway Python Engines**: `https://webshore-witnessos-aleph-production.up.railway.app`
 - **Health Check**: `GET /health`
 - **Engine List**: `GET /engines`
 - **Engine Calculation**: `POST /engines/{engine_name}/calculate`

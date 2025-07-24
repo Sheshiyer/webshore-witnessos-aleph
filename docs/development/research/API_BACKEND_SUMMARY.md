@@ -8,12 +8,19 @@ The WitnessOS Consciousness API is a production-ready spiritual technology backe
 
 ## 🏗️ **Technical Architecture**
 
-### **Infrastructure Stack**
-- **Runtime**: Cloudflare Workers (Edge Computing)
+### **Hybrid Infrastructure Stack**
+- **API Gateway**: Cloudflare Workers (Edge Computing)
+- **Engine Backend**: Python services on Railway (uvicorn/FastAPI)
 - **Database**: Cloudflare D1 (SQLite-compatible)
 - **Storage**: Cloudflare KV (Key-Value Store)
 - **CDN**: Global edge network with <100ms latency
 - **Security**: JWT authentication, rate limiting, CORS protection
+
+### **Architecture Overview**
+- **Frontend**: React/TypeScript applications
+- **API Router**: Cloudflare Workers orchestrating requests
+- **Engine Services**: Python implementations on Railway
+- **Data Layer**: Cloudflare D1 + KV for caching and user profiles
 
 ### **API Endpoints**
 - **Production**: `https://api.witnessos.space`
@@ -79,6 +86,17 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ---
 
 ## 🧠 **Consciousness Engines**
+
+### **Engine Architecture**
+All consciousness engines are implemented in **Python** and deployed on **Railway** infrastructure. The Cloudflare Workers API acts as an intelligent router and orchestrator, forwarding calculation requests to the appropriate Python engine services and handling authentication, caching, and response formatting.
+
+**Engine Flow:**
+1. Client sends request to Cloudflare Workers API
+2. Workers authenticate and validate the request
+3. Workers forward calculation to Python engine on Railway
+4. Python engine performs consciousness calculations
+5. Workers cache results and format response
+6. Formatted response returned to client
 
 ### **Complete Engine Catalog**
 
@@ -404,7 +422,7 @@ Retry-After: 60
 
 ## 🔧 **Development Environment**
 
-### **Local Development Setup**
+### **Hybrid Architecture Setup**
 ```bash
 # Clone repository
 git clone https://github.com/witnessos/webshore.git
@@ -413,11 +431,19 @@ cd webshore
 # Install dependencies
 npm install
 
-# Start development server
+# Start Cloudflare Workers (API Gateway)
 npm run workers:dev
+# API Gateway available at http://localhost:8787
 
-# API available at http://localhost:8787
+# Python engines run on Railway in production
+# For local development, engines proxy to Railway services
 ```
+
+### **Architecture Components**
+- **Cloudflare Workers**: API gateway, authentication, caching
+- **Python Engines**: Consciousness calculations on Railway
+- **Frontend**: React/TypeScript applications
+- **Database**: Cloudflare D1 for user profiles and caching
 
 ### **Environment Variables**
 ```bash

@@ -5,9 +5,32 @@
 The WitnessOS Consciousness API provides access to a sophisticated consciousness exploration platform featuring 10 different spiritual and psychological analysis engines, multi-engine workflows, and AI-enhanced interpretations.
 
 ### **Base URLs**
-- **Production**: `https://api.witnessos.space`
-- **Staging**: `https://api-staging.witnessos.space`
+- **Production**: `https://witnessos-api.sheshnarayan-iyer.workers.dev`
+- **Engine Proxy**: `https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev`
+- **Railway Python Engines**: `https://webshore-witnessos-aleph-production.up.railway.app`
 - **Development**: `http://localhost:8787`
+
+### **Hybrid Architecture**
+WitnessOS uses a hybrid architecture for optimal performance and accuracy:
+- **Cloudflare Workers**: Handle authentication, routing, caching, and API orchestration
+- **Railway Python Engines**: Provide 100% accurate consciousness calculations using Swiss Ephemeris
+- **Edge Caching**: Intelligent KV-based caching for improved response times
+- **Automatic Failover**: Built-in retry mechanisms and health monitoring
+
+### **Railway Integration**
+The consciousness engines run on Railway's infrastructure for maximum accuracy:
+- **Swiss Ephemeris**: Professional-grade astronomical calculations
+- **Python FastAPI**: High-performance engine runtime
+- **Automatic Scaling**: Handles traffic spikes seamlessly
+- **Health Monitoring**: Continuous uptime and performance tracking
+- **Direct Access**: Engine proxy allows direct Railway communication
+
+**Railway Engine URL**: `https://webshore-witnessos-aleph-production.up.railway.app`
+
+**Available Engines**:
+- `numerology`: Life path and destiny calculations
+- `human_design`: Complete bodygraph with Swiss Ephemeris precision
+- `biorhythm`: Physical, emotional, and intellectual cycles
 
 ### **Authentication**
 Most endpoints require JWT authentication. Include your token in the Authorization header:
@@ -22,7 +45,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ### **1. Register and Login**
 ```bash
 # Register new user
-curl -X POST https://api.witnessos.space/auth/register \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -31,7 +54,7 @@ curl -X POST https://api.witnessos.space/auth/register \
   }'
 
 # Login to get JWT token
-curl -X POST https://api.witnessos.space/auth/login \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -41,21 +64,42 @@ curl -X POST https://api.witnessos.space/auth/login \
 
 ### **2. Health Check**
 ```bash
-curl https://api.witnessos.space/health
+# Main API health
+curl https://witnessos-api.sheshnarayan-iyer.workers.dev/health
+
+# Engine proxy health
+curl https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/health
 ```
 
 ### **3. List Available Engines**
 ```bash
-curl https://api.witnessos.space/engines
+# Via main API
+curl https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines
+
+# Direct from engine proxy
+curl https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/engines
 ```
 
 ### **4. Calculate with an Engine**
 ```bash
-curl -X POST https://api.witnessos.space/engines/numerology/calculate \
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
   -H "Content-Type: application/json" \
   -d '{
-    "input": {
-      "birth_date": "1990-01-15",
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Alex Morgan"
+    }
+  }'
+
+# Direct engine proxy
+curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
       "full_name": "Alex Morgan"
     }
   }'
@@ -64,6 +108,52 @@ curl -X POST https://api.witnessos.space/engines/numerology/calculate \
 ---
 
 ## 🧠 **Consciousness Engines**
+
+### **List All Engines**
+```bash
+# Via main API (includes authentication and caching)
+curl https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines
+
+# Direct from engine proxy (faster, no auth required)
+curl https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/engines
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "engines": [
+      {
+        "id": "numerology",
+        "name": "Numerology",
+        "description": "Life path and destiny number calculations",
+        "version": "1.0.0",
+        "status": "active",
+        "provider": "railway"
+      },
+      {
+        "id": "human_design",
+        "name": "Human Design",
+        "description": "Complete Human Design chart analysis using Swiss Ephemeris",
+        "version": "1.0.0",
+        "status": "active",
+        "provider": "railway"
+      },
+      {
+        "id": "biorhythm",
+        "name": "Biorhythm",
+        "description": "Physical, emotional, and intellectual cycles",
+        "version": "1.0.0",
+        "status": "active",
+        "provider": "railway"
+      }
+    ],
+    "swiss_ephemeris": true,
+    "provider_status": "healthy"
+  }
+}
+```
 
 ### **Available Engines**
 
@@ -83,27 +173,96 @@ curl -X POST https://api.witnessos.space/engines/numerology/calculate \
 ### **Engine Input Examples**
 
 #### **Numerology**
-```json
-{
-  "input": {
-    "birth_date": "1990-01-15",
-    "full_name": "Alexander Morgan",
-    "birth_name": "Alexander James Morgan"
-  }
-}
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Alexander Morgan",
+      "birth_name": "Alexander James Morgan"
+    }
+  }'
+
+# Direct engine proxy
+curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Alexander Morgan",
+      "birth_name": "Alexander James Morgan"
+    }
+  }'
 ```
 
 #### **Human Design**
-```json
-{
-  "input": {
-    "birth_date": "1990-01-15",
-    "birth_time": "14:30",
-    "birth_location": "New York, NY, USA",
-    "includeChannels": true,
-    "includeGates": true
-  }
-}
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "human_design",
+    "birth_data": {
+      "date": "1990-01-15",
+      "time": "14:30",
+      "location": {
+        "city": "New York",
+        "country": "US",
+        "latitude": 40.7128,
+        "longitude": -74.0060,
+        "timezone": "America/New_York"
+      }
+    }
+  }'
+
+# Direct engine proxy
+curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "human_design",
+    "birth_data": {
+      "date": "1990-01-15",
+      "time": "14:30",
+      "location": {
+        "city": "New York",
+        "country": "US",
+        "latitude": 40.7128,
+        "longitude": -74.0060,
+        "timezone": "America/New_York"
+      }
+    }
+  }'
+```
+
+#### **Biorhythm**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "biorhythm",
+    "birth_data": {
+      "date": "1990-01-15",
+      "target_date": "2025-06-24",
+      "cycles": ["physical", "emotional", "intellectual"]
+    }
+  }'
+
+# Direct engine proxy
+curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "biorhythm",
+    "birth_data": {
+      "date": "1990-01-15",
+      "target_date": "2025-06-24",
+      "cycles": ["physical", "emotional", "intellectual"]
+    }
+  }'
 ```
 
 #### **Tarot**
@@ -245,7 +404,7 @@ curl -X POST https://api.witnessos.space/batch \
 
 ### **Register User**
 ```bash
-curl -X POST https://api.witnessos.space/auth/register \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -256,7 +415,7 @@ curl -X POST https://api.witnessos.space/auth/register \
 
 ### **Login**
 ```bash
-curl -X POST https://api.witnessos.space/auth/login \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -266,13 +425,13 @@ curl -X POST https://api.witnessos.space/auth/login \
 
 ### **Get Current User**
 ```bash
-curl https://api.witnessos.space/auth/me \
+curl https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### **Logout**
 ```bash
-curl -X POST https://api.witnessos.space/auth/logout \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/auth/logout \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -367,19 +526,41 @@ Retry-After: 60
 
 ### **Test Health**
 ```bash
-curl https://api.witnessos.space/health
+# Main API health
+curl https://witnessos-api.sheshnarayan-iyer.workers.dev/health
+
+# Engine proxy health
+curl https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/health
 ```
 
 ### **Test Engine**
 ```bash
-curl -X POST https://api.witnessos.space/engines/numerology/calculate \
+# Via main API
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
   -H "Content-Type: application/json" \
-  -d '{"input": {"birth_date": "1990-01-15", "full_name": "Test User"}}'
+  -d '{
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Test User"
+    }
+  }'
+
+# Direct engine proxy
+curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "numerology",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Test User"
+    }
+  }'
 ```
 
 ### **Test Workflow**
 ```bash
-curl -X POST https://api.witnessos.space/workflows/daily \
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/workflows/daily \
   -H "Content-Type: application/json" \
   -d '{"userProfile": {"fullName": "Test User", "birthDate": "1990-01-15"}}'
 ```
@@ -402,4 +583,4 @@ Full OpenAPI 3.0 specification available at:
 4. **Build Applications**: Integrate consciousness features
 5. **Join Community**: Connect with other consciousness explorers
 
-**The universe of consciousness exploration awaits! ✨** 
+**The universe of consciousness exploration awaits! ✨**

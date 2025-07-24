@@ -459,12 +459,12 @@ export class ForecastService extends WorkerEntrypoint<ForecastServiceEnv> {
 
     // I Ching-based recommendations
     if (ichingResult?.hexagram) {
-      recommendations.awareness_points.push(`I Ching guidance: ${ichingResult.interpretation || 'Reflect on current situation'}`);
+      recommendations.awareness_points.push(`I Ching guidance: ${ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput || 'Reflect on current situation'}`);
     }
 
     // Tarot-based recommendations
     if (tarotResult?.card) {
-      recommendations.awareness_points.push(`Tarot insight: ${tarotResult.meaning || 'Trust your intuition'}`);
+      recommendations.awareness_points.push(`Tarot insight: ${tarotResult.data?.rawData?.meaning || tarotResult.data?.formattedOutput || 'Trust your intuition'}`);
     }
 
     return recommendations;

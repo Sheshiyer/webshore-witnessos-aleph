@@ -1,7 +1,7 @@
 # 🐍 **BACKEND TODO - HYBRID ARCHITECTURE PIVOT**
 
 **Status:** 🚀 **ACTIVE IMPLEMENTATION**  
-**Architecture:** Cloudflare Workers + Render.com Python Engines  
+**Architecture:** Cloudflare Workers + Railway Python Engines  
 **Timeline:** 4 weeks to full production deployment
 
 ---
@@ -10,14 +10,14 @@
 
 ### **🔄 Engine Proxy Worker**
 - [ ] Create `src/workers/engine-proxy-worker.ts`
-- [ ] Implement Render.com API client with retry logic
+- [ ] Implement Railway API client with retry logic
 - [ ] Add connection pooling and keep-alive
 - [ ] Handle cold start mitigation (4-minute warmup pings)
 - [ ] Error handling and timeout management (30s timeout)
 
 ### **🐍 Python Engine Migration**
 - [ ] Restructure `/docs/reference/python-engines/` to production services
-- [ ] Create Render.com deployment configuration
+- [ ] Create Railway deployment configuration
 - [ ] Implement FastAPI endpoints for all engines:
   - [ ] `/engines/human_design/calculate`
   - [ ] `/engines/numerology/calculate`
@@ -31,7 +31,7 @@
   - [ ] `/engines/sigil_forge/calculate`
 
 ### **🌟 Swiss Ephemeris Integration**
-- [ ] Deploy existing Swiss Ephemeris service to Render.com
+- [ ] Deploy existing Swiss Ephemeris service to Railway
 - [ ] Integrate with Human Design, Gene Keys, Vimshottari engines
 - [ ] Implement caching for astronomical calculations
 - [ ] Add health check endpoints
@@ -107,7 +107,7 @@
 ## **🔗 IMPLEMENTATION DEPENDENCIES**
 
 ### **External Services**
-- **Render.com**: Python engine hosting and PostgreSQL database
+- **Railway**: Python engine hosting and PostgreSQL database
 - **Cloudflare**: Workers, KV storage, D1 database, R2 buckets
 - **Swiss Ephemeris**: Astronomical calculation service
 
@@ -122,7 +122,7 @@
 
 ### **This Week (July 19-26, 2025)**
 1. **[ ] Restructure Python engines** from reference to production-ready
-2. **[ ] Create Render.com service deployment**
+2. **[ ] Create Railway service deployment**
 3. **[ ] Implement basic Cloudflare proxy worker**
 4. **[ ] Test Human Design engine accuracy** with user's birth data
 

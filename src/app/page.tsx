@@ -11,7 +11,25 @@ import { OfflineModeBanner } from '@/components/ui/ConnectionStatusIndicator';
 import APIConnectionTest, { useAPIConnectionTest } from '@/components/debug/APIConnectionTest';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import type { BiofieldViewerOutput } from '@/engines/biofield-viewer-engine';
+import type { BaseEngineOutput } from '@/engines/core/types';
+
+// BiofieldViewer-specific types
+interface BiofieldViewerOutput extends BaseEngineOutput {
+  snapshot?: {
+    timestamp: string;
+    energeticSignature: Record<string, unknown>;
+    rawImageData: string;
+    metadata: Record<string, unknown>;
+  };
+  nextEngine?: string;
+  breathPattern?: string;
+  consciousnessLevel?: number;
+  engineReadiness?: Record<string, number>;
+  visualization?: {
+    processedImageUrl: string;
+    energeticOverlay: Record<string, unknown>;
+  };
+}
 import PsyShaderLanding from '@/components/ui/PsyShaderLanding';
 
 // Import simplified consciousness profile hook

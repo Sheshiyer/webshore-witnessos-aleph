@@ -2,7 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { BiofieldViewerOutput } from '@/engines/biofield-viewer-engine';
+import type { BaseEngineOutput } from '@/engines/core/types';
+
+// BiofieldViewer-specific types
+interface BiofieldViewerOutput extends BaseEngineOutput {
+  snapshot?: {
+    timestamp: string;
+    energeticSignature: Record<string, unknown>;
+    rawImageData: string;
+    metadata: Record<string, unknown>;
+  };
+  nextEngine?: string;
+  breathPattern?: string;
+  consciousnessLevel?: number;
+  engineReadiness?: Record<string, number>;
+  visualization?: {
+    processedImageUrl: string;
+    energeticOverlay: Record<string, unknown>;
+  };
+}
 
 interface UnifiedAdminDebugSystemProps {
   isVisible?: boolean;
@@ -332,4 +350,4 @@ export default function UnifiedAdminDebugSystem({
       )}
     </>
   );
-} 
+}

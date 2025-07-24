@@ -9,7 +9,31 @@
 import React, { useState, useEffect } from 'react';
 import { useConsciousnessProfile } from '../../hooks/useConsciousnessProfile';
 import BiofieldViewerEngine from '../../components/consciousness-engines/BiofieldViewerEngine';
-import type { BiofieldViewerOutput } from '../../engines/biofield-viewer-engine';
+import type { BaseEngineOutput } from '../../engines/core/types';
+
+// BiofieldViewer-specific types
+interface BiofieldViewerOutput extends BaseEngineOutput {
+  snapshot?: {
+    timestamp: string;
+    energeticSignature: {
+      consciousnessMarkers: {
+        breathCoherence: number;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
+    rawImageData: string;
+    metadata: Record<string, unknown>;
+  };
+  nextEngine?: string;
+  breathPattern?: string;
+  consciousnessLevel?: number;
+  engineReadiness?: Record<string, number>;
+  visualization?: {
+    processedImageUrl: string;
+    energeticOverlay: Record<string, unknown>;
+  };
+}
 
 export default function CosmicTemplePage() {
   const { profile, isLoading } = useConsciousnessProfile();

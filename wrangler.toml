@@ -9,15 +9,15 @@ compatibility_flags = ["nodejs_compat"]
 # Service bindings to specialized workers (RPC)
 [[services]]
 binding = "ENGINE_SERVICE"
-service = "witnessos-engine-service"
+service = "witnessos-engine-proxy"
 
-[[services]]
-binding = "FORECAST_SERVICE"
-service = "witnessos-forecast-service"
+# [[services]]
+# binding = "FORECAST_SERVICE"
+# service = "witnessos-forecast-service"
 
-[[services]]
-binding = "AI_SERVICE"
-service = "witnessos-ai-service"
+# [[services]]
+# binding = "AI_SERVICE"
+# service = "witnessos-ai-service"
 
 # Durable Objects
 [[durable_objects.bindings]]
@@ -30,38 +30,53 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router"
 
-# Workflows
-[[workflows]]
-name = "CONSCIOUSNESS_WORKFLOW"
-binding = "CONSCIOUSNESS_WORKFLOW"
-class_name = "ConsciousnessWorkflow"
+# Workflows (temporarily disabled due to authentication error)
+# [[workflows]]
+# name = "CONSCIOUSNESS_WORKFLOW"
+# binding = "CONSCIOUSNESS_WORKFLOW"
+# class_name = "ConsciousnessWorkflow"
 
-[[workflows]]
-name = "INTEGRATION_WORKFLOW"
-binding = "INTEGRATION_WORKFLOW"
-class_name = "IntegrationWorkflow"
+# [[workflows]]
+# name = "INTEGRATION_WORKFLOW"
+# binding = "INTEGRATION_WORKFLOW"
+# class_name = "IntegrationWorkflow"
 
 # KV Namespaces
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "your-cache-kv-namespace-id"
-preview_id = "your-cache-kv-preview-id"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 [[kv_namespaces]]
 binding = "KV_USER_PROFILES"
-id = "your-profiles-kv-namespace-id"
-preview_id = "your-profiles-kv-preview-id"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
 
 [[kv_namespaces]]
 binding = "KV_FORECASTS"
-id = "your-forecasts-kv-namespace-id"
-preview_id = "your-forecasts-kv-preview-id"
+id = "2a075a9931374c22ba032d7c7cdb6054"
+preview_id = "2a075a9931374c22ba032d7c7cdb6054"
+
+[[kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+[[kv_namespaces]]
+binding = "KV_SECRETS"
+id = "74748736c9584954b5191d3ebe3300ac"
+preview_id = "74748736c9584954b5191d3ebe3300ac"
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "witnessos-db"
-database_id = "your-database-id"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
+
+# R2 Buckets
+[[r2_buckets]]
+binding = "REPORTS"
+bucket_name = "witnessos-reports"
 
 # Environment Variables
 [vars]
@@ -69,20 +84,25 @@ ENVIRONMENT = "production"
 API_VERSION = "2.0"
 ENABLE_CACHING = "true"
 ENABLE_ANALYTICS = "true"
+CORS_ORIGIN = "*"
+RATE_LIMIT_MAX = "1000"
+RATE_LIMIT_WINDOW = "60000"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 
 # Secrets (set via wrangler secret put)
 # JWT_SECRET
 # OPENROUTER_API_KEY
+# RAILWAY_API_KEY
 
 # Migrations for Durable Objects
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["EngineCoordinator", "ForecastSession"]
 
-# Routes
-[[routes]]
-pattern = "api.witnessos.com/*"
-zone_name = "witnessos.com"
+# Routes (temporarily disabled due to conflict)
+# [[routes]]
+# pattern = "api.witnessos.space/*"
+# zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7"
 
 # Build configuration
 [build]
@@ -91,22 +111,162 @@ command = "npm run build"
 # Development configuration
 [env.development]
 name = "witnessos-api-router-dev"
+compatibility_date = "2024-01-15"
 
 [env.development.vars]
 ENVIRONMENT = "development"
+API_VERSION = "2.0-dev"
 ENABLE_CACHING = "false"
+CORS_ORIGIN = "*"
+RATE_LIMIT_MAX = "50"
+RATE_LIMIT_WINDOW = "60000"
 
 # Staging configuration
 [env.staging]
 name = "witnessos-api-router-staging"
+routes = [
+  { pattern = "api-staging.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
+]
+
+# Staging KV Namespaces
+[[env.staging.kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_USER_PROFILES"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_FORECASTS"
+id = "2a075a9931374c22ba032d7c7cdb6054"
+preview_id = "2a075a9931374c22ba032d7c7cdb6054"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_SECRETS"
+id = "74748736c9584954b5191d3ebe3300ac"
+preview_id = "74748736c9584954b5191d3ebe3300ac"
+
+# Staging D1 Database
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
+
+# Staging R2 Buckets
+[[env.staging.r2_buckets]]
+binding = "REPORTS"
+bucket_name = "witnessos-reports"
+
+# Staging Durable Objects
+[[env.staging.durable_objects.bindings]]
+name = "ENGINE_COORDINATOR"
+class_name = "EngineCoordinator"
+script_name = "witnessos-api-router-staging"
+
+[[env.staging.durable_objects.bindings]]
+name = "FORECAST_SESSION"
+class_name = "ForecastSession"
+script_name = "witnessos-api-router-staging"
+
+# Staging Workflows (disabled - requires additional permissions)
+# [[env.staging.workflows]]
+# name = "CONSCIOUSNESS_WORKFLOW"
+# binding = "CONSCIOUSNESS_WORKFLOW"
+# class_name = "ConsciousnessWorkflow"
+
+# [[env.staging.workflows]]
+# name = "INTEGRATION_WORKFLOW"
+# binding = "INTEGRATION_WORKFLOW"
+# class_name = "IntegrationWorkflow"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
+API_VERSION = "2.0-staging"
+ENABLE_CACHING = "false"
+ENABLE_ANALYTICS = "true"
+CORS_ORIGIN = "*"
+RATE_LIMIT_MAX = "100"
+RATE_LIMIT_WINDOW = "60000"
 
 # Production configuration
 [env.production]
 name = "witnessos-api-router-prod"
+routes = [
+  { pattern = "api-v2.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
+]
+
+# Production KV Namespaces
+[[env.production.kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[env.production.kv_namespaces]]
+binding = "KV_USER_PROFILES"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
+
+[[env.production.kv_namespaces]]
+binding = "KV_FORECASTS"
+id = "2a075a9931374c22ba032d7c7cdb6054"
+preview_id = "2a075a9931374c22ba032d7c7cdb6054"
+
+[[env.production.kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+[[env.production.kv_namespaces]]
+binding = "KV_SECRETS"
+id = "74748736c9584954b5191d3ebe3300ac"
+preview_id = "74748736c9584954b5191d3ebe3300ac"
+
+# Production D1 Database
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
+
+# Production R2 Buckets
+[[env.production.r2_buckets]]
+binding = "REPORTS"
+bucket_name = "witnessos-reports"
+
+# Production Durable Objects
+[[env.production.durable_objects.bindings]]
+name = "ENGINE_COORDINATOR"
+class_name = "EngineCoordinator"
+script_name = "witnessos-api-router-prod"
+
+[[env.production.durable_objects.bindings]]
+name = "FORECAST_SESSION"
+class_name = "ForecastSession"
+script_name = "witnessos-api-router-prod"
+
+# Production Workflows (disabled - requires additional permissions)
+# [[env.production.workflows]]
+# name = "CONSCIOUSNESS_WORKFLOW"
+# binding = "CONSCIOUSNESS_WORKFLOW"
+# class_name = "ConsciousnessWorkflow"
+
+# [[env.production.workflows]]
+# name = "INTEGRATION_WORKFLOW"
+# binding = "INTEGRATION_WORKFLOW"
+# class_name = "IntegrationWorkflow"
 
 [env.production.vars]
 ENVIRONMENT = "production"
+API_VERSION = "2.0"
+ENABLE_CACHING = "true"
 ENABLE_ANALYTICS = "true"
+CORS_ORIGIN = "*"
+RATE_LIMIT_MAX = "1000"
+RATE_LIMIT_WINDOW = "60000"

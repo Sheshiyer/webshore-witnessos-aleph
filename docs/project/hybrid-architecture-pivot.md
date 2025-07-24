@@ -22,7 +22,7 @@ User Request → Cloudflare Worker → TypeScript Engines (❌ Inaccurate) → R
 
 ### **New Hybrid Architecture**
 ```
-User Request → Cloudflare Worker → Render.com Python Engines (✅ Accurate) → Response
+User Request → Cloudflare Worker → Railway Python Engines (✅ Accurate) → Response
                 ↓
             Caching & Auth
 ```
@@ -39,7 +39,7 @@ User Request → Cloudflare Worker → Render.com Python Engines (✅ Accurate) 
 - **Rate Limiting & Security**
 - **Performance Monitoring**
 
-### **Render.com Services (Computation Layer)**
+### **Railway Services (Computation Layer)**
 - **All Consciousness Engine Calculations**
 - **Swiss Ephemeris Astronomical Data**
 - **Complex Algorithm Processing**
@@ -51,7 +51,7 @@ User Request → Cloudflare Worker → Render.com Python Engines (✅ Accurate) 
 ## **🔧 IMPLEMENTATION PHASES**
 
 ### **Phase 1: Core Proxy (Week 1-2)**
-- [ ] Create Render.com API endpoints for all engines
+- [ ] Create Railway API endpoints for all engines
 - [ ] Implement Cloudflare proxy worker
 - [ ] Basic request routing and response handling
 - [ ] Health check and monitoring endpoints
@@ -85,7 +85,7 @@ User Request → Cloudflare Worker → Render.com Python Engines (✅ Accurate) 
 
 ### **Immediate Actions**
 1. **Restructure Python engines** from `/docs/reference/python-engines/` to production-ready services
-2. **Deploy Render.com services** with proper API endpoints
+2. **Deploy Railway services** with proper API endpoints
 3. **Create Cloudflare proxy workers** for engine routing
 4. **Update project constants** and documentation
 
@@ -136,7 +136,7 @@ graph TB
     end
     
     %% Render.com Computation Layer
-    subgraph "🐍 Render.com Services (Python Engines)"
+    subgraph "🐍 Railway Services (Python Engines)"
         subgraph "Core Engines"
             HD[🧬 Human Design Engine]
             NUM[🔢 Numerology Engine]

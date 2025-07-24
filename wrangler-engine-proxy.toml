@@ -1,0 +1,72 @@
+# Engine Proxy Worker Configuration
+# Handles communication with Railway Python engines
+
+name = "witnessos-engine-proxy"
+main = "src/workers/engine-proxy-worker.ts"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespaces for caching
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Secrets (set via wrangler secret put)
+# RAILWAY_API_KEY
+
+# Development configuration
+[env.development]
+name = "witnessos-engine-proxy-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Staging configuration
+[env.staging]
+name = "witnessos-engine-proxy-staging"
+
+# Staging KV Namespaces
+[[env.staging.kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Production configuration
+[env.production]
+name = "witnessos-engine-proxy-prod"
+
+# Production KV Namespaces
+[[env.production.kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[env.production.kv_namespaces]]
+binding = "KV_ENGINE_DATA"
+id = "317be7d22ee14e51b1bed3d15145dd51"
+preview_id = "317be7d22ee14e51b1bed3d15145dd51"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"

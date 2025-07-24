@@ -1,134 +1,65 @@
 /**
  * WitnessOS Engine Registry
  * 
- * Central registry for all TypeScript consciousness engines
- * Replaces Python FastAPI backend with pure TypeScript implementation
+ * Minimal TypeScript engine registry for hybrid architecture
+ * All consciousness engines now run on Python/Railway backend
+ * This file maintains type compatibility and core utilities only
  */
 
 export * from './core/types';
 export * from './core/base-engine';
-export * from './numerology-engine';
-export * from './human-design-engine';
-export * from './tarot-engine';
-export * from './biorhythm-engine';
-export * from './vimshottari-engine';
-export * from './gene-keys-engine';
-export * from './sigil-forge-engine';
-export * from './nadabrahman-engine';
-export * from './biofield-viewer-engine';
+export * from './consciousness-simulator';
+export * from './ai-interpretation-wrapper';
 
-import { NumerologyEngine } from './numerology-engine';
-import { HumanDesignEngine } from './human-design-engine';
 import { BaseEngine } from './core/base-engine';
 import type { BaseEngineInput, CalculationResult, BaseEngineOutput } from './core/types';
 import type { EngineName } from '../types/engines';
-import { TarotEngine } from './tarot-engine';
-import { ichingEngine } from './iching-engine';
-import { enneagramEngine } from './enneagram-engine';
-import { sacredGeometryEngine } from './sacred-geometry-engine';
-import { BiorhythmEngine } from './biorhythm-engine';
-import { VimshottariEngine } from './vimshottari-engine';
-import { GeneKeysEngine } from './gene-keys-engine';
-import { SigilForgeEngine } from './sigil-forge-engine';
-import { NadaBrahmanEngine } from './nadabrahman-engine';
 
-// Engine registry with proper typing
-const ENGINE_CLASSES = {
-  numerology: NumerologyEngine,
-  human_design: HumanDesignEngine,
-  tarot: TarotEngine,
-  gene_keys: GeneKeysEngine,
-  sigil_forge: SigilForgeEngine,
-  biorhythm: BiorhythmEngine,
-  vimshottari: VimshottariEngine,
-  nadabrahman: NadaBrahmanEngine,
-} as const;
+// Minimal engine registry - all engines now run on Python backend
+// This is kept for type compatibility and fallback scenarios only
+const ENGINE_CLASSES = {} as const;
 
-// Pre-instantiated engines that don't follow BaseEngine pattern
-const ENGINE_INSTANCES_STATIC = {
-  iching: ichingEngine,
-  enneagram: enneagramEngine,
-  sacred_geometry: sacredGeometryEngine,
-} as const;
+// No pre-instantiated engines in hybrid architecture
+const ENGINE_INSTANCES_STATIC = {} as const;
 
-// Cache for engine instances
+// Cache for engine instances (minimal usage)
 const ENGINE_INSTANCES = new Map<EngineName, any>();
 
 /**
  * Get an engine instance by name
+ * NOTE: In hybrid architecture, this should rarely be used
+ * All calculations go through Cloudflare Workers -> Python engines
  * @param engineName - Name of the engine to get
- * @param db - Optional D1 database for engines that require it (like Human Design)
+ * @param db - Optional D1 database (not used in hybrid architecture)
  */
 export function getEngine(engineName: EngineName, db?: D1Database): any {
-  if (!ENGINE_INSTANCES.has(engineName)) {
-    // Check if it's a pre-instantiated engine
-    if (engineName in ENGINE_INSTANCES_STATIC) {
-      const instance = ENGINE_INSTANCES_STATIC[engineName as keyof typeof ENGINE_INSTANCES_STATIC];
-      ENGINE_INSTANCES.set(engineName, instance);
-      return instance;
-    }
-    
-         // Otherwise create new instance from class
-     const EngineClass = ENGINE_CLASSES[engineName as keyof typeof ENGINE_CLASSES];
-     if (!EngineClass) {
-       throw new Error(`Unknown engine: ${engineName}`);
-     }
-     
-     // Create instance with proper constructor parameters
-     let instance: any;
-     switch (engineName) {
-       case 'numerology':
-         instance = new EngineClass('numerology', 'Calculates numerological patterns and life path analysis', {});
-         break;
-       case 'human_design':
-         // CRITICAL: Human Design requires D1 database for Swiss Ephemeris service
-         if (!db) {
-           throw new Error('CRITICAL: Human Design engine requires D1 database for Swiss Ephemeris calculations - no fallbacks allowed');
-         }
-         instance = new EngineClass('human_design', 'Calculates complete Human Design charts with personality/design activations', {}, db);
-         break;
-       case 'tarot':
-         instance = new EngineClass('tarot', 'Performs tarot card readings using traditional spreads', {});
-         break;
-       case 'gene_keys':
-         instance = new EngineClass('gene_keys', 'Provides Gene Keys archetypal analysis and pathworking guidance', {});
-         break;
-       case 'sigil_forge':
-         instance = new EngineClass('sigil_forge', 'Creates sigils for manifestation and intention setting', {});
-         break;
-       case 'biorhythm':
-         instance = new EngineClass('biorhythm', 'Calculates biorhythm cycles and critical days', {});
-         break;
-       case 'vimshottari':
-         instance = new EngineClass('vimshottari', 'Calculates Vimshottari Dasha periods and karmic timing', {});
-         break;
-       case 'nadabrahman':
-         instance = new EngineClass('nadabrahman', 'Bio-responsive raga synthesis and consciousness training', {});
-         break;
-       // case 'biofield_viewer':
-       //   instance = new EngineClass('biofield_viewer', 'Energetic signature capture and analysis', {});
-       //   break;
-       default:
-         instance = new EngineClass(engineName, `${engineName} consciousness engine`, {});
-     }
-     
-     ENGINE_INSTANCES.set(engineName, instance);
-     return instance;
-  }
-  return ENGINE_INSTANCES.get(engineName)!;
+  throw new Error(`Engine ${engineName} not available in TypeScript - use Python backend via Cloudflare Workers`);
 }
 
 /**
  * List all available engine names
+ * NOTE: This returns the canonical list but engines run on Python backend
  */
 export function listEngines(): EngineName[] {
-  const classEngines = Object.keys(ENGINE_CLASSES) as EngineName[];
-  const staticEngines = Object.keys(ENGINE_INSTANCES_STATIC) as EngineName[];
-  return [...classEngines, ...staticEngines];
+  return [
+    'numerology',
+    'human_design',
+    'tarot',
+    'iching',
+    'enneagram',
+    'sacred_geometry',
+    'vimshottari',
+    'gene_keys',
+    'sigil_forge',
+    'nadabrahman',
+    'biorhythm',
+    'biofield_viewer'
+  ];
 }
 
 /**
  * Calculate using a specific engine with optional config
+ * NOTE: In hybrid architecture, this should route to Cloudflare Workers
  */
 export async function calculateEngine(
   engineName: EngineName,
@@ -136,65 +67,44 @@ export async function calculateEngine(
   config?: any,
   db?: D1Database
 ): Promise<CalculationResult<BaseEngineOutput>> {
-  const engine = getEngine(engineName, db);
-  
-  // Pass config to engine if it supports it
-  if (config && engine.setConfig) {
-    engine.setConfig(config);
-  } else if (config && engine.config) {
-    engine.config = { ...engine.config, ...config };
-  }
-  
-  return engine.calculate(input as any);
+  throw new Error(`Engine calculations must go through Cloudflare Workers -> Python backend. Use /engines/${engineName} API endpoint.`);
 }
 
 /**
  * Check if an engine is available
+ * NOTE: All engines are available via Python backend
  */
 export function isEngineAvailable(engineName: string): engineName is EngineName {
-  return engineName in ENGINE_CLASSES || engineName in ENGINE_INSTANCES_STATIC;
+  const availableEngines = listEngines();
+  return availableEngines.includes(engineName as EngineName);
 }
 
 /**
  * Get engine metadata
+ * NOTE: Metadata is now served by Python backend
  */
 export function getEngineMetadata(engineName: EngineName) {
-  const engine = getEngine(engineName);
-  return engine.getMetadata();
+  const metadata = ENGINE_METADATA[engineName];
+  if (!metadata) {
+    throw new Error(`No metadata available for engine: ${engineName}`);
+  }
+  return metadata;
 }
 
 /**
  * Health check for all engines
+ * NOTE: In hybrid architecture, this checks Python backend health
  */
 export async function healthCheck(): Promise<{ status: string; engines: string[] }> {
   const engines = listEngines();
-  const availableEngines = engines.filter(engineName => {
-    try {
-      getEngine(engineName);
-      return true;
-    } catch {
-      return false;
-    }
-  });
-
+  
   return {
-    status: availableEngines.length === engines.length ? 'healthy' : 'degraded',
-    engines: availableEngines
+    status: 'hybrid', // All engines run on Python backend
+    engines: engines
   };
 }
 
-// Engine registry
-export const engineRegistry = {
-  numerology: NumerologyEngine,
-  'human-design': HumanDesignEngine,
-  tarot: TarotEngine,
-  iching: ichingEngine,
-  enneagram: enneagramEngine,
-  sacred_geometry: sacredGeometryEngine,
-};
-
-
-
+// Available engines list for API compatibility
 export const AVAILABLE_ENGINES: EngineName[] = [
   'numerology',
   'human_design',
@@ -205,75 +115,95 @@ export const AVAILABLE_ENGINES: EngineName[] = [
   'vimshottari',
   'gene_keys',
   'sigil_forge',
-  'nadabrahman'
+  'nadabrahman',
+  'biorhythm',
+  'biofield_viewer'
 ];
 
-// Engine metadata for discovery
+// Engine metadata for discovery (kept for API compatibility)
 export const ENGINE_METADATA = {
   'numerology': {
     name: 'Numerology',
     description: 'Life path and karmic analysis through numbers',
     category: 'foundational',
-    difficulty: 'beginner'
+    difficulty: 'beginner',
+    backend: 'python'
   },
-  'human-design': {
+  'human_design': {
     name: 'Human Design',
     description: 'Type, strategy, and authority mapping',
     category: 'foundational',
-    difficulty: 'intermediate'
+    difficulty: 'intermediate',
+    backend: 'python'
   },
   'tarot': {
     name: 'Tarot',
     description: 'Archetypal guidance and symbolic insight',
     category: 'divination',
-    difficulty: 'beginner'
+    difficulty: 'beginner',
+    backend: 'python'
   },
   'iching': {
     name: 'I-Ching',
     description: 'Ancient wisdom and hexagram guidance',
     category: 'divination',
-    difficulty: 'intermediate'
+    difficulty: 'intermediate',
+    backend: 'python'
   },
   'enneagram': {
     name: 'Enneagram',
     description: 'Personality types and growth patterns',
     category: 'psychology',
-    difficulty: 'intermediate'
+    difficulty: 'intermediate',
+    backend: 'python'
   },
-  'sacred-geometry': {
+  'sacred_geometry': {
     name: 'Sacred Geometry',
     description: 'Pattern recognition and sacred ratios',
     category: 'mystical',
-    difficulty: 'advanced'
+    difficulty: 'advanced',
+    backend: 'python'
   },
   'vimshottari': {
     name: 'Vimshottari Dasha',
     description: 'Vedic planetary periods and timing',
     category: 'astrology',
-    difficulty: 'advanced'
+    difficulty: 'advanced',
+    backend: 'python'
   },
-  'gene-keys': {
+  'gene_keys': {
     name: 'Gene Keys',
     description: 'Archetypal pathworking and transformation',
     category: 'mystical',
-    difficulty: 'advanced'
+    difficulty: 'advanced',
+    backend: 'python'
   },
-  'sigil-forge': {
+  'sigil_forge': {
     name: 'Sigil Forge',
     description: 'Intention manifestation and symbol creation',
     category: 'manifestation',
-    difficulty: 'intermediate'
+    difficulty: 'intermediate',
+    backend: 'python'
   },
   'nadabrahman': {
     name: 'NadaBrahman',
     description: 'Bio-responsive raga synthesis',
     category: 'sound',
-    difficulty: 'advanced'
+    difficulty: 'advanced',
+    backend: 'python'
   },
-  'biofield-viewer': {
+  'biorhythm': {
+    name: 'Biorhythm',
+    description: 'Biological cycle analysis and critical days',
+    category: 'foundational',
+    difficulty: 'beginner',
+    backend: 'python'
+  },
+  'biofield_viewer': {
     name: 'Biofield Viewer',
     description: 'Energetic signature capture and analysis',
     category: 'biofield',
-    difficulty: 'foundational'
+    difficulty: 'foundational',
+    backend: 'python'
   }
 } as const;

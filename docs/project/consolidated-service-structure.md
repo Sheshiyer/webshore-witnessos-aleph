@@ -6,7 +6,7 @@
 witnessos-engines/
 ├── app.py                          # Main FastAPI application
 ├── requirements.txt                # All dependencies
-├── render.yaml                     # Deployment configuration
+├── railway.toml                    # Deployment configuration
 ├── Dockerfile                      # Optional containerization
 ├── .env.example                    # Environment variables template
 ├── 
@@ -120,7 +120,7 @@ witnessos-engines/
 ```python
 """
 Integrated Swiss Ephemeris Service for WitnessOS Consolidated Engine
-Combines the existing Render.com Swiss Ephemeris service with direct pyswisseph integration
+Combines the existing Railway Swiss Ephemeris service with direct pyswisseph integration
 """
 
 import swisseph as swe

@@ -19,13 +19,27 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import Swiss Ephemeris service
 from swiss_ephemeris.ephemeris import SwissEphemerisService
 
-# Import proven consciousness engines
+# Import all consciousness engines
 from engines.human_design import HumanDesignScanner
 from engines.human_design_models import HumanDesignInput
 from engines.numerology import NumerologyEngine
 from engines.numerology_models import NumerologyInput
 from engines.biorhythm import BiorhythmEngine
 from engines.biorhythm_models import BiorhythmInput
+from engines.vimshottari import VimshottariTimelineMapper
+from engines.vimshottari_models import VimshottariInput
+from engines.tarot import TarotSequenceDecoder
+from engines.tarot_models import TarotInput
+from engines.iching import IChingMutationOracle
+from engines.iching_models import IChingInput
+from engines.gene_keys import GeneKeysCompass
+from engines.gene_keys_models import GeneKeysInput
+from engines.enneagram import EnneagramResonator
+from engines.enneagram_models import EnneagramInput
+from engines.sacred_geometry import SacredGeometryMapper
+from engines.sacred_geometry_models import SacredGeometryInput
+from engines.sigil_forge import SigilForgeSynthesizer
+from engines.sigil_forge_models import SigilForgeInput
 
 # Configure logging
 logging.basicConfig(
@@ -73,13 +87,19 @@ async def startup_event():
         test_result = swiss_ephemeris.test_admin_user_calculation()
         logger.info(f"🎯 Test completed - Personality Sun: Gate {test_result['personality']['SUN']['human_design_gate']['gate']}.{test_result['personality']['SUN']['human_design_gate']['line']}")
         
-        # Initialize proven consciousness engines
-        logger.info("🔧 Initializing proven consciousness engines...")
+        # Initialize all consciousness engines
+        logger.info("🔧 Initializing all consciousness engines...")
         engines = {
             "human_design": HumanDesignScanner(),
             "numerology": NumerologyEngine(),
             "biorhythm": BiorhythmEngine(),
-            # Additional engines will be added as needed
+            "vimshottari": VimshottariTimelineMapper(),
+            "tarot": TarotSequenceDecoder(),
+            "iching": IChingMutationOracle(),
+            "gene_keys": GeneKeysCompass(),
+            "enneagram": EnneagramResonator(),
+            "sacred_geometry": SacredGeometryMapper(),
+            "sigil_forge": SigilForgeSynthesizer(),
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
@@ -164,9 +184,9 @@ async def test_admin_user():
         swiss_result = swiss_ephemeris.test_admin_user_calculation()
 
         # Test Human Design engine with admin user data
-        from datetime import date, time as dt_time
+        from datetime import date as date_class, time as dt_time
         admin_input = HumanDesignInput(
-            birth_date=date(1991, 8, 13),
+            birth_date=date_class(1991, 8, 13),
             birth_time=dt_time(13, 31, 0),  # 13:31 local time (08:01 UTC)
             birth_location=(12.9716, 77.5946),  # Bengaluru, India
             timezone="Asia/Kolkata"
@@ -217,10 +237,11 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
         logger.info(f"🔮 Running {engine_name} calculation with proven engine")
 
         # Create appropriate input model based on engine
+        from datetime import date as date_class, time as dt_time
+        
         if engine_name == "human_design":
-            from datetime import date, time as dt_time
             input_obj = HumanDesignInput(
-                birth_date=date.fromisoformat(request.input["birth_date"]),
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
                 birth_time=dt_time.fromisoformat(request.input["birth_time"]),
                 birth_location=tuple(request.input["birth_location"]),
                 timezone=request.input.get("timezone", "UTC")
@@ -228,12 +249,55 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
         elif engine_name == "numerology":
             input_obj = NumerologyInput(
                 full_name=request.input["full_name"],
-                birth_date=date.fromisoformat(request.input["birth_date"])
+                birth_date=date_class.fromisoformat(request.input["birth_date"])
             )
         elif engine_name == "biorhythm":
             input_obj = BiorhythmInput(
-                birth_date=date.fromisoformat(request.input["birth_date"]),
-                target_date=date.fromisoformat(request.input.get("target_date", datetime.now().date().isoformat()))
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                target_date=date_class.fromisoformat(request.input.get("target_date", datetime.now().date().isoformat()))
+            )
+        elif engine_name == "vimshottari":
+            input_obj = VimshottariInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
+                timezone=request.input.get("timezone", "UTC")
+            )
+        elif engine_name == "tarot":
+            input_obj = TarotInput(
+                question=request.input["question"],
+                spread_type=request.input.get("spread_type", "three_card"),
+                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+            )
+        elif engine_name == "iching":
+            input_obj = IChingInput(
+                question=request.input["question"],
+                method=request.input.get("method", "coins"),
+                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+            )
+        elif engine_name == "gene_keys":
+            input_obj = GeneKeysInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
+                timezone=request.input.get("timezone", "UTC")
+            )
+        elif engine_name == "enneagram":
+            input_obj = EnneagramInput(
+                responses=request.input["responses"],
+                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+            )
+        elif engine_name == "sacred_geometry":
+            input_obj = SacredGeometryInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                full_name=request.input["full_name"],
+                birth_location=tuple(request.input.get("birth_location", (0, 0)))
+            )
+        elif engine_name == "sigil_forge":
+            input_obj = SigilForgeInput(
+                intention=request.input["intention"],
+                method=request.input.get("method", "traditional"),
+                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
             )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")

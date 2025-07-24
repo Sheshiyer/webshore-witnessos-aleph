@@ -1240,13 +1240,13 @@ export class WitnessOSAPIHandler {
     // Create guidance object
     const guidance: ForecastGuidance = {
       iching: ichingResult ? {
-        hexagram: ichingResult.hexagram,
-        interpretation: ichingResult.interpretation || ichingResult.meaning,
-        changingLines: ichingResult.changingLines
-      } : undefined,
+              hexagram: ichingResult.data?.rawData?.hexagram || ichingResult.data?.hexagram,
+              interpretation: ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput,
+              changingLines: ichingResult.data?.rawData?.changingLines || ichingResult.data?.changingLines
+            } : undefined,
       tarot: tarotResult ? {
-        card: tarotResult.card,
-        interpretation: tarotResult.interpretation || tarotResult.meaning,
+         card: tarotResult.data?.rawData?.card || tarotResult.data?.card,
+              interpretation: tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput,
         focusArea: 'daily_guidance'
       } : undefined,
       synthesis,
@@ -1707,11 +1707,11 @@ export class WitnessOSAPIHandler {
     }
 
     if (ichingResult) {
-      synthesis += `🔮 I-Ching Guidance: ${ichingResult.interpretation || ichingResult.meaning || 'Ancient wisdom for the day'}\n`;
+      synthesis += `🔮 I-Ching Guidance: ${ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput || 'Ancient wisdom for the day'}\n`;
     }
 
     if (tarotResult) {
-      synthesis += `🃏 Tarot Insight: ${tarotResult.interpretation || tarotResult.meaning || 'Intuitive guidance for daily focus'}\n`;
+      synthesis += `🃏 Tarot Insight: ${tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput || 'Intuitive guidance for daily focus'}\n`;
     }
 
     synthesis += `\n✨ This enhanced forecast combines biorhythm cycles, ancient wisdom, and predictive analytics to provide comprehensive daily guidance.`;
@@ -2832,13 +2832,13 @@ export class WitnessOSAPIHandler {
           energyProfile,
           guidance: {
             iching: ichingResult ? {
-              hexagram: ichingResult.hexagram,
-              interpretation: ichingResult.interpretation || ichingResult.meaning,
-              changingLines: ichingResult.changingLines
+              hexagram: ichingResult.data?.rawData?.hexagram || ichingResult.data?.hexagram,
+              interpretation: ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput,
+              changingLines: ichingResult.data?.rawData?.changingLines || ichingResult.data?.changingLines
             } : undefined,
             tarot: tarotResult ? {
-              card: tarotResult.card,
-              interpretation: tarotResult.interpretation || tarotResult.meaning,
+              card: tarotResult.data?.rawData?.card || tarotResult.data?.card,
+              interpretation: tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput,
               focusArea: 'daily_guidance'
             } : undefined,
             synthesis,
@@ -3611,12 +3611,14 @@ export class WitnessOSAPIHandler {
       synthesis += `Energy Profile: ${biorhythmResult.overall_energy > 50 ? 'High energy day' : biorhythmResult.overall_energy > 0 ? 'Moderate energy' : 'Low energy, focus on rest'}.\n`;
     }
 
-    if (ichingResult && ichingResult.interpretation) {
-      synthesis += `I-Ching Wisdom: ${ichingResult.interpretation.guidance || ichingResult.interpretation.judgment}\n`;
+    if (ichingResult && (ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput)) {
+       const interpretation = ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput;
+       synthesis += `I-Ching Wisdom: ${typeof interpretation === 'object' ? interpretation.guidance || interpretation.judgment : interpretation}\n`;
     }
 
-    if (tarotResult && tarotResult.interpretation) {
-      synthesis += `Tarot Insight: ${tarotResult.interpretation.overall_message || tarotResult.interpretation.detailed_interpretation}`;
+    if (tarotResult && (tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput)) {
+        const interpretation = tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput;
+        synthesis += `Tarot Insight: ${typeof interpretation === 'object' ? interpretation.overall_message || interpretation.detailed_interpretation : interpretation}`;
     }
 
     return synthesis;

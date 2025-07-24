@@ -19,6 +19,7 @@ build/
 # Cloudflare Workers
 .wrangler/
 wrangler.toml.backup
+wrangler-consolidation-analysis.md
 
 # IDE files
 .vscode/
@@ -106,4 +107,4 @@ scratch-*.ts
 
 # Consciousness data (sensitive)
 consciousness-profiles/
-user-data/ 
+user-data/
