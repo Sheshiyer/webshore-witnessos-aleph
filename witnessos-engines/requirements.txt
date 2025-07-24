@@ -10,3 +10,5 @@ requests==2.31.0
 pyswisseph==2.10.03.2
 # NumPy - latest stable version
 numpy>=1.24.0,<2.0.0
+# Matplotlib for sacred geometry visualizations
+matplotlib>=3.7.0,<4.0.0
