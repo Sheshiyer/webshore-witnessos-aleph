@@ -106,10 +106,38 @@ Systematic removal of deprecated TypeScript consciousness engines from src/engin
 - **Dependencies Resolved**: Installed missing packages (pyswisseph, matplotlib, numpy, pillow)
 - **Next Dependencies**: Update API documentation for new engine endpoints
 
+### [2025-01-28] Birth Location Validation Fix: Coordinate-Only Input System
+- **Outcome**: Successfully removed geocoding dependency and enforced coordinate-only input for all engines
+- **Breakthrough**: Eliminated string location parsing errors by requiring direct latitude/longitude coordinates
+- **Errors Fixed**: 
+  - Pydantic validation errors for string inputs like "Bangalore, India"
+  - "too many values to unpack (expected 2)" errors from geocode_location function
+  - Tuple conversion issues in app.py causing character-by-character parsing
+- **Code Changes**:
+  - `witnessos-engines/engines/human_design_models.py` - Removed geocode_location function and location_map
+  - Updated HumanDesignInput.birth_location to strictly require Tuple[float, float]
+  - Removed field_validator that called geocoding for string inputs
+  - Previous app.py fixes already handled tuple() conversion removal
+- **Files Modified**: 
+  - `human_design_models.py` - Simplified birth_location validation to coordinates only
+  - Verified other engines (vimshottari, gene_keys) already used coordinate-only validation
+  - Confirmed sacred_geometry doesn't use birth_location
+- **Testing Verified**:
+  - Railway endpoint: `curl` with coordinates [12.9716, 77.5946] returns success: true
+  - Cloudflare Workers endpoint: Both proxy layers working correctly with coordinate inputs
+  - Vimshottari engine: Confirmed coordinate input compatibility
+- **User Experience**: Users now provide coordinates directly instead of city names, ensuring consistent global location support
+- **Next Dependencies**: Update API documentation to reflect coordinate-only input requirements
+
 ## Key Breakthroughs
 - **Hybrid Architecture Understanding**: Cloudflare Workers handle edge logic while Railway Python engines handle accurate calculations
 - **Python Engine Superiority**: 100% accurate results vs 60% TypeScript fallback accuracy
 - **Clean Separation**: Edge computing (Cloudflare) vs computation layer (Railway)
+- **Human Design Accuracy Validated**: Railway production deployment matches local validation results
+  - Type: Generator ✓
+  - Profile: 4/5 Opportunist/Heretic ✓
+  - Strategy: To Respond ✓
+  - Authority: Sacral Authority ✓
 
 ## Error Patterns & Solutions
 [Will be populated as issues are encountered]

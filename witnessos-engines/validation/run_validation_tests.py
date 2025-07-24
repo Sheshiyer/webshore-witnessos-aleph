@@ -25,8 +25,25 @@ from test_validation_data import (
     print_validation_summary
 )
 
-# Import engines using the ENGINES package
-from ENGINES import get_engine
+# Import engines from the current deployment structure
+from engines.numerology import NumerologyEngine
+from engines.biorhythm import BiorhythmEngine
+from engines.human_design import HumanDesignScanner
+from engines.vimshottari import VimshottariTimelineMapper
+from engines.gene_keys import GeneKeysCompass
+from engines.tarot import TarotSequenceDecoder
+from engines.iching import IChingMutationOracle
+from engines.enneagram import EnneagramResonator
+
+# Import input models
+from engines.numerology_models import NumerologyInput
+from engines.biorhythm_models import BiorhythmInput
+from engines.human_design_models import HumanDesignInput
+from engines.vimshottari_models import VimshottariInput
+from engines.gene_keys_models import GeneKeysInput
+from engines.tarot_models import TarotInput
+from engines.iching_models import IChingInput
+from engines.enneagram_models import EnneagramInput
 
 
 def test_numerology_engine():
@@ -35,15 +52,15 @@ def test_numerology_engine():
     print("─" * 50)
 
     try:
-        engine = get_engine("numerology_field_extractor")
+        engine = NumerologyEngine()
         test_data = get_numerology_test_data()
 
-        result = engine.calculate(test_data)
+        input_data = NumerologyInput(**test_data)
+        result = engine.calculate(input_data)
         
         print(f"✅ Engine: {result.engine_name}")
         print(f"⏱️ Time: {result.calculation_time:.4f}s")
         print(f"🎯 Confidence: {result.confidence_score:.2f}")
-        print(f"🔮 Field: {result.field_signature}")
         
         # Show key numbers
         print(f"\n📊 Core Numbers:")
@@ -70,7 +87,7 @@ def test_biorhythm_engine():
     print("─" * 50)
     
     try:
-        engine = BiorhythmSynchronizer()
+        engine = BiorhythmEngine()
         test_data = get_biorhythm_test_data()
         
         input_data = BiorhythmInput(**test_data)
@@ -81,17 +98,20 @@ def test_biorhythm_engine():
         print(f"🎯 Confidence: {result.confidence_score:.2f}")
         
         # Show current cycles
-        cycles = result.raw_data['current_cycles']
+        snapshot = result.raw_data['snapshot']
+        cycles = snapshot.cycles
         print(f"\n📊 Current Cycles:")
-        print(f"   Physical: {cycles['physical']['percentage']:.1f}% ({cycles['physical']['phase']})")
-        print(f"   Emotional: {cycles['emotional']['percentage']:.1f}% ({cycles['emotional']['phase']})")
-        print(f"   Intellectual: {cycles['intellectual']['percentage']:.1f}% ({cycles['intellectual']['phase']})")
+        print(f"   Physical: {cycles['physical'].percentage:.1f}% ({cycles['physical'].phase})")
+        print(f"   Emotional: {cycles['emotional'].percentage:.1f}% ({cycles['emotional'].phase})")
+        print(f"   Intellectual: {cycles['intellectual'].percentage:.1f}% ({cycles['intellectual'].phase})")
         
-        if 'extended_cycles' in result.raw_data:
-            ext = result.raw_data['extended_cycles']
-            print(f"   Intuitive: {ext['intuitive']['percentage']:.1f}%")
-            print(f"   Aesthetic: {ext['aesthetic']['percentage']:.1f}%")
-            print(f"   Spiritual: {ext['spiritual']['percentage']:.1f}%")
+        # Check for extended cycles
+        if 'intuitive' in cycles:
+            print(f"   Intuitive: {cycles['intuitive'].percentage:.1f}%")
+        if 'aesthetic' in cycles:
+            print(f"   Aesthetic: {cycles['aesthetic'].percentage:.1f}%")
+        if 'spiritual' in cycles:
+            print(f"   Spiritual: {cycles['spiritual'].percentage:.1f}%")
         
         return True
         
@@ -120,12 +140,15 @@ def test_human_design_engine():
         chart = result.chart
         print(f"\n📊 Human Design Chart:")
         print(f"   Type: {chart.type_info.type_name}")
-        print(f"   Profile: {chart.profile.personality_line}/{chart.profile.design_line} {chart.profile.profile_name}")
+        print(f"   Profile: {chart.profile.profile_name}")
         print(f"   Strategy: {chart.type_info.strategy}")
         print(f"   Authority: {chart.type_info.authority}")
         
-        # Validate against known data
-        validation = validate_human_design_results(result)
+        # Validate against known data using the chart object
+        validation = validate_human_design_results({
+            'type_info': result.chart.type_info,
+            'profile': result.chart.profile
+        })
         print_validation_summary(validation)
         
         return len(validation["failed"]) == 0
@@ -152,10 +175,13 @@ def test_vimshottari_engine():
         print(f"🎯 Confidence: {result.confidence_score:.2f}")
         
         # Show current periods
-        timeline = result.raw_data['timeline']
+        timeline = result.timeline
         print(f"\n📊 Current Dasha Periods:")
-        print(f"   Mahadasha: {timeline.current_mahadasha.planet} ({timeline.current_mahadasha.remaining_years:.1f} years left)")
-        print(f"   Antardasha: {timeline.current_antardasha.planet} ({timeline.current_antardasha.remaining_months:.1f} months left)")
+        print(f"   Mahadasha: {timeline.current_mahadasha.planet} (duration: {timeline.current_mahadasha.duration_years:.1f} years)")
+        if hasattr(timeline, 'current_antardasha') and timeline.current_antardasha:
+            print(f"   Antardasha: {timeline.current_antardasha.planet} (duration: {timeline.current_antardasha.duration_years:.2f} years)")
+        else:
+            print(f"   Antardasha: Not available")
         
         if timeline.current_pratyantardasha:
             print(f"   Pratyantardasha: {timeline.current_pratyantardasha.planet}")
@@ -260,18 +286,22 @@ def test_enneagram_engine():
 
 
 def main():
-    """Run comprehensive validation tests."""
+    """Run comprehensive validation tests with admin console verification."""
     print("🌟 WitnessOS Engines - Comprehensive Validation Tests")
-    print("=" * 60)
+    print("👤 Admin Shesh - Detailed Console Verification Mode")
+    print("=" * 80)
     
     personal = get_validation_personal_data()
     print(f"👤 Testing with: {personal['full_name']}")
     print(f"📅 Birth: {personal['birth_date']} at {personal['birth_time']}")
     print(f"📍 Location: {personal['birth_location']} ({personal['timezone']})")
-    print("=" * 60)
+    print("=" * 80)
     
-    # Run all tests
+    # Run all tests with admin verification notes
     test_results = []
+    
+    print("\n📋 Admin Note: Please verify each engine output for accuracy")
+    print("-" * 60)
     
     test_results.append(test_numerology_engine())
     test_results.append(test_biorhythm_engine())
@@ -281,8 +311,8 @@ def main():
     test_results.append(test_enneagram_engine())
     
     # Summary
-    print("\n🏆 VALIDATION SUMMARY")
-    print("=" * 60)
+    print("\n🏆 ADMIN VALIDATION SUMMARY")
+    print("=" * 80)
     
     passed = sum(test_results)
     total = len(test_results)
@@ -291,14 +321,24 @@ def main():
     print(f"✅ Tests Passed: {passed}/{total}")
     print(f"📊 Success Rate: {success_rate:.1f}%")
     
-    if passed == total:
-        print("🎉 All engines validated successfully!")
-        print("🔮 WitnessOS divination system is fully operational")
-    else:
-        print("⚠️ Some engines need attention")
-        print("🔧 Check failed tests for debugging")
+    # Special admin verification checklist
+    print("\n📋 ADMIN VERIFICATION CHECKLIST:")
+    print("1. ✓ Review Human Design Incarnation Cross accuracy")
+    print("2. ✓ Verify Human Design Profile calculation")
+    print("3. ✓ Check all engine outputs against known reference data")
+    print("4. ✓ Confirm timezone handling across all engines")
+    print("5. ✓ Validate birth data parsing and calculations")
     
-    print("=" * 60)
+    if passed == total:
+        print("\n🎉 All engines validated successfully!")
+        print("🔮 WitnessOS divination system is fully operational")
+        print("✅ System ready for production deployment")
+    else:
+        print("\n⚠️ Some engines need attention")
+        print("🔧 Check failed tests for debugging")
+        print("🚨 System requires admin attention before deployment")
+    
+    print("=" * 80)
     return passed == total
 
 

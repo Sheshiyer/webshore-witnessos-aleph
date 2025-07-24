@@ -1,8 +1,35 @@
 /**
  * Swiss Ephemeris Service for WitnessOS
- * Integrates with Render.com astronomical service for 100% accurate calculations
+ * Integrates with Railway astronomical service for 100% accurate calculations
  * Replaces all JavaScript VSOP87 approximations with professional-grade Swiss Ephemeris
  */
+
+// Cloudflare D1 Database type definitions
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  dump(): Promise<ArrayBuffer>;
+  batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
+  exec(query: string): Promise<D1ExecResult>;
+}
+
+interface D1PreparedStatement {
+  bind(...values: any[]): D1PreparedStatement;
+  first(): Promise<any>;
+  run(): Promise<D1Result>;
+  all(): Promise<D1Result>;
+}
+
+interface D1Result {
+  results?: any[];
+  success: boolean;
+  error?: string;
+  meta: any;
+}
+
+interface D1ExecResult {
+  count: number;
+  duration: number;
+}
 
 export interface SwissEphemerisPosition {
   longitude: number;
@@ -42,14 +69,14 @@ export class SwissEphemerisService {
 
   constructor(db: D1Database, serviceUrl?: string) {
     this.db = db;
-    // Use the deployed Render service URL
-    this.serviceUrl = serviceUrl || 'https://witnessos-astronomical-service.onrender.com';
+    // Use the deployed Railway service URL
+    this.serviceUrl = serviceUrl || 'https://webshore-witnessos-aleph-production.up.railway.app';
   }
 
   /**
    * Get accurate planetary positions using Swiss Ephemeris
    * This is the REAL astronomical calculation that replaces all approximations
-   * Handles Render.com free tier cold starts with robust retry logic
+   * Handles Railway service cold starts with robust retry logic
    */
   async getAccuratePlanetaryPositions(
     birthDate: Date,
@@ -68,7 +95,8 @@ export class SwissEphemerisService {
 
     // Format date and time for Swiss Ephemeris service
     const birthDateStr = birthDate.toISOString().split('T')[0]; // "1991-08-13"
-    const birthTimeStr = birthDate.toISOString().split('T')[1].substring(0, 5); // "08:01"
+    const timePart = birthDate.toISOString().split('T')[1];
+    const birthTimeStr = timePart ? timePart.substring(0, 5) : '00:00'; // "08:01"
 
     const requestData = {
       birth_date: birthDateStr,
@@ -81,12 +109,12 @@ export class SwissEphemerisService {
     console.log('📡 Calling Swiss Ephemeris service:', this.serviceUrl);
     console.log('📊 Request data:', requestData);
 
-    // Robust API call with retries for Render.com free tier cold starts
+    // Robust API call with retries for Railway service cold starts
     const astronomicalData = await this.callSwissEphemerisWithRetries(requestData);
 
     console.log('✅ Swiss Ephemeris calculation successful');
-    console.log(`🌟 Personality Sun: Gate ${astronomicalData.personality.SUN.human_design_gate.gate}.${astronomicalData.personality.SUN.human_design_gate.line}`);
-    console.log(`🌙 Design Sun: Gate ${astronomicalData.design.SUN.human_design_gate.gate}.${astronomicalData.design.SUN.human_design_gate.line}`);
+    console.log(`🌟 Personality Sun: Gate ${astronomicalData.personality?.SUN?.human_design_gate?.gate}.${astronomicalData.personality?.SUN?.human_design_gate?.line}`);
+    console.log(`🌙 Design Sun: Gate ${astronomicalData.design?.SUN?.human_design_gate?.gate}.${astronomicalData.design?.SUN?.human_design_gate?.line}`);
 
     // Cache the results for future use
     await this.cachePositions(birthDate, latitude, longitude, astronomicalData);
@@ -95,7 +123,7 @@ export class SwissEphemerisService {
   }
 
   /**
-   * Call Swiss Ephemeris service with robust retry logic for Render.com free tier
+   * Call Swiss Ephemeris service with robust retry logic for Railway service
    * Handles cold starts that can take 50+ seconds
    */
   private async callSwissEphemerisWithRetries(requestData: any): Promise<SwissEphemerisResponse> {
@@ -104,7 +132,7 @@ export class SwissEphemerisService {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        console.log(`🔄 Swiss Ephemeris attempt ${attempt + 1}/${maxRetries} (timeout: ${timeouts[attempt]/1000}s)`);
+        console.log(`🔄 Swiss Ephemeris attempt ${attempt + 1}/${maxRetries} (timeout: ${(timeouts[attempt] || 60000)/1000}s)`);
 
         // Create AbortController for timeout
         const controller = new AbortController();
@@ -140,7 +168,7 @@ export class SwissEphemerisService {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
         if (errorMessage.includes('aborted')) {
-          console.warn(`⏰ Swiss Ephemeris timeout on attempt ${attempt + 1} (${timeouts[attempt]/1000}s)`);
+          console.warn(`⏰ Swiss Ephemeris timeout on attempt ${attempt + 1} (${(timeouts[attempt] || 60000)/1000}s)`);
         } else {
           console.warn(`⚠️ Swiss Ephemeris error on attempt ${attempt + 1}: ${errorMessage}`);
         }
@@ -182,8 +210,8 @@ export class SwissEphemerisService {
       const testResult: SwissEphemerisResponse = await response.json();
       
       console.log('🎯 Test Results:');
-      console.log(`Personality Sun: Gate ${testResult.personality.SUN.human_design_gate.gate}.${testResult.personality.SUN.human_design_gate.line}`);
-      console.log(`Design Sun: Gate ${testResult.design.SUN.human_design_gate.gate}.${testResult.design.SUN.human_design_gate.line}`);
+      console.log(`Personality Sun: Gate ${testResult.personality?.SUN?.human_design_gate?.gate}.${testResult.personality?.SUN?.human_design_gate?.line}`);
+      console.log(`Design Sun: Gate ${testResult.design?.SUN?.human_design_gate?.gate}.${testResult.design?.SUN?.human_design_gate?.line}`);
       
       return testResult;
 
@@ -230,19 +258,21 @@ export class SwissEphemerisService {
     try {
       const cacheKey = this.getCacheKey(birthDate, latitude, longitude);
       
-      await this.db.prepare(`
-        INSERT OR REPLACE INTO swiss_ephemeris_cache 
-        (cache_key, birth_date, birth_time, latitude, longitude, data, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        cacheKey,
-        data.birth_data.date,
-        data.birth_data.time,
-        latitude,
-        longitude,
-        JSON.stringify(data),
-        new Date().toISOString()
-      ).run();
+      if (this.db) {
+        await this.db.prepare(`
+          INSERT OR REPLACE INTO swiss_ephemeris_cache 
+          (cache_key, birth_date, birth_time, latitude, longitude, data, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          cacheKey,
+          data.birth_data.date,
+          data.birth_data.time,
+          latitude,
+          longitude,
+          JSON.stringify(data),
+          new Date().toISOString()
+        ).run();
+      }
 
       console.log('💾 Swiss Ephemeris data cached successfully');
     } catch (error) {
@@ -262,12 +292,13 @@ export class SwissEphemerisService {
     try {
       const cacheKey = this.getCacheKey(birthDate, latitude, longitude);
       
-      const result = await this.db.prepare(`
+      const result = this.db ? await this.db.prepare(`
         SELECT data FROM swiss_ephemeris_cache 
         WHERE cache_key = ? AND created_at > datetime('now', '-30 days')
-      `).bind(cacheKey).first();
+      `).bind(cacheKey).first() : null;
 
-      if (result) {
+      if (result?.data) {
+        console.log('💾 Cache hit for Swiss Ephemeris data');
         return JSON.parse(result.data as string);
       }
 
@@ -283,7 +314,8 @@ export class SwissEphemerisService {
    */
   private getCacheKey(birthDate: Date, latitude: number, longitude: number): string {
     const dateStr = birthDate.toISOString().split('T')[0];
-    const timeStr = birthDate.toISOString().split('T')[1].substring(0, 5);
+    const timePart = birthDate.toISOString().split('T')[1];
+    const timeStr = timePart ? timePart.substring(0, 5) : '00:00';
     const latStr = latitude.toFixed(4);
     const lonStr = longitude.toFixed(4);
     
@@ -295,23 +327,25 @@ export class SwissEphemerisService {
    */
   async initializeCache(): Promise<void> {
     try {
-      await this.db.prepare(`
-        CREATE TABLE IF NOT EXISTS swiss_ephemeris_cache (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          cache_key TEXT UNIQUE NOT NULL,
-          birth_date TEXT NOT NULL,
-          birth_time TEXT NOT NULL,
-          latitude REAL NOT NULL,
-          longitude REAL NOT NULL,
-          data TEXT NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
+      if (this.db) {
+        await this.db.prepare(`
+          CREATE TABLE IF NOT EXISTS swiss_ephemeris_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cache_key TEXT UNIQUE NOT NULL,
+            birth_date TEXT NOT NULL,
+            birth_time TEXT NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            data TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `).run();
 
-      // Create index for faster lookups
-      await this.db.prepare(`
-        CREATE INDEX IF NOT EXISTS idx_cache_key ON swiss_ephemeris_cache(cache_key)
-      `).run();
+        // Create index for faster lookups
+        await this.db.prepare(`
+          CREATE INDEX IF NOT EXISTS idx_cache_key ON swiss_ephemeris_cache(cache_key)
+        `).run();
+      }
 
       console.log('✅ Swiss Ephemeris cache initialized');
     } catch (error) {

@@ -147,8 +147,9 @@ class HumanDesignScanner(BaseEngine):
                 birth_datetime, lat, lon, validated_input.timezone
             )
 
-        # Calculate design datetime (88 days before birth) - needed for both formats
-        design_datetime = birth_datetime - timedelta(days=88)
+        # Note: AstrologyCalculator already handles design time calculation using proper 88-degree solar arc
+        # The design_datetime from hd_data is already calculated correctly
+        design_datetime = hd_data.get('design_datetime', birth_datetime - timedelta(days=88))
 
         # Process personality gates - handle both Swiss Ephemeris and AstrologyCalculator formats
         if 'personality' in hd_data:  # Swiss Ephemeris format
@@ -228,11 +229,9 @@ class HumanDesignScanner(BaseEngine):
 
         for planet, gate_num in gate_numbers.items():
             if gate_num in self.gate_data:
-                # Calculate line, color, tone, base from position
-                # Handle Earth specially (opposite of Sun)
-                if planet == 'earth' and 'sun' in positions:
-                    longitude = (positions['sun']['longitude'] + 180) % 360
-                elif planet in positions:
+                # Use the longitude from positions (already calculated with proper offsets)
+                # Do NOT recalculate Earth longitude here - it's already correct from astrology calculator
+                if planet in positions:
                     longitude = positions[planet]['longitude']
                 else:
                     continue  # Skip if no position data available
@@ -491,7 +490,7 @@ class HumanDesignScanner(BaseEngine):
         try:
             import json
             import os
-            data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'human_design', 'incarnation_crosses.json')
+            data_path = os.path.join(os.path.dirname(__file__), '..', 'shared', 'data', 'human_design', 'incarnation_crosses.json')
             with open(data_path, 'r') as f:
                 crosses_data = json.load(f)
 

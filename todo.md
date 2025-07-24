@@ -6,7 +6,6 @@
 - [ ] Update API documentation for new engine endpoints
 - [ ] Update project constants with Railway production URL: webshore-witnessos-aleph-production.up.railway.app
 - [ ] Restructure /docs/reference/python-engines/ to production services
-- [ ] Test Human Design engine accuracy with Railway deployment
 - [ ] Update project constants to reflect Railway architecture
 - [ ] Fix remaining TypeScript compilation errors (600+ errors across multiple files)
 - [ ] Update type definitions and imports throughout the codebase
@@ -18,6 +17,8 @@
 - [ ] Update documentation to reflect Python-only engine architecture
 ## Completed (move to memory.md)
 - [x] Implement FastAPI endpoints for all consciousness engines (10 engines: human_design, numerology, biorhythm, vimshottari, tarot, iching, gene_keys, enneagram, sacred_geometry, sigil_forge)
+- [DONE] Test Human Design engine accuracy with Railway deployment
+- [MOVED] Birth location validation fix moved to memory.md
 - [MOVED] Railway integration deployment and testing moved to memory.md
 - [MOVED] Railway deployment tasks moved to memory.md
 - [MOVED] Documentation cleanup tasks moved to memory.md

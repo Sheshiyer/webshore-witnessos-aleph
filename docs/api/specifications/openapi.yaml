@@ -26,10 +26,12 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.witnessos.space
-    description: Production server
-  - url: https://api-staging.witnessos.space  
-    description: Staging server
+  - url: https://witnessos-api.sheshnarayan-iyer.workers.dev
+    description: Production API (Cloudflare Workers)
+  - url: https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev
+    description: Engine Proxy (Direct Railway Access)
+  - url: https://webshore-witnessos-aleph-production.up.railway.app
+    description: Railway Python Engines (Direct Access)
   - url: http://localhost:8787
     description: Development server
 
@@ -845,4 +847,4 @@ tags:
   - name: Workflows
     description: Predefined multi-engine consciousness analysis patterns
   - name: Authentication
-    description: User authentication and account management 
+    description: User authentication and account management

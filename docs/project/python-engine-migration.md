@@ -3,7 +3,7 @@
 ## **📋 MIGRATION OVERVIEW**
 
 **Source:** `/docs/reference/python-engines/`  
-**Target:** Production Render.com services  
+**Target:** Production Railway services  
 **Goal:** Deploy proven Python engines as production APIs
 
 ---
@@ -91,9 +91,10 @@ async def health_check():
     return {"status": "healthy", "engine": "human_design"}
 ```
 
-### **Step 3: Create Render.com Deployment Config**
+### **Step 3: Create Railway Deployment Config**
+
 ```yaml
-# render.yaml
+# railway.toml (if needed)
 services:
   - type: web
     name: human-design-engine
@@ -203,7 +204,7 @@ databases:
 
 1. **[ ] Create backend-services directory structure**
 2. **[ ] Migrate Human Design engine first (highest priority)**
-3. **[ ] Deploy to Render.com and test accuracy**
+3. **[ ] Deploy to Railway and test accuracy**
 4. **[ ] Update Cloudflare proxy to route to Python services**
 5. **[ ] Validate with user's actual birth data**
 

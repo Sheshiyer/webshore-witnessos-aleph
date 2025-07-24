@@ -466,7 +466,7 @@ export class EnhancedAPIRouter {
       const workflowType = segments[0]; // 'natal', 'career', 'spiritual', 'integration'
 
       // Handle consciousness workflows
-      if (['natal', 'career', 'spiritual'].includes(workflowType)) {
+      if (workflowType && ['natal', 'career', 'spiritual'].includes(workflowType)) {
         if (!this.env.CONSCIOUSNESS_WORKFLOW) {
           return this.createErrorResponse(503, 'SERVICE_UNAVAILABLE', 'Consciousness Workflow not available', requestId);
         }
@@ -867,7 +867,8 @@ export class EnhancedAPIRouter {
     const dayOfWeek = now.getDay();
     const startDate = new Date(now);
     startDate.setDate(now.getDate() - dayOfWeek);
-    return startDate.toISOString().split('T')[0];
+    const dateString = startDate.toISOString().split('T')[0];
+    return dateString || '';
   }
 }
 

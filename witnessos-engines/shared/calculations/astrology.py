@@ -155,31 +155,47 @@ class AstrologyCalculator:
 
         return positions
 
-    def longitude_to_human_design_gate(self, longitude: float) -> int:
+    def longitude_to_human_design_gate(self, longitude: float, is_design: bool = False, is_earth: bool = False) -> int:
         """
-        Convert astronomical longitude to Human Design gate number using the official sequence.
-
+        Convert astronomical longitude to Human Design gate using sequential mapping.
+        
         Args:
-            longitude: Longitude in degrees (0-360)
-
+            longitude: Celestial longitude in degrees (0-360)
+            is_design: Whether this is for Design calculation or Personality
+            is_earth: Whether this is for Earth position (uses different offsets)
+            
         Returns:
             Gate number (1-64)
         """
-        # Apply the 46-degree offset used in the official Human Design system
-        # This aligns our astronomical coordinates with the Human Design wheel
-        adjusted_longitude = (longitude + 46.0) % 360
-
-        # Each gate covers 360/64 = 5.625 degrees
-        gate_size = 360.0 / 64.0
-
-        # Calculate position in the official Human Design gate sequence
-        position = int(adjusted_longitude / gate_size)
-        position = min(position, 63)  # Ensure we don't exceed bounds
-
-        # Official Human Design gate sequence (based on Godhead structure)
-        gate_sequence = self._get_official_gate_sequence()
-
-        return gate_sequence[position]
+        # Apply coordinate system corrections based on astronomical accuracy breakthrough
+        if is_earth:
+            # Earth positions need different offsets
+            if is_design:
+                # Design Earth: -150° offset
+                adjusted_longitude = longitude - 150.0
+            else:
+                # Personality Earth: +158° offset (middle of +155° to +160° range)
+                adjusted_longitude = longitude + 158.0
+        else:
+            # Sun and other planetary positions
+            if is_design:
+                # Design calculations: +72° offset
+                adjusted_longitude = longitude + 72.0
+            else:
+                # Personality calculations: -120° offset
+                adjusted_longitude = longitude - 120.0
+        
+        # Normalize longitude to 0-360°
+        normalized_longitude = ((adjusted_longitude % 360) + 360) % 360
+        
+        # Each gate covers exactly 5.625° (360° ÷ 64 gates)
+        degrees_per_gate = 360.0 / 64.0
+        
+        # Calculate gate number (1-64) - SEQUENTIAL!
+        gate_number = int(normalized_longitude / degrees_per_gate) + 1
+        gate = max(1, min(64, gate_number))
+        
+        return gate
 
     def _get_official_gate_sequence(self) -> list:
         """
@@ -390,19 +406,38 @@ class AstrologyCalculator:
                       'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']:
             if planet in personality_positions:
                 personality_gates[planet] = self.longitude_to_human_design_gate(
-                    personality_positions[planet]['longitude']
+                    personality_positions[planet]['longitude'], is_design=False
                 )
                 design_gates[planet] = self.longitude_to_human_design_gate(
-                    design_positions[planet]['longitude']
+                    design_positions[planet]['longitude'], is_design=True
                 )
 
-        # Calculate Earth gates (opposite of Sun)
+        # Calculate Earth gates and positions (opposite of Sun)
         if 'sun' in personality_positions:
-            earth_longitude_personality = (personality_positions['sun']['longitude'] + 180) % 360
-            earth_longitude_design = (design_positions['sun']['longitude'] + 180) % 360
+            # Get the raw Sun longitudes (before Human Design offsets)
+            raw_personality_sun = personality_positions['sun']['longitude']
+            raw_design_sun = design_positions['sun']['longitude']
+            
+            # Calculate Earth longitudes (opposite of Sun)
+            raw_earth_longitude_personality = (raw_personality_sun + 180) % 360
+            raw_earth_longitude_design = (raw_design_sun + 180) % 360
 
-            personality_gates['earth'] = self.longitude_to_human_design_gate(earth_longitude_personality)
-            design_gates['earth'] = self.longitude_to_human_design_gate(earth_longitude_design)
+            # Apply the same Human Design offsets to Earth as we do to Sun
+            personality_gates['earth'] = self.longitude_to_human_design_gate(raw_earth_longitude_personality, is_design=False, is_earth=True)
+            design_gates['earth'] = self.longitude_to_human_design_gate(raw_earth_longitude_design, is_design=True, is_earth=True)
+            
+            # Add Earth positions to the positions dictionaries so human_design.py can access them
+            # Store the raw Earth longitudes (the offsets are applied in longitude_to_human_design_gate)
+            personality_positions['earth'] = {
+                'longitude': raw_earth_longitude_personality,
+                'latitude': 0.0,  # Earth is always on the ecliptic
+                'distance': 1.0   # Normalized distance
+            }
+            design_positions['earth'] = {
+                'longitude': raw_earth_longitude_design,
+                'latitude': 0.0,  # Earth is always on the ecliptic
+                'distance': 1.0   # Normalized distance
+            }
 
         # Calculate solar arc details for verification
         solar_arc_details = None

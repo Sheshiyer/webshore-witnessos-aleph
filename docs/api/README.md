@@ -31,6 +31,13 @@ The consciousness engines run on Railway's infrastructure for maximum accuracy:
 - `numerology`: Life path and destiny calculations
 - `human_design`: Complete bodygraph with Swiss Ephemeris precision
 - `biorhythm`: Physical, emotional, and intellectual cycles
+- `vimshottari`: Vedic planetary period timeline mapping
+- `tarot`: Card spread interpretation and guidance
+- `iching`: Hexagram mutation and wisdom oracle
+- `gene_keys`: Genetic pathway and shadow work analysis
+- `enneagram`: Personality type resonance mapping
+- `sacred_geometry`: Pattern generation and visualization
+- `sigil_forge`: Intention-based symbol synthesis
 
 ### **Authentication**
 Most endpoints require JWT authentication. Include your token in the Authorization header:
@@ -161,13 +168,13 @@ curl https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/engines
 |--------|----------|-------------|
 | **Numerology** | `/engines/numerology/calculate` | Life path, expression, and soul urge calculations |
 | **Human Design** | `/engines/human_design/calculate` | Type, strategy, authority, and centers analysis |
-| **Tarot** | `/engines/tarot/calculate` | Card spreads and interpretations |
-| **I-Ching** | `/engines/iching/calculate` | Hexagram generation and wisdom |
-| **Enneagram** | `/engines/enneagram/calculate` | Personality type and growth patterns |
-| **Sacred Geometry** | `/engines/sacred_geometry/calculate` | Geometric pattern analysis |
 | **Biorhythm** | `/engines/biorhythm/calculate` | Physical, emotional, and intellectual cycles |
 | **Vimshottari** | `/engines/vimshottari/calculate` | Vedic dasha periods and timing |
+| **Tarot** | `/engines/tarot/calculate` | Card spreads and interpretations |
+| **I-Ching** | `/engines/iching/calculate` | Hexagram generation and wisdom |
 | **Gene Keys** | `/engines/gene_keys/calculate` | 64 archetypal keys analysis |
+| **Enneagram** | `/engines/enneagram/calculate` | Personality type and growth patterns |
+| **Sacred Geometry** | `/engines/sacred_geometry/calculate` | Geometric pattern analysis |
 | **Sigil Forge** | `/engines/sigil_forge/calculate` | Sacred symbol creation |
 
 ### **Engine Input Examples**
@@ -209,13 +216,8 @@ curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/cal
     "birth_data": {
       "date": "1990-01-15",
       "time": "14:30",
-      "location": {
-        "city": "New York",
-        "country": "US",
-        "latitude": 40.7128,
-        "longitude": -74.0060,
-        "timezone": "America/New_York"
-      }
+      "birth_location": [40.7128, -74.0060],
+      "timezone": "America/New_York"
     }
   }'
 
@@ -227,13 +229,8 @@ curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calcul
     "birth_data": {
       "date": "1990-01-15",
       "time": "14:30",
-      "location": {
-        "city": "New York",
-        "country": "US",
-        "latitude": 40.7128,
-        "longitude": -74.0060,
-        "timezone": "America/New_York"
-      }
+      "birth_location": [40.7128, -74.0060],
+      "timezone": "America/New_York"
     }
   }'
 ```
@@ -265,26 +262,116 @@ curl -X POST https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev/calcul
   }'
 ```
 
+#### **Vimshottari**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "vimshottari",
+    "birth_data": {
+      "date": "1990-01-15",
+      "time": "14:30",
+      "birth_location": [12.9716, 77.5946],
+      "timezone": "Asia/Kolkata"
+    }
+  }'
+```
+
 #### **Tarot**
-```json
-{
-  "input": {
-    "question": "What guidance do I need for my spiritual path?",
-    "spread_type": "celtic_cross",
-    "deck": "rider_waite"
-  }
-}
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "tarot",
+    "birth_data": {
+      "question": "What guidance do I need for my spiritual path?",
+      "spread_type": "celtic_cross",
+      "deck": "rider_waite"
+    }
+  }'
 ```
 
 #### **I-Ching**
-```json
-{
-  "input": {
-    "question": "How can I find balance in my life?",
-    "method": "coins",
-    "includeChangingLines": true
-  }
-}
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "iching",
+    "birth_data": {
+      "question": "How can I find balance in my life?",
+      "method": "coins",
+      "includeChangingLines": true
+    }
+  }'
+```
+
+#### **Gene Keys**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "gene_keys",
+    "birth_data": {
+      "date": "1990-01-15",
+      "time": "14:30",
+      "birth_location": [12.9716, 77.5946],
+      "timezone": "Asia/Kolkata"
+    }
+  }'
+```
+
+#### **Enneagram**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "enneagram",
+    "birth_data": {
+      "date": "1990-01-15",
+      "full_name": "Alexander Morgan",
+      "personality_indicators": {
+        "core_motivation": "security",
+        "core_fear": "abandonment"
+      }
+    }
+  }'
+```
+
+#### **Sacred Geometry**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "sacred_geometry",
+    "birth_data": {
+      "date": "1990-01-15",
+      "pattern_type": "flower_of_life",
+      "dimensions": 2,
+      "complexity": "medium"
+    }
+  }'
+```
+
+#### **Sigil Forge**
+```bash
+# Via main API (recommended)
+curl -X POST https://witnessos-api.sheshnarayan-iyer.workers.dev/api/engines/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "engine": "sigil_forge",
+    "birth_data": {
+      "intention": "I manifest abundance and prosperity",
+      "style": "geometric",
+      "complexity": "medium",
+      "elements": ["earth", "fire"]
+    }
+  }'
 ```
 
 ---

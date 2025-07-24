@@ -125,6 +125,9 @@ def get_gene_keys_test_data():
     personal = VALIDATION_DATA["personal"]
     return {
         "birth_date": personal["birth_date"],
+        "birth_time": personal["birth_time"],
+        "birth_location": personal["birth_location"],
+        "timezone": personal["timezone"],
         "focus_sequence": "activation",
         "include_programming_partner": True
     }

@@ -328,7 +328,7 @@ cp -r docs/reference/python-engines/data witnessos-engines/shared/
 cp -r docs/reference/python-engines/integration/* witnessos-engines/integration/
 
 # Create Swiss Ephemeris integration
-# (Combine existing Render.com service with direct pyswisseph)
+# (Combine existing Railway service with direct pyswisseph)
 ```
 
 ### **Step 2: Test Human Design Accuracy (Day 3)**
@@ -346,15 +346,15 @@ test_data = {
 
 ### **Step 3: Deploy and Validate (Day 4-5)**
 ```bash
-# Deploy to Render.com
+# Deploy to Railway
 git init
 git add .
 git commit -m "Initial consolidated WitnessOS engines service"
 git push origin main
 
 # Test all endpoints
-curl -X POST "https://witnessos-engines.onrender.com/engines/human_design/calculate"
-curl -X POST "https://witnessos-engines.onrender.com/swiss_ephemeris/calculate"
+curl -X POST "https://webshore-witnessos-aleph-production.up.railway.app/engines/human_design/calculate"
+curl -X POST "https://webshore-witnessos-aleph-production.up.railway.app/swiss_ephemeris/calculate"
 ```
 
 This consolidated approach will give you **one service to rule them all** - accurate, cost-effective, and maintainable! 🚀

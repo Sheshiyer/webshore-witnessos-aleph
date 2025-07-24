@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, date, time, timedelta
-from calculations.astrology import AstrologyCalculator
+from shared.calculations.astrology import AstrologyCalculator
 
 def debug_mage_astro():
     """Debug astronomical calculations for Mage's birth data."""
@@ -55,10 +55,10 @@ def debug_mage_astro():
         print(f"{'EARTH':>8}: {earth_longitude:>8.4f}° → Gate {earth_gate:>2}")
         print()
         
-        # Design time (88 days before)
-        design_datetime = birth_datetime - timedelta(days=88)
+        # Design time (88 degrees solar arc - official Human Design method)
+        design_datetime = calc._calculate_design_time_solar_arc(birth_datetime, timezone)
         print(f"🎨 DESIGN TIME: {design_datetime}")
-        print("DESIGN (88 days before) POSITIONS:")
+        print("DESIGN (88 degrees solar arc) POSITIONS:")
         
         design_positions = calc.get_planetary_positions(
             design_datetime, lat, lon, timezone

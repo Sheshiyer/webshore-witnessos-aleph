@@ -1,13 +1,13 @@
 # WitnessOS Consolidated Consciousness Engines
 
-Single Render.com service containing all consciousness engines with integrated Swiss Ephemeris.
+Single Railway service containing all consciousness engines with integrated Swiss Ephemeris.
 
 ## Features
 
 - **Integrated Swiss Ephemeris**: Direct pyswisseph integration for 100% accurate astronomical calculations
 - **All Consciousness Engines**: Human Design, Numerology, Biorhythm, Vimshottari, Tarot, I-Ching, Gene Keys, Enneagram, Sacred Geometry, Sigil Forge
 - **FastAPI Service**: Modern async API with automatic documentation
-- **Production Ready**: Optimized for Render.com deployment
+- **Production Ready**: Optimized for Railway deployment
 
 ## Endpoints
 
@@ -19,7 +19,7 @@ Single Render.com service containing all consciousness engines with integrated S
 
 ## Deployment
 
-Deploy to Render.com using the included `render.yaml` configuration.
+Deploy to Railway using the Railway dashboard or CLI.
 
 ## Testing
 

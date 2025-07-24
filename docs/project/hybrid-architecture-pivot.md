@@ -3,7 +3,7 @@
 
 ## **📋 EXECUTIVE SUMMARY**
 
-**Strategic Decision**: Pivot from TypeScript engine implementations to a hybrid architecture leveraging existing proven Python engines on Render.com with Cloudflare Workers for orchestration.
+**Strategic Decision**: Pivot from TypeScript engine implementations to a hybrid architecture leveraging existing proven Python engines on Railway with Cloudflare Workers for orchestration.
 
 **Rationale**: 
 - ✅ Proven Python engines with 100% accuracy already exist
@@ -135,7 +135,7 @@ graph TB
         Monitor[📊 Performance Monitor]
     end
     
-    %% Render.com Computation Layer
+    %% Railway Computation Layer
     subgraph "🐍 Railway Services (Python Engines)"
         subgraph "Core Engines"
             HD[🧬 Human Design Engine]

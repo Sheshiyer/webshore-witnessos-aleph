@@ -31,7 +31,7 @@ WitnessOS Webshore is pioneering **consciousness technology** - a new category w
 
 ### **Architecture Overview:**
 - **Cloudflare Workers**: API routing, auth, caching, orchestration
-- **Render.com Services**: All consciousness engine calculations (Python)
+- **Railway Services**: All consciousness engine calculations (Python)
 - **Hybrid Benefits**: 100% accuracy + faster development + proven codebase
 
 ### **Cloudflare Infrastructure (Edge Layer)**

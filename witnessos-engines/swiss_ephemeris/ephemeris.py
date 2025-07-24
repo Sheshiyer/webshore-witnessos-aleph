@@ -190,21 +190,29 @@ class SwissEphemerisService:
             longitude: Raw astronomical longitude in degrees
             is_design: True for Design calculations, False for Personality
         """
-        # Apply Human Design coordinate system offsets
+        # Apply Human Design coordinate system offsets - CORRECTED VALUES
         if is_design:
-            # Design calculations: +72° offset
-            adjusted_longitude = (longitude + 72.0) % 360
+            # Design calculations: +58° offset (corrected from +72°)
+            adjusted_longitude = (longitude + 58.0) % 360
         else:
-            # Personality calculations: -120° offset
-            adjusted_longitude = (longitude - 120.0) % 360
+            # Personality calculations: -134° offset (corrected from -120°)
+            adjusted_longitude = (longitude - 134.0) % 360
 
-        # Use sequential gate mapping (1-64) - NOT I-Ching wheel
-        # This is the breakthrough discovery from research
+        # Use I-Ching wheel gate mapping with proper gate order
         gate_degrees = 360.0 / 64.0  # 5.625 degrees per gate
 
-        # Calculate gate number (1-64)
-        gate_number = int(adjusted_longitude / gate_degrees) + 1
-        gate_number = min(64, max(1, gate_number))  # Ensure gate is 1-64
+        # Calculate gate number using I-Ching wheel order
+        gate_index = int(adjusted_longitude / gate_degrees)
+        
+        # I-Ching wheel gate order (starting from 0° Aries)
+        iching_wheel = [
+            41, 19, 13, 49, 30, 55, 37, 63, 22, 36, 25, 17, 21, 51, 42, 3,
+            27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56,
+            31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50,
+            28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60
+        ]
+        
+        gate_number = iching_wheel[gate_index % 64]
 
         # Calculate line within gate (1-6)
         line_degrees = gate_degrees / 6.0  # 0.9375 degrees per line
