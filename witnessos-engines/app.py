@@ -243,7 +243,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = HumanDesignInput(
                 birth_date=date_class.fromisoformat(request.input["birth_date"]),
                 birth_time=dt_time.fromisoformat(request.input["birth_time"]),
-                birth_location=tuple(request.input["birth_location"]),
+                birth_location=request.input["birth_location"],
                 timezone=request.input.get("timezone", "UTC")
             )
         elif engine_name == "numerology":
@@ -260,7 +260,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = VimshottariInput(
                 birth_date=date_class.fromisoformat(request.input["birth_date"]),
                 birth_time=dt_time.fromisoformat(request.input["birth_time"]),
-                birth_location=tuple(request.input["birth_location"]),
+                birth_location=request.input["birth_location"],
                 timezone=request.input.get("timezone", "UTC")
             )
         elif engine_name == "tarot":
@@ -279,7 +279,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = GeneKeysInput(
                 birth_date=date_class.fromisoformat(request.input["birth_date"]),
                 birth_time=dt_time.fromisoformat(request.input["birth_time"]),
-                birth_location=tuple(request.input["birth_location"]),
+                birth_location=request.input["birth_location"],
                 timezone=request.input.get("timezone", "UTC")
             )
         elif engine_name == "enneagram":
@@ -291,7 +291,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = SacredGeometryInput(
                 birth_date=date_class.fromisoformat(request.input["birth_date"]),
                 full_name=request.input["full_name"],
-                birth_location=tuple(request.input.get("birth_location", (0, 0)))
+                birth_location=request.input.get("birth_location", (0, 0))
             )
         elif engine_name == "sigil_forge":
             input_obj = SigilForgeInput(
