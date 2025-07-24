@@ -419,6 +419,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
 
         return EngineResponse(
             success=False,
+            data=None,
             error=f"{type(e).__name__}: {str(e)}",
             processing_time=processing_time,
             timestamp=datetime.utcnow().isoformat(),
