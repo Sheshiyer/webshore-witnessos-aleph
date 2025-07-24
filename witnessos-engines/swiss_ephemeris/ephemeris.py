@@ -37,8 +37,20 @@ class SwissEphemerisService:
             Dictionary containing planetary positions and derived data
         """
         try:
-            # Parse birth data
-            birth_datetime = datetime.strptime(f"{birth_date} {birth_time}", "%Y-%m-%d %H:%M")
+            # Parse birth data - handle both HH:MM and HH:MM:SS formats
+            time_formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"]
+            birth_datetime = None
+            
+            for fmt in time_formats:
+                try:
+                    birth_datetime = datetime.strptime(f"{birth_date} {birth_time}", fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if birth_datetime is None:
+                raise ValueError(f"Invalid time format: {birth_time}. Expected HH:MM or HH:MM:SS")
+            
             latitude, longitude = birth_location
             
             logger.info(f"🌟 Calculating Swiss Ephemeris positions for {birth_datetime} at {latitude}, {longitude}")
