@@ -326,11 +326,18 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
 
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"❌ Engine {engine_name} calculation failed: {e}")
+        import traceback
+        error_details = {
+            "error_message": str(e),
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc(),
+            "input_data": request.input
+        }
+        logger.error(f"❌ Engine {engine_name} calculation failed: {error_details}")
 
         return EngineResponse(
             success=False,
-            error=str(e),
+            error=f"{type(e).__name__}: {str(e)}",
             processing_time=processing_time,
             timestamp=datetime.utcnow().isoformat(),
             engine=engine_name
