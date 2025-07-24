@@ -5,9 +5,34 @@ Defines input/output structures and Human Design specific data types.
 """
 
 from datetime import datetime, date, time
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, List, Tuple, Any, Union
 from pydantic import BaseModel, Field, field_validator
 from shared.base.data_models import BaseEngineInput, BaseEngineOutput, BirthDataInput
+
+
+def geocode_location(location_name: str) -> Tuple[float, float]:
+    """Convert location name to coordinates using a simple mapping."""
+    # Simple geocoding mapping for common locations
+    location_map = {
+        "bangalore, india": (12.9716, 77.5946),
+        "mumbai, india": (19.0760, 72.8777),
+        "delhi, india": (28.7041, 77.1025),
+        "new york, usa": (40.7128, -74.0060),
+        "london, uk": (51.5074, -0.1278),
+        "paris, france": (48.8566, 2.3522),
+        "tokyo, japan": (35.6762, 139.6503),
+        "sydney, australia": (-33.8688, 151.2093),
+        "los angeles, usa": (34.0522, -118.2437),
+        "toronto, canada": (43.6532, -79.3832)
+    }
+    
+    normalized_location = location_name.lower().strip()
+    if normalized_location in location_map:
+        return location_map[normalized_location]
+    
+    # If not found, try to extract coordinates from common formats
+    # This is a fallback - in production, you'd use a real geocoding service
+    raise ValueError(f"Location '{location_name}' not found. Please provide coordinates as [latitude, longitude] or use a supported city name.")
 
 
 class HumanDesignInput(BaseEngineInput, BirthDataInput):
@@ -15,7 +40,7 @@ class HumanDesignInput(BaseEngineInput, BirthDataInput):
 
     # Birth data is required for Human Design
     birth_time: time = Field(..., description="Exact birth time is required for Human Design")
-    birth_location: Tuple[float, float] = Field(..., description="Birth coordinates (latitude, longitude)")
+    birth_location: Union[Tuple[float, float], str] = Field(..., description="Birth location as coordinates [lat, lon] or city name")
     timezone: str = Field(..., description="Birth timezone (e.g., 'America/New_York')")
 
     # Optional preferences
@@ -34,12 +59,25 @@ class HumanDesignInput(BaseEngineInput, BirthDataInput):
     def validate_birth_location(cls, v):
         if v is None:
             raise ValueError("Birth location is required for Human Design calculations")
-        lat, lon = v
-        if not (-90 <= lat <= 90):
-            raise ValueError("Latitude must be between -90 and 90")
-        if not (-180 <= lon <= 180):
-            raise ValueError("Longitude must be between -180 and 180")
-        return v
+        
+        # Handle string location names
+        if isinstance(v, str):
+            try:
+                lat, lon = geocode_location(v)
+                return (lat, lon)
+            except ValueError as e:
+                raise ValueError(str(e))
+        
+        # Handle coordinate tuples
+        if isinstance(v, (tuple, list)) and len(v) == 2:
+            lat, lon = float(v[0]), float(v[1])
+            if not (-90 <= lat <= 90):
+                raise ValueError("Latitude must be between -90 and 90")
+            if not (-180 <= lon <= 180):
+                raise ValueError("Longitude must be between -180 and 180")
+            return (lat, lon)
+        
+        raise ValueError("Birth location must be either a string (city name) or coordinates [latitude, longitude]")
 
 
 class HumanDesignGate(BaseModel):
