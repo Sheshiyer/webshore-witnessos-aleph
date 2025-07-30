@@ -224,14 +224,16 @@ class HumanDesignScanner(BaseEngine):
 
     def _process_gates(self, gate_numbers: Dict[str, int],
                       positions: Dict[str, Dict], gate_type: str) -> Dict[str, HumanDesignGate]:
-        """Process raw gate numbers into HumanDesignGate objects."""
+        """Process gate numbers from AstrologyCalculator into HumanDesignGate objects."""
         processed_gates = {}
 
         for planet, gate_num in gate_numbers.items():
             if gate_num in self.gate_data:
-                # Use the longitude from positions (already calculated with proper offsets)
-                # Do NOT recalculate Earth longitude here - it's already correct from astrology calculator
+                # Use the gate number calculated by AstrologyCalculator (already correct)
+                # Only use longitude for line/color/tone/base calculations
                 if planet in positions:
+                    # Use the adjusted longitude that AstrologyCalculator already calculated
+                    # AstrologyCalculator stores the offset-adjusted longitude in positions
                     longitude = positions[planet]['longitude']
                 else:
                     continue  # Skip if no position data available
@@ -244,7 +246,7 @@ class HumanDesignScanner(BaseEngine):
                 gate_data = self.gate_data[gate_num]
 
                 processed_gates[planet] = HumanDesignGate(
-                    number=gate_num,
+                    number=gate_num,  # Use the correct gate from AstrologyCalculator
                     name=gate_data['name'],
                     planet=planet,
                     line=line,

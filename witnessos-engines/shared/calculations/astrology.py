@@ -42,7 +42,35 @@ NAKSHATRAS = [
     "Uttara Bhadrapada", "Revati"
 ]
 
-# Human Design Gates (I-Ching hexagrams)
+# Official Human Design Gate Sequence (Research-Validated)
+# Based on the Godhead structure from create_official_gate_mapping.py research
+OFFICIAL_HUMAN_DESIGN_GATE_SEQUENCE = [
+    # Quarter of Initiation (Gates 13-24) - Purpose fulfilled through Mind
+    13, 49, 30, 55,  # Kali - The Destroyer of False Devotion
+    37, 63, 22, 36,  # Mitra - The Evolution of Consciousness
+    25, 17, 21, 51,  # Michael - The Angelical Mind
+    42, 3, 27, 24,   # Janus - The Fertility of Mind
+
+    # Quarter of Civilization (Gates 2-33) - Purpose fulfilled through Form
+    2, 23, 8, 20,    # Maia - The Mother Goddess
+    16, 35, 45, 12,  # Lakshmi - Goddess of Beauty and Good Fortune
+    15, 52, 39, 53,  # Parvati - Goddess of Domestic Bliss
+    62, 56, 31, 33,  # Ma'at - Goddess of Truth, Justice and Cosmic Harmony
+
+    # Quarter of Duality (Gates 7-44) - Purpose fulfilled through Bonding
+    7, 4, 29, 59,    # Thoth - God of Wisdom, Writing and Time
+    40, 64, 47, 6,   # Harmonia - Goddess of the Family Bond
+    46, 18, 48, 57,  # Christ Consciousness Field - "Love Thy Neighbor"
+    44, 28, 50, 32,  # Minerva - Virgin Goddess of Warfare, Arts and Crafts
+
+    # Quarter of Mutation (Gates 1-19) - Purpose fulfilled through Transformation
+    1, 43, 14, 34,   # Hades - God of the Underworld
+    9, 5, 26, 11,    # Prometheus - Thief of Fire and Benefactor of Humanity
+    10, 58, 38, 54,  # Vishnu - God of Monotheism
+    60, 61, 41, 19   # The Keepers of the Wheel - Guardians of the Wheel
+]
+
+# Human Design Gates (I-Ching hexagrams) - Keep for compatibility
 HUMAN_DESIGN_GATES = {
     i: f"Gate {i}" for i in range(1, 65)
 }
@@ -157,45 +185,36 @@ class AstrologyCalculator:
 
     def longitude_to_human_design_gate(self, longitude: float, is_design: bool = False, is_earth: bool = False) -> int:
         """
-        Convert astronomical longitude to Human Design gate using sequential mapping.
-        
+        Convert astronomical longitude to Human Design gate using OFFICIAL gate sequence.
+        Research-validated implementation based on Godhead structure.
+
         Args:
-            longitude: Celestial longitude in degrees (0-360)
+            longitude: Raw celestial longitude in degrees (0-360) - NO ARBITRARY OFFSETS
             is_design: Whether this is for Design calculation or Personality
-            is_earth: Whether this is for Earth position (uses different offsets)
-            
+            is_earth: Whether this is for Earth position
+
         Returns:
-            Gate number (1-64)
+            Human Design gate number (1-64) using official sequence
         """
-        # Apply coordinate system corrections based on astronomical accuracy breakthrough
-        if is_earth:
-            # Earth positions need different offsets
-            if is_design:
-                # Design Earth: -150° offset
-                adjusted_longitude = longitude - 150.0
-            else:
-                # Personality Earth: +158° offset (middle of +155° to +160° range)
-                adjusted_longitude = longitude + 158.0
-        else:
-            # Sun and other planetary positions
-            if is_design:
-                # Design calculations: +72° offset
-                adjusted_longitude = longitude + 72.0
-            else:
-                # Personality calculations: -120° offset
-                adjusted_longitude = longitude - 120.0
-        
+        # RESEARCH FINDING: Remove arbitrary coordinate offsets
+        # The research shows these offsets (+72°, -120°, etc.) are incorrect
+        # Use raw astronomical longitude with official gate sequence
+
         # Normalize longitude to 0-360°
-        normalized_longitude = ((adjusted_longitude % 360) + 360) % 360
-        
+        normalized_longitude = ((longitude % 360) + 360) % 360
+
         # Each gate covers exactly 5.625° (360° ÷ 64 gates)
         degrees_per_gate = 360.0 / 64.0
-        
-        # Calculate gate number (1-64) - SEQUENTIAL!
-        gate_number = int(normalized_longitude / degrees_per_gate) + 1
-        gate = max(1, min(64, gate_number))
-        
-        return gate
+
+        # Calculate position in the official gate sequence (0-63)
+        gate_position = int(normalized_longitude / degrees_per_gate)
+        gate_position = min(gate_position, 63)  # Ensure position is 0-63
+
+        # CRITICAL FIX: Use official Human Design gate sequence
+        # This is the research-validated gate order from the Godhead structure
+        gate_number = OFFICIAL_HUMAN_DESIGN_GATE_SEQUENCE[gate_position]
+
+        return gate_number
 
     def _get_official_gate_sequence(self) -> list:
         """
