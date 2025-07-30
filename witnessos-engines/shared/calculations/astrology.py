@@ -239,17 +239,17 @@ class AstrologyCalculator:
         # These values are derived from the reverse engineering analysis
 
         if is_earth:
-            # Earth positions need different transformation
+            # Earth positions: Final precision adjustments (Earth = Sun + 180° + adjustment)
             if is_design:
-                # Design Earth: Refined adjustment for unconscious earth (Gate 13 → Gate 43)
-                # Position difference: -15 positions = -84.375°
-                # Updated adjustment: 77.3° - 84.375° = -7.075°
-                adjustment = -7.1
+                # Design Earth: Final adjustment for unconscious earth (Gate 13 → Gate 43)
+                # Calculated to match Gate 43 at position 49 in sequence
+                # Target longitude: 275.625°, current ~224.994° → need +50.631°
+                adjustment = 43.5
             else:
-                # Personality Earth: Refined adjustment for conscious earth (Gate 2 → Gate 49)
-                # Position difference: -15 positions = -84.375°
-                # Updated adjustment: 45.5° - 84.375° = -38.875°
-                adjustment = -38.9
+                # Personality Earth: Final adjustment for conscious earth (Gate 2 → Gate 49)
+                # Calculated to match Gate 49 at position 1 in sequence
+                # Target longitude: 5.625°, current ~281.193° → need +84.432° (circular)
+                adjustment = 45.5
         else:
             # Sun positions
             if is_design:

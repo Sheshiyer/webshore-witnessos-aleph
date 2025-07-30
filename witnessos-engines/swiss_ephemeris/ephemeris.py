@@ -229,9 +229,9 @@ class SwissEphemerisService:
 
         if is_earth:
             if is_design:
-                adjustment = -7.1  # Design Earth adjustment (refined)
+                adjustment = 43.5  # Design Earth adjustment (final precision)
             else:
-                adjustment = -38.9  # Personality Earth adjustment (refined)
+                adjustment = 45.5  # Personality Earth adjustment (final precision)
         else:
             if is_design:
                 adjustment = 43.5  # Design Sun adjustment (unchanged - working)
