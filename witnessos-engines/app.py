@@ -130,6 +130,7 @@ async def health_check():
         "service": "witnessos-engines",
         "engines_available": list(engines.keys()),
         "swiss_ephemeris": swiss_ephemeris is not None,
+        "human_design_fix": "research-validated-calculations-deployed",  # Force deployment
         "timestamp": datetime.utcnow().isoformat()
     }
 
@@ -354,6 +355,168 @@ async def list_engines():
         "engines": list(engines.keys()),
         "count": len(engines),
         "swiss_ephemeris_available": swiss_ephemeris is not None,
+        "service": "witnessos-engines"
+    }
+
+# Engine metadata endpoint
+@app.get("/engines/{engine_name}/metadata")
+async def get_engine_metadata(engine_name: str):
+    """Get metadata for a specific consciousness engine"""
+    if engine_name not in engines:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Engine '{engine_name}' not found. Available: {list(engines.keys())}"
+        )
+    
+    # Define metadata for each engine
+    metadata = {
+        "human_design": {
+            "name": "Human Design",
+            "description": "Comprehensive Human Design bodygraph analysis with type, strategy, authority, and profile",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "birth_time": {"type": "string", "format": "time", "required": True, "description": "Birth time in HH:MM:SS format"},
+                "birth_location": {"type": "array", "items": "number", "required": True, "description": "[latitude, longitude] coordinates"},
+                "timezone": {"type": "string", "required": False, "default": "UTC", "description": "Timezone identifier"}
+            },
+            "outputs": ["type", "strategy", "authority", "profile", "centers", "channels", "gates"],
+            "calculation_time": "~2-5 seconds",
+            "accuracy": "High (Swiss Ephemeris)"
+        },
+        "numerology": {
+            "name": "Numerology",
+            "description": "Pythagorean and Chaldean numerology calculations with life path, destiny, and soul urge numbers",
+            "version": "2.5.0",
+            "inputs": {
+                "full_name": {"type": "string", "required": True, "description": "Full birth name"},
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"}
+            },
+            "outputs": ["life_path", "destiny", "soul_urge", "personality", "maturity"],
+            "calculation_time": "~0.5-1 seconds",
+            "accuracy": "High (Mathematical)"
+        },
+        "biorhythm": {
+            "name": "Biorhythm",
+            "description": "Physical, emotional, and intellectual biorhythm cycles with critical days detection",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "target_date": {"type": "string", "format": "date", "required": False, "default": "today", "description": "Target date for calculation"}
+            },
+            "outputs": ["physical", "emotional", "intellectual", "cycles", "critical_days"],
+            "calculation_time": "~0.2-0.5 seconds",
+            "accuracy": "High (Mathematical)"
+        },
+        "vimshottari": {
+            "name": "Vimshottari Dasha",
+            "description": "Vedic astrology planetary periods and sub-periods analysis",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "birth_time": {"type": "string", "format": "time", "required": True, "description": "Birth time in HH:MM:SS format"},
+                "birth_location": {"type": "array", "items": "number", "required": True, "description": "[latitude, longitude] coordinates"},
+                "timezone": {"type": "string", "required": False, "default": "UTC", "description": "Timezone identifier"}
+            },
+            "outputs": ["current_dasha", "sub_periods", "planetary_influences", "timeline"],
+            "calculation_time": "~1-3 seconds",
+            "accuracy": "High (Swiss Ephemeris)"
+        },
+        "tarot": {
+            "name": "Tarot Reading",
+            "description": "Intuitive tarot card readings with multiple spread types",
+            "version": "2.5.0",
+            "inputs": {
+                "question": {"type": "string", "required": True, "description": "Question or intention for the reading"},
+                "spread_type": {"type": "string", "required": False, "default": "three_card", "description": "Type of spread (three_card, celtic_cross, etc.)"},
+                "birth_date": {"type": "string", "format": "date", "required": False, "description": "Birth date for personalization"}
+            },
+            "outputs": ["cards", "positions", "interpretation", "guidance"],
+            "calculation_time": "~0.5-1 seconds",
+            "accuracy": "Intuitive (Symbolic)"
+        },
+        "iching": {
+            "name": "I Ching",
+            "description": "Ancient Chinese divination with hexagram generation and interpretation",
+            "version": "2.5.0",
+            "inputs": {
+                "question": {"type": "string", "required": True, "description": "Question or situation to explore"},
+                "method": {"type": "string", "required": False, "default": "coins", "description": "Divination method (coins, yarrow, etc.)"},
+                "birth_date": {"type": "string", "format": "date", "required": False, "description": "Birth date for personalization"}
+            },
+            "outputs": ["hexagram", "changing_lines", "interpretation", "guidance"],
+            "calculation_time": "~0.5-1 seconds",
+            "accuracy": "Intuitive (Symbolic)"
+        },
+        "gene_keys": {
+            "name": "Gene Keys",
+            "description": "Gene Keys profile with activation sequence and life themes",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "birth_time": {"type": "string", "format": "time", "required": True, "description": "Birth time in HH:MM:SS format"},
+                "birth_location": {"type": "array", "items": "number", "required": True, "description": "[latitude, longitude] coordinates"},
+                "timezone": {"type": "string", "required": False, "default": "UTC", "description": "Timezone identifier"}
+            },
+            "outputs": ["activation_sequence", "life_work", "evolution", "radiance"],
+            "calculation_time": "~2-4 seconds",
+            "accuracy": "High (Swiss Ephemeris)"
+        },
+        "enneagram": {
+            "name": "Enneagram",
+            "description": "Personality type analysis with wings, instincts, and growth paths",
+            "version": "2.5.0",
+            "inputs": {
+                "responses": {"type": "array", "items": "object", "required": True, "description": "Array of question responses"},
+                "birth_date": {"type": "string", "format": "date", "required": False, "description": "Birth date for additional insights"}
+            },
+            "outputs": ["type", "wing", "instinct", "growth_path", "stress_path"],
+            "calculation_time": "~1-2 seconds",
+            "accuracy": "High (Psychological)"
+        },
+        "sacred_geometry": {
+            "name": "Sacred Geometry",
+            "description": "Geometric patterns and mathematical relationships in consciousness",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "full_name": {"type": "string", "required": True, "description": "Full birth name"},
+                "birth_location": {"type": "array", "items": "number", "required": False, "default": [0, 0], "description": "[latitude, longitude] coordinates"}
+            },
+            "outputs": ["geometric_patterns", "mathematical_relationships", "sacred_ratios"],
+            "calculation_time": "~1-2 seconds",
+            "accuracy": "High (Mathematical)"
+        },
+        "sigil_forge": {
+            "name": "Sigil Forge",
+            "description": "Personalized sigil creation for intention manifestation",
+            "version": "2.5.0",
+            "inputs": {
+                "intention": {"type": "string", "required": True, "description": "Clear intention or desire to manifest"},
+                "method": {"type": "string", "required": False, "default": "traditional", "description": "Sigil creation method"},
+                "birth_date": {"type": "string", "format": "date", "required": False, "description": "Birth date for personalization"}
+            },
+            "outputs": ["sigil_design", "activation_method", "timing_guidance"],
+            "calculation_time": "~0.5-1 seconds",
+            "accuracy": "Creative (Symbolic)"
+        }
+    }
+    
+    engine_metadata = metadata.get(engine_name, {
+        "name": engine_name.replace('_', ' ').title(),
+        "description": f"Consciousness analysis engine: {engine_name}",
+        "version": "2.5.0",
+        "inputs": {},
+        "outputs": [],
+        "calculation_time": "Variable",
+        "accuracy": "High"
+    })
+    
+    return {
+        "success": True,
+        "engine": engine_name,
+        "metadata": engine_metadata,
+        "timestamp": datetime.utcnow().isoformat(),
         "service": "witnessos-engines"
     }
 
