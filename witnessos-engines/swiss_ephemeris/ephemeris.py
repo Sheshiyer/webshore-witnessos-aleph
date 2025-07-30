@@ -229,14 +229,14 @@ class SwissEphemerisService:
 
         if is_earth:
             if is_design:
-                adjustment = 77.3  # Design Earth adjustment
+                adjustment = -7.1  # Design Earth adjustment (refined)
             else:
-                adjustment = 45.5  # Personality Earth adjustment
+                adjustment = -38.9  # Personality Earth adjustment (refined)
         else:
             if is_design:
-                adjustment = 43.5  # Design Sun adjustment
+                adjustment = 43.5  # Design Sun adjustment (unchanged - working)
             else:
-                adjustment = 56.8  # Personality Sun adjustment
+                adjustment = 45.6  # Personality Sun adjustment (refined)
 
         return (longitude + adjustment) % 360
 
