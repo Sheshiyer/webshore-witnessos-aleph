@@ -130,7 +130,7 @@ async def health_check():
         "service": "witnessos-engines",
         "engines_available": list(engines.keys()),
         "swiss_ephemeris": swiss_ephemeris is not None,
-        "human_design_fix": "precision-refined-coordinates-v3",  # Final precision deployment
+        "human_design_fix": "complete-earth-precision-v4",  # Complete coordinate transformation
         "timestamp": datetime.utcnow().isoformat()
     }
 
