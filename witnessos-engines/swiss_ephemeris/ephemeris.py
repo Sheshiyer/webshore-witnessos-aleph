@@ -169,7 +169,7 @@ class SwissEphemerisService:
             # Determine if this is an Earth position (Earth is calculated as Sun + 180°)
             is_earth = planet.lower() == 'earth'
             gate, line = self._longitude_to_gate_line(longitude, is_design, is_earth)
-            
+
             gates[planet] = {
                 **pos_data,
                 'planet': planet,
@@ -180,7 +180,29 @@ class SwissEphemerisService:
                     'gate_position': (longitude % 5.625) / 5.625  # Position within gate (0-1)
                 }
             }
-        
+
+        # CRITICAL FIX: Calculate Earth positions (Sun + 180°) with proper coordinate transformation
+        if 'SUN' in positions and 'error' not in positions['SUN']:
+            sun_longitude = positions['SUN']['longitude']
+            earth_longitude = (sun_longitude + 180) % 360
+
+            # Apply Earth coordinate transformation
+            earth_gate, earth_line = self._longitude_to_gate_line(earth_longitude, is_design, is_earth=True)
+
+            gates['EARTH'] = {
+                'longitude': earth_longitude,
+                'latitude': 0.0,  # Earth is always on the ecliptic
+                'distance': 1.0,  # Normalized distance
+                'longitude_speed': -positions['SUN']['longitude_speed'] if 'longitude_speed' in positions['SUN'] else 0,
+                'planet': 'EARTH',
+                'human_design_gate': {
+                    'gate': earth_gate,
+                    'line': earth_line,
+                    'longitude': earth_longitude,
+                    'gate_position': (earth_longitude % 5.625) / 5.625  # Position within gate (0-1)
+                }
+            }
+
         return gates
     
     def _longitude_to_gate_line(self, longitude: float, is_design: bool = False, is_earth: bool = False) -> Tuple[int, int]:
