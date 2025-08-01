@@ -8,23 +8,22 @@ Multi-dimensional consciousness optimization combining:
 - Personal chart integration (lagna, nakshatra)
 """
 
-from datetime import datetime, time
-from typing import Dict, List, Any, Optional, Literal
-from pydantic import BaseModel, Field
+from datetime import datetime, time, date
+from typing import Dict, List, Any, Optional, Literal, Tuple
+from pydantic import BaseModel, Field, field_validator
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import BaseEngineInput, BaseEngineOutput, BirthDataInput
 
 
 # ===== INPUT MODELS =====
 
-class VedicClockTCMInput(BaseEngineInput):
+class VedicClockTCMInput(BaseEngineInput, BirthDataInput):
     """Input model for VedicClock-TCM Integration Engine."""
-    
-    # Personal Chart Data (required for personalization)
-    birth_date: str = Field(..., description="Birth date in YYYY-MM-DD format")
-    birth_time: str = Field(..., description="Birth time in HH:MM format (24-hour)")
-    birth_location: List[float] = Field(..., description="[latitude, longitude] of birth place")
-    timezone: str = Field(default="UTC", description="Birth timezone (e.g., 'Asia/Kolkata')")
+
+    # Birth data is required for VedicClock-TCM
+    birth_time: time = Field(..., description="Birth time is required for VedicClock-TCM calculations")
+    birth_location: Tuple[float, float] = Field(..., description="Birth location as coordinates [latitude, longitude]")
+    timezone: str = Field(..., description="Birth timezone (e.g., 'Asia/Kolkata')")
     
     # Analysis Parameters
     target_date: Optional[str] = Field(None, description="Date for analysis (defaults to today)")
@@ -43,6 +42,20 @@ class VedicClockTCMInput(BaseEngineInput):
     # User Preferences
     include_predictions: bool = Field(default=True, description="Include future optimization windows")
     prediction_hours: int = Field(default=24, ge=1, le=168, description="Hours ahead to predict (1-168)")
+
+    @field_validator('birth_time')
+    @classmethod
+    def validate_birth_time(cls, v):
+        if v is None:
+            raise ValueError("Birth time is required for VedicClock-TCM calculations")
+        return v
+
+    @field_validator('birth_location')
+    @classmethod
+    def validate_birth_location(cls, v):
+        if v is None:
+            raise ValueError("Birth location is required for VedicClock-TCM calculations")
+        return v
 
 
 # ===== OUTPUT MODELS =====

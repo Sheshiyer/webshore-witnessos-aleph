@@ -255,12 +255,12 @@ class VedicClockTCMEngine(BaseEngine):
                 date_part = datetime.strptime(input_data.target_date, "%Y-%m-%d").date()
             else:
                 date_part = datetime.now().date()
-            
+
             if input_data.target_time:
                 time_part = datetime.strptime(input_data.target_time, "%H:%M").time()
             else:
                 time_part = datetime.now().time()
-            
+
             return datetime.combine(date_part, time_part)
         except Exception:
             return datetime.now()
@@ -270,8 +270,8 @@ class VedicClockTCMEngine(BaseEngine):
     ) -> VimshottariContext:
         """Calculate current Vimshottari Dasha context."""
         # Simplified calculation - in production, use proper Vedic calculations
-        birth_date = datetime.strptime(input_data.birth_date, "%Y-%m-%d")
-        age_years = (target_datetime - birth_date).days / 365.25
+        birth_datetime = datetime.combine(input_data.birth_date, input_data.birth_time)
+        age_years = (target_datetime - birth_datetime).days / 365.25
         
         # Basic dasha progression (simplified)
         dasha_sequence = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"]
@@ -462,8 +462,8 @@ class VedicClockTCMEngine(BaseEngine):
     def _generate_field_signature(self, input_data: VedicClockTCMInput) -> str:
         """Generate unique field signature for this calculation."""
         components = [
-            input_data.birth_date,
-            input_data.birth_time,
+            input_data.birth_date.strftime("%Y-%m-%d"),
+            input_data.birth_time.strftime("%H:%M"),
             f"{input_data.birth_location[0]:.2f},{input_data.birth_location[1]:.2f}",
             input_data.target_date or "now",
             input_data.analysis_depth
