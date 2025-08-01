@@ -43,9 +43,6 @@ class VedicClockTCMEngine(BaseEngine):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.engine_data: Optional[VedicClockTCMData] = None
-
-    def _initialize(self):
-        """Initialize VedicClock-TCM engine data."""
         self._load_engine_data()
     
     @property
@@ -68,28 +65,37 @@ class VedicClockTCMEngine(BaseEngine):
         """Load VedicClock-TCM engine data files."""
         try:
             data_dir = Path(__file__).parent / "data"
-            
-            # Load all data files
-            dasha_data = self._load_json_file(data_dir / "vimshottari_periods.json")
-            panchanga_data = self._load_json_file(data_dir / "panchanga_qualities.json")
-            tcm_data = self._load_json_file(data_dir / "tcm_organ_clock.json")
-            correspondences = self._load_json_file(data_dir / "vedic_tcm_correspondences.json")
-            practices = self._load_json_file(data_dir / "consciousness_practices.json")
-            
-            self.engine_data = VedicClockTCMData(
-                dasha_periods=dasha_data.get("periods", {}),
-                planetary_qualities=dasha_data.get("planetary_qualities", {}),
-                tithi_qualities=panchanga_data.get("tithi", {}),
-                nakshatra_qualities=panchanga_data.get("nakshatra", {}),
-                yoga_qualities=panchanga_data.get("yoga", {}),
-                organ_clock_schedule=tcm_data.get("schedule", {}),
-                element_cycles=tcm_data.get("elements", {}),
-                vedic_tcm_correspondences=correspondences,
-                consciousness_practices=practices
-            )
-            
+
+            # Initialize with empty data first
+            self.engine_data = VedicClockTCMData()
+
+            # Try to load data files, but don't fail if they're missing
+            try:
+                dasha_data = self._load_json_file(data_dir / "vimshottari_periods.json")
+                panchanga_data = self._load_json_file(data_dir / "panchanga_qualities.json")
+                tcm_data = self._load_json_file(data_dir / "tcm_organ_clock.json")
+                correspondences = self._load_json_file(data_dir / "vedic_tcm_correspondences.json")
+                practices = self._load_json_file(data_dir / "consciousness_practices.json")
+
+                self.engine_data = VedicClockTCMData(
+                    dasha_periods=dasha_data.get("periods", {}),
+                    planetary_qualities=dasha_data.get("planetary_qualities", {}),
+                    tithi_qualities=panchanga_data.get("tithi", {}),
+                    nakshatra_qualities=panchanga_data.get("nakshatra", {}),
+                    yoga_qualities=panchanga_data.get("yoga", {}),
+                    organ_clock_schedule=tcm_data.get("schedule", {}),
+                    element_cycles=tcm_data.get("elements", {}),
+                    vedic_tcm_correspondences=correspondences,
+                    consciousness_practices=practices
+                )
+                print(f"✅ VedicClock-TCM data loaded successfully")
+
+            except Exception as data_error:
+                print(f"⚠️ Warning: Could not load VedicClock-TCM data files: {data_error}")
+                print("🔄 Using minimal data for basic functionality")
+
         except Exception as e:
-            print(f"Warning: Could not load VedicClock-TCM data: {e}")
+            print(f"❌ Error initializing VedicClock-TCM engine: {e}")
             # Initialize with minimal data for basic functionality
             self.engine_data = VedicClockTCMData()
     
