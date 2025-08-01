@@ -40,9 +40,12 @@ class VedicClockTCMEngine(BaseEngine):
     Returns personalized consciousness guidance for optimal spiritual development.
     """
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__(config)
         self.engine_data: Optional[VedicClockTCMData] = None
+
+    def _initialize(self):
+        """Initialize VedicClock-TCM engine data."""
         self._load_engine_data()
     
     @property
@@ -100,10 +103,100 @@ class VedicClockTCMEngine(BaseEngine):
             print(f"Warning: Could not load {file_path}: {e}")
         return {}
     
+    def _calculate(self, validated_input: VedicClockTCMInput) -> Dict[str, Any]:
+        """
+        Perform the core VedicClock-TCM calculation logic.
+
+        Args:
+            validated_input: Validated input data
+
+        Returns:
+            Dictionary containing raw calculation results
+        """
+        # Parse target date/time (default to now)
+        target_datetime = self._parse_target_datetime(validated_input)
+
+        # 1. Calculate personal Vimshottari Dasha context
+        vimshottari_context = self._calculate_vimshottari_context(
+            validated_input, target_datetime
+        )
+
+        # 2. Determine current Panchanga state
+        panchanga_state = self._calculate_panchanga_state(target_datetime)
+
+        # 3. Calculate TCM Organ Clock state
+        tcm_organ_state = self._calculate_tcm_organ_state(target_datetime)
+
+        # 4. Synthesize elemental energies
+        elemental_synthesis = self._synthesize_elements(
+            panchanga_state, tcm_organ_state
+        )
+
+        # 5. Calculate personal resonance
+        personal_resonance = self._calculate_personal_resonance(
+            validated_input, vimshottari_context, panchanga_state, tcm_organ_state
+        )
+
+        # 6. Generate consciousness optimization guidance
+        consciousness_optimization = self._generate_consciousness_optimization(
+            validated_input, vimshottari_context, panchanga_state,
+            tcm_organ_state, elemental_synthesis, personal_resonance
+        )
+
+        # 7. Generate future optimization windows (if requested)
+        upcoming_windows = None
+        if validated_input.include_predictions:
+            upcoming_windows = self._generate_optimization_windows(
+                validated_input, target_datetime
+            )
+
+        # 8. Create daily curriculum and homework
+        daily_curriculum, homework_practices, progress_indicators = (
+            self._create_consciousness_curriculum(
+                vimshottari_context, consciousness_optimization, validated_input
+            )
+        )
+
+        return {
+            'vimshottari_context': vimshottari_context,
+            'panchanga_state': panchanga_state,
+            'tcm_organ_state': tcm_organ_state,
+            'elemental_synthesis': elemental_synthesis,
+            'consciousness_optimization': consciousness_optimization,
+            'personal_resonance_score': personal_resonance,
+            'optimal_energy_window': personal_resonance > 0.7,
+            'upcoming_windows': upcoming_windows,
+            'daily_curriculum': daily_curriculum,
+            'homework_practices': homework_practices,
+            'progress_indicators': progress_indicators
+        }
+
+    def _interpret(self, calculation_results: Dict[str, Any], input_data: VedicClockTCMInput) -> str:
+        """
+        Interpret VedicClock-TCM calculation results into human-readable format.
+
+        Args:
+            calculation_results: Raw calculation results
+            input_data: Original input data
+
+        Returns:
+            Human-readable interpretation string
+        """
+        vimshottari = calculation_results['vimshottari_context']
+        panchanga = calculation_results['panchanga_state']
+        tcm = calculation_results['tcm_organ_state']
+        elemental = calculation_results['elemental_synthesis']
+        optimization = calculation_results['consciousness_optimization']
+        resonance = calculation_results['personal_resonance_score']
+
+        return self._format_output(
+            vimshottari, panchanga, tcm, elemental, optimization, resonance
+        )
+
     async def calculate(self, input_data: VedicClockTCMInput) -> VedicClockTCMOutput:
         """
         Main calculation method for VedicClock-TCM integration.
-        
+
         Performs multi-dimensional analysis combining:
         1. Personal Vimshottari Dasha calculation
         2. Current Panchanga state analysis
@@ -113,89 +206,45 @@ class VedicClockTCMEngine(BaseEngine):
         """
         try:
             start_time = datetime.now()
-            
-            # Parse target date/time (default to now)
-            target_datetime = self._parse_target_datetime(input_data)
-            
-            # 1. Calculate personal Vimshottari Dasha context
-            vimshottari_context = self._calculate_vimshottari_context(
-                input_data, target_datetime
-            )
-            
-            # 2. Determine current Panchanga state
-            panchanga_state = self._calculate_panchanga_state(target_datetime)
-            
-            # 3. Calculate TCM Organ Clock state
-            tcm_organ_state = self._calculate_tcm_organ_state(target_datetime)
-            
-            # 4. Synthesize elemental energies
-            elemental_synthesis = self._synthesize_elements(
-                panchanga_state, tcm_organ_state
-            )
-            
-            # 5. Calculate personal resonance
-            personal_resonance = self._calculate_personal_resonance(
-                input_data, vimshottari_context, panchanga_state, tcm_organ_state
-            )
-            
-            # 6. Generate consciousness optimization guidance
-            consciousness_optimization = self._generate_consciousness_optimization(
-                input_data, vimshottari_context, panchanga_state, 
-                tcm_organ_state, elemental_synthesis, personal_resonance
-            )
-            
-            # 7. Generate future optimization windows (if requested)
-            upcoming_windows = None
-            if input_data.include_predictions:
-                upcoming_windows = self._generate_optimization_windows(
-                    input_data, target_datetime
-                )
-            
-            # 8. Create daily curriculum and homework
-            daily_curriculum, homework_practices, progress_indicators = (
-                self._create_consciousness_curriculum(
-                    vimshottari_context, consciousness_optimization, input_data
-                )
-            )
-            
+
+            # Use the abstract _calculate method
+            calculation_results = self._calculate(input_data)
+
             # Calculate processing time
             calculation_time = (datetime.now() - start_time).total_seconds()
-            
-            # Generate formatted output
-            formatted_output = self._format_output(
-                vimshottari_context, panchanga_state, tcm_organ_state,
-                elemental_synthesis, consciousness_optimization, personal_resonance
-            )
-            
+
+            # Generate formatted output using _interpret method
+            formatted_output = self._interpret(calculation_results, input_data)
+
             return VedicClockTCMOutput(
                 engine_name=self.engine_name,
                 calculation_time=calculation_time,
                 confidence_score=0.92,  # High confidence for established systems
                 field_signature=self._generate_field_signature(input_data),
                 formatted_output=formatted_output,
-                
+
                 # Core Analysis
-                vimshottari_context=vimshottari_context,
-                panchanga_state=panchanga_state,
-                tcm_organ_state=tcm_organ_state,
-                
+                vimshottari_context=calculation_results['vimshottari_context'],
+                panchanga_state=calculation_results['panchanga_state'],
+                tcm_organ_state=calculation_results['tcm_organ_state'],
+
                 # Synthesis
-                elemental_synthesis=elemental_synthesis,
-                consciousness_optimization=consciousness_optimization,
-                
+                elemental_synthesis=calculation_results['elemental_synthesis'],
+                consciousness_optimization=calculation_results['consciousness_optimization'],
+
                 # Personal Resonance
-                personal_resonance_score=personal_resonance,
-                optimal_energy_window=personal_resonance > 0.7,
-                
+                personal_resonance_score=calculation_results['personal_resonance_score'],
+                optimal_energy_window=calculation_results['optimal_energy_window'],
+
                 # Predictions
-                upcoming_windows=upcoming_windows,
-                
+                upcoming_windows=calculation_results['upcoming_windows'],
+
                 # Integration Guidance
-                daily_curriculum=daily_curriculum,
-                homework_practices=homework_practices,
-                progress_indicators=progress_indicators
+                daily_curriculum=calculation_results['daily_curriculum'],
+                homework_practices=calculation_results['homework_practices'],
+                progress_indicators=calculation_results['progress_indicators']
             )
-            
+
         except Exception as e:
             raise Exception(f"VedicClock-TCM calculation failed: {str(e)}")
     
