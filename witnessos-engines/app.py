@@ -40,8 +40,8 @@ from engines.sacred_geometry import SacredGeometryMapper
 from engines.sacred_geometry_models import SacredGeometryInput
 from engines.sigil_forge import SigilForgeSynthesizer
 from engines.sigil_forge_models import SigilForgeInput
-from engines.vedicclock_tcm import VedicClockTCMEngine
-from engines.vedicclock_tcm_models import VedicClockTCMInput
+# from engines.vedicclock_tcm import VedicClockTCMEngine
+# from engines.vedicclock_tcm_models import VedicClockTCMInput
 
 # Configure logging
 logging.basicConfig(
@@ -304,6 +304,19 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
                 intention=request.input["intention"],
                 method=request.input.get("method", "traditional"),
                 birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+            )
+        elif engine_name == "vedicclock_tcm":
+            input_obj = VedicClockTCMInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
+                timezone=request.input.get("timezone", "UTC"),
+                target_date=request.input.get("target_date"),
+                target_time=request.input.get("target_time"),
+                analysis_depth=request.input.get("analysis_depth", "detailed"),
+                optimization_focus=request.input.get("optimization_focus", []),
+                include_predictions=request.input.get("include_predictions", True),
+                prediction_hours=request.input.get("prediction_hours", 24)
             )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
