@@ -102,7 +102,7 @@ async def startup_event():
             "enneagram": EnneagramResonator(),
             "sacred_geometry": SacredGeometryMapper(),
             "sigil_forge": SigilForgeSynthesizer(),
-            "vedicclock_tcm": VedicClockTCMEngine(),
+            # "vedicclock_tcm": VedicClockTCMEngine(),  # Temporarily disabled for debugging
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
