@@ -10,12 +10,36 @@ import CosmicPortalTemple from '@/components/procedural-scenes/CosmicPortalTempl
 import { TEMPLE_TEMPLATES } from '@/lib/cosmic-portal-temple';
 
 export default function CosmicTempleClient() {
-  const { consciousness, updateConsciousness } = useConsciousness();
+  const { consciousness, updateConsciousness } = useConsciousness({
+    initialBreathPattern: {
+      inhaleCount: 4,
+      holdCount: 4,
+      exhaleCount: 4,
+      pauseCount: 4,
+      rhythm: 60,
+      totalCycle: 16,
+      frequency: 0.0625
+    },
+    autoBreathDetection: true,
+    consciousnessEvolution: true,
+    discoveryTracking: true
+  });
   const [breathState, setBreathState] = useState<BreathState>({
-    phase: 'neutral',
+    pattern: {
+      inhaleCount: 4,
+      holdCount: 4,
+      exhaleCount: 4,
+      pauseCount: 4,
+      rhythm: 60,
+      totalCycle: 16,
+      frequency: 0.0625
+    },
+    phase: 'pause' as const,
     intensity: 0,
+    rhythm: 60,
     coherence: 0,
-    timestamp: Date.now(),
+    synchronization: 0,
+    timestamp: new Date().toISOString(),
   });
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLE_TEMPLATES>('MEDITATION_SANCTUARY');
   const [activatedPortals, setActivatedPortals] = useState<string[]>([]);
@@ -28,8 +52,8 @@ export default function CosmicTempleClient() {
     if (newBreathState.coherence > 0.7) {
       updateConsciousness({
         awarenessLevel: Math.min(1.0, consciousness.awarenessLevel + 0.002),
-        coherenceLevel: newBreathState.coherence,
-        breathSynchronization: newBreathState.intensity,
+        integrationPoints: [...consciousness.integrationPoints, 'Breath Coherence'],
+        expansionVectors: [...consciousness.expansionVectors, 'Deep Breathing'],
       });
     }
   }, [consciousness.awarenessLevel, updateConsciousness]);
@@ -51,8 +75,7 @@ export default function CosmicTempleClient() {
       {/* Breath Detection */}
       <BreathDetection
         onBreathStateChange={handleBreathStateChange}
-        consciousness={consciousness}
-        isActive={true}
+        enabled={true}
       />
 
       {/* Temple Info Overlay */}
@@ -81,23 +104,23 @@ export default function CosmicTempleClient() {
         <div className="space-y-2 text-xs">
           <div className="flex justify-between">
             <span>Consciousness:</span>
-            <span className="text-indigo-400">{(consciousness.awarenessLevel * 100).toFixed(1)}%</span>
+            <span className="text-indigo-400">{(consciousness?.awarenessLevel * 100).toFixed(1)}%</span>
           </div>
           <div className="flex justify-between">
             <span>Coherence:</span>
-            <span className="text-purple-400">{(consciousness.coherenceLevel * 100).toFixed(1)}%</span>
+            <span className="text-purple-400">{(breathState?.coherence * 100).toFixed(1)}%</span>
           </div>
           <div className="flex justify-between">
             <span>Breath Coherence:</span>
-            <span className="text-green-400">{(breathState.coherence * 100).toFixed(1)}%</span>
+            <span className="text-green-400">{(breathState?.coherence * 100).toFixed(1)}%</span>
           </div>
           <div className="flex justify-between">
             <span>Breath Phase:</span>
-            <span className="text-blue-400">{breathState.phase}</span>
+            <span className="text-blue-400">{breathState?.phase}</span>
           </div>
           <div className="flex justify-between">
             <span>Portals Activated:</span>
-            <span className="text-yellow-400">{activatedPortals.length}</span>
+            <span className="text-yellow-400">{activatedPortals?.length}</span>
           </div>
         </div>
       </div>
@@ -106,16 +129,16 @@ export default function CosmicTempleClient() {
       <div className="absolute top-4 right-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
         <h3 className="font-bold text-indigo-300 mb-2">Temple Requirements</h3>
         <div className="text-sm text-gray-300 space-y-1">
-          <div>Min Awareness: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.minimumAwarenessLevel * 100).toFixed(0)}%</div>
-          <div>Required Coherence: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.requiredCoherence * 100).toFixed(0)}%</div>
-          <div>Breath Sync: {(TEMPLE_TEMPLATES[selectedTemplate].consciousness.breathSynchronizationLevel * 100).toFixed(0)}%</div>
+          <div>Min Awareness: {((TEMPLE_TEMPLATES[selectedTemplate]?.consciousness?.minimumAwarenessLevel ?? 0) * 100).toFixed(0)}%</div>
+          <div>Required Coherence: {((TEMPLE_TEMPLATES[selectedTemplate]?.consciousness?.requiredCoherence ?? 0) * 100).toFixed(0)}%</div>
+          <div>Breath Sync: {((TEMPLE_TEMPLATES[selectedTemplate]?.consciousness?.breathSynchronizationLevel ?? 0) * 100).toFixed(0)}%</div>
         </div>
         
         <div className="mt-3 text-xs">
           <div className="font-medium text-indigo-300 mb-1">Temple Features:</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].portals.length} Portal(s)</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].energyFields.length} Energy Field(s)</div>
-          <div>• {TEMPLE_TEMPLATES[selectedTemplate].sacredElements.length} Sacred Element(s)</div>
+          <div>• {TEMPLE_TEMPLATES[selectedTemplate]?.portals?.length ?? 0} Portal(s)</div>
+          <div>• {TEMPLE_TEMPLATES[selectedTemplate]?.energyFields?.length ?? 0} Energy Field(s)</div>
+          <div>• {TEMPLE_TEMPLATES[selectedTemplate]?.sacredElements?.length ?? 0} Sacred Element(s)</div>
         </div>
       </div>
 
@@ -196,9 +219,8 @@ export default function CosmicTempleClient() {
           <bufferGeometry>
             <bufferAttribute
               attach="attributes-position"
-              array={new Float32Array(Array.from({ length: 2000 * 3 }, () => (Math.random() - 0.5) * 200))}
+              args={[new Float32Array(Array.from({ length: 2000 * 3 }, () => (Math.random() - 0.5) * 200)), 3]}
               count={2000}
-              itemSize={3}
             />
           </bufferGeometry>
           <pointsMaterial
@@ -212,4 +234,4 @@ export default function CosmicTempleClient() {
       </Canvas>
     </div>
   );
-} 
+}

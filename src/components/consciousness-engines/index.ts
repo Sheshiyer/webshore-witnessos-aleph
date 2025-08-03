@@ -17,6 +17,7 @@ import SacredGeometryEngineComponent from './SacredGeometryEngine';
 import SigilForgeEngineComponent from './SigilForgeEngine';
 import TarotEngineComponent from './TarotEngine';
 import VimshottariEngineComponent from './VimshottariEngine';
+import VedicClockTCMEngineComponent from './VedicClockTCMEngine';
 import { NadaBrahmanEngine as NadaBrahmanEngineComponent } from './NadaBrahmanEngine';
 
 // Re-export with consistent names
@@ -32,6 +33,7 @@ export {
   SigilForgeEngineComponent as SigilForgeEngine,
   TarotEngineComponent as TarotEngine,
   VimshottariEngineComponent as VimshottariEngine,
+  VedicClockTCMEngineComponent as VedicClockTCMEngine,
   NadaBrahmanEngineComponent as NadaBrahmanEngine,
 };
 
@@ -46,7 +48,8 @@ export type EngineComponent =
   | 'gene_keys'
   | 'enneagram'
   | 'sacred_geometry'
-  | 'sigil_forge';
+  | 'sigil_forge'
+  | 'vedicclock_tcm';
 
 // Engine metadata for discovery layer integration
 export const ENGINE_METADATA = {
@@ -130,6 +133,14 @@ export const ENGINE_METADATA = {
     frequency: 285,
     element: 'intention',
   },
+  vedicclock_tcm: {
+    name: 'VedicClock-TCM Integration',
+    description: 'Multi-dimensional consciousness optimization combining Vedic time cycles with TCM organ rhythms',
+    layer: 3, // Integration layer - advanced consciousness technology
+    color: '#8B4513', // Earth-tone for grounding
+    frequency: 432, // Sacred frequency for consciousness integration
+    element: 'time',
+  },
 } as const;
 
 // Helper function to get engines by discovery layer
@@ -156,6 +167,7 @@ export const ENGINE_COMPONENTS = {
   enneagram: EnneagramEngineComponent,
   sacred_geometry: SacredGeometryEngineComponent,
   sigil_forge: SigilForgeEngineComponent,
+  vedicclock_tcm: VedicClockTCMEngineComponent,
 } as const;
 
 // Discovery layer engine distribution
@@ -163,7 +175,7 @@ export const LAYER_ENGINES = {
   0: [], // Portal layer - no engines, just entry
   1: ['sacred_geometry', 'biorhythm'], // Awakening - foundational patterns
   2: ['numerology', 'vimshottari', 'tarot', 'iching'], // Recognition - system understanding
-  3: ['human_design', 'gene_keys', 'enneagram', 'sigil_forge'], // Integration - personal mastery
+  3: ['human_design', 'gene_keys', 'enneagram', 'sigil_forge', 'vedicclock_tcm'], // Integration - personal mastery
 } as const;
 
 // Consciousness frequency mapping for engine harmonics
@@ -174,7 +186,7 @@ export const ENGINE_FREQUENCIES = Object.fromEntries(
 // Engine element groupings for thematic organization
 export const ENGINE_ELEMENTS = {
   spirit: ['numerology', 'sacred_geometry'],
-  time: ['biorhythm', 'vimshottari'],
+  time: ['biorhythm', 'vimshottari', 'vedicclock_tcm'],
   consciousness: ['human_design'],
   archetype: ['tarot'],
   change: ['iching'],
@@ -195,6 +207,7 @@ export default {
   EnneagramEngine: EnneagramEngineComponent,
   SacredGeometryEngine: SacredGeometryEngineComponent,
   SigilForgeEngine: SigilForgeEngineComponent,
+  VedicClockTCMEngine: VedicClockTCMEngineComponent,
   BreathDetection: BreathDetectionComponent,
 
   // Metadata

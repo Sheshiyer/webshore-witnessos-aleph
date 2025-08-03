@@ -15,6 +15,9 @@ import { BaseEngine } from './core/base-engine';
 import type { BaseEngineInput, CalculationResult, BaseEngineOutput } from './core/types';
 import type { EngineName } from '../types/engines';
 
+// Cloudflare D1 Database type
+type D1Database = any;
+
 // Minimal engine registry - all engines now run on Python backend
 // This is kept for type compatibility and fallback scenarios only
 const ENGINE_CLASSES = {} as const;
@@ -51,9 +54,7 @@ export function listEngines(): EngineName[] {
     'vimshottari',
     'gene_keys',
     'sigil_forge',
-    'nadabrahman',
-    'biorhythm',
-    'biofield_viewer'
+    'biorhythm'
   ];
 }
 
@@ -115,9 +116,7 @@ export const AVAILABLE_ENGINES: EngineName[] = [
   'vimshottari',
   'gene_keys',
   'sigil_forge',
-  'nadabrahman',
-  'biorhythm',
-  'biofield_viewer'
+  'biorhythm'
 ];
 
 // Engine metadata for discovery (kept for API compatibility)
@@ -185,25 +184,11 @@ export const ENGINE_METADATA = {
     difficulty: 'intermediate',
     backend: 'python'
   },
-  'nadabrahman': {
-    name: 'NadaBrahman',
-    description: 'Bio-responsive raga synthesis',
-    category: 'sound',
-    difficulty: 'advanced',
-    backend: 'python'
-  },
   'biorhythm': {
     name: 'Biorhythm',
     description: 'Biological cycle analysis and critical days',
     category: 'foundational',
     difficulty: 'beginner',
-    backend: 'python'
-  },
-  'biofield_viewer': {
-    name: 'Biofield Viewer',
-    description: 'Energetic signature capture and analysis',
-    category: 'biofield',
-    difficulty: 'foundational',
     backend: 'python'
   }
 } as const;

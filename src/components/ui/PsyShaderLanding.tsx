@@ -16,6 +16,7 @@ const audioVSStyles = `
     --accent-tertiary: #ffb3ab;
     --panel-bg: rgba(30, 26, 24, 0.7);
     --panel-border: rgba(255, 78, 66, 0.3);
+    
     --panel-highlight: rgba(255, 78, 66, 0.1);
     --scanner-line: rgba(255, 78, 66, 0.7);
   }

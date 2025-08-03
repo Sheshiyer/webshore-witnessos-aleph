@@ -6,7 +6,6 @@
  * inter-service communication for engine operations.
  */
 
-import { WorkerEntrypoint } from 'cloudflare:workers';
 import {
   getEngine,
   listEngines,
@@ -24,6 +23,56 @@ import {
 } from '../lib/validation-constants';
 import { createKVDataAccess, CloudflareKVDataAccess } from '../lib/kv-data-access';
 import { AuthService } from '../lib/auth';
+import { WorkerEntrypoint } from 'cloudflare:workers';
+
+// Cloudflare Workers types
+declare global {
+  interface D1Database {
+    prepare(query: string): D1PreparedStatement;
+    dump(): Promise<ArrayBuffer>;
+    batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+    exec(query: string): Promise<D1ExecResult>;
+  }
+
+  interface D1PreparedStatement {
+    bind(...values: any[]): D1PreparedStatement;
+    first<T = unknown>(colName?: string): Promise<T | null>;
+    run(): Promise<D1Result>;
+    all<T = unknown>(): Promise<D1Result<T>>;
+    raw<T = unknown>(): Promise<T[]>;
+  }
+
+  interface D1Result<T = Record<string, unknown>> {
+    results: T[];
+    success: boolean;
+    meta: {
+      duration: number;
+      size_after: number;
+      rows_read: number;
+      rows_written: number;
+      last_row_id: number;
+    };
+  }
+
+  interface D1ExecResult {
+    count: number;
+    duration: number;
+  }
+
+  interface KVNamespace {
+    get(key: string, options?: { type?: 'text' | 'json' | 'arrayBuffer' | 'stream' }): Promise<any>;
+    put(key: string, value: string | ArrayBuffer | ArrayBufferView | ReadableStream, options?: { expirationTtl?: number; expiration?: number; metadata?: any }): Promise<void>;
+    delete(key: string): Promise<void>;
+    list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: { name: string; expiration?: number; metadata?: any }[]; list_complete: boolean; cursor?: string }>;
+  }
+
+
+
+  interface ExecutionContext {
+    waitUntil(promise: Promise<any>): void;
+    passThroughOnException(): void;
+  }
+}
 
 // Environment interface for this service
 interface EngineServiceEnv {
@@ -32,6 +81,10 @@ interface EngineServiceEnv {
   KV_USER_PROFILES: KVNamespace;
   ENGINE_DATA: KVNamespace;
   ENGINE_CACHE: KVNamespace;
+  USER_PROFILES: KVNamespace;
+  CACHE: KVNamespace;
+  TIMELINE_DATA: KVNamespace;
+  SECRETS?: KVNamespace;
   AI_SERVICE?: any; // RPC binding to AI service
   OPENROUTER_API_KEY?: string;
   JWT_SECRET?: string;
@@ -69,7 +122,7 @@ interface BatchCalculationParams {
 interface EngineResult {
   success: boolean;
   data?: any;
-  error?: string;
+  error?: string | undefined;
   metadata?: {
     engineName: string;
     calculationTime: number;
@@ -101,13 +154,22 @@ interface BatchResult {
 }
 
 /**
- * Engine Service Worker - RPC Entrypoint
- * 
- * Provides specialized engine calculation services via RPC interface.
+ * Engine Service Worker - Standard Worker
+ *
+ * Provides specialized engine calculation services.
  * This worker handles all consciousness engine operations including
  * calculation, validation, metadata retrieval, and batch processing.
  */
+
+/**
+ * HTTP fetch handler for direct API access
+ * CRITICAL: Preserves exact API endpoints from legacy system
+ */
 export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
+  constructor(ctx: ExecutionContext, env: EngineServiceEnv) {
+    super(ctx, env);
+  }
+
   /**
    * HTTP fetch handler for direct API access
    * CRITICAL: Preserves exact API endpoints from legacy system
@@ -297,10 +359,9 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
 
       console.log(`[${requestId}] Calculating ${engineName} engine for user ${authResult.user.id}`);
 
-      // Execute engine calculation (EXACT COPY from legacy calculateEngine calls)
-      // CRITICAL: Pass D1 database for Swiss Ephemeris calculations
+      // Execute engine calculation via Railway Python backend
       const startTime = Date.now();
-      const result = await calculateEngine(engineName, enhancedInput, config, this.env.DB);
+      const result = await this.callRailwayEngine(engineName, enhancedInput, config);
       const calculationTime = Date.now() - startTime;
 
       // Log calculation for debugging (preserving legacy logging)
@@ -311,7 +372,7 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
         success: result.success,
         engine: engineName,
         data: result.data,
-        error: result.error,
+        error: result.error ? String(result.error) : undefined,
         metadata: {
           requestId,
           calculationTime,
@@ -355,6 +416,40 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
     } catch (error) {
       console.error('Authentication error:', error);
       return { success: false, error: 'Authentication failed' };
+    }
+  }
+
+  /**
+   * Call Railway Python engine backend directly
+   */
+  private async callRailwayEngine(engineName: string, input: any, config?: any): Promise<any> {
+    try {
+      const railwayUrl = 'https://webshore-witnessos-aleph-production.up.railway.app';
+      const response = await fetch(`${railwayUrl}/engines/${engineName}/calculate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'WitnessOS-EngineService/1.0'
+        },
+        body: JSON.stringify({ input, config })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Railway API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: result,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Railway engine ${engineName} error:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Railway engine calculation failed'
+      };
     }
   }
 
@@ -455,7 +550,7 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
       return {
         success: result.success,
         data: result.data,
-        error: result.error,
+        ...(result.error && { error: String(result.error) }),
         metadata: {
           engineName,
           calculationTime: Date.now() - startTime,
@@ -498,7 +593,7 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
       }
 
       // Get validation metadata for the engine
-      const validationMeta = VALIDATION_METADATA[engineName];
+      const validationMeta = (VALIDATION_METADATA as any)[engineName];
       if (!validationMeta) {
         return {
           valid: false,
@@ -518,32 +613,33 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
       }
 
       // Validate field types and formats
-      for (const [field, rules] of Object.entries(validationMeta.fields)) {
+      for (const [field, rules] of Object.entries(validationMeta.fields || {})) {
+        const fieldRules = rules as any;
         if (input[field] !== undefined) {
           // Type validation
-          if (rules.type && typeof input[field] !== rules.type) {
-            errors.push(`Field '${field}' must be of type ${rules.type}`);
+          if (fieldRules.type && typeof input[field] !== fieldRules.type) {
+            errors.push(`Field '${field}' must be of type ${fieldRules.type}`);
           }
 
           // Format validation (e.g., date format, email format)
-          if (rules.format && !this.validateFormat(input[field], rules.format)) {
-            errors.push(`Field '${field}' has invalid format. Expected: ${rules.format}`);
+          if (fieldRules.format && !this.validateFormat(input[field], fieldRules.format)) {
+            errors.push(`Field '${field}' has invalid format. Expected: ${fieldRules.format}`);
           }
 
           // Range validation
-          if (rules.min !== undefined && input[field] < rules.min) {
-            errors.push(`Field '${field}' must be >= ${rules.min}`);
+          if (fieldRules.min !== undefined && input[field] < fieldRules.min) {
+            errors.push(`Field '${field}' must be >= ${fieldRules.min}`);
           }
-          if (rules.max !== undefined && input[field] > rules.max) {
-            errors.push(`Field '${field}' must be <= ${rules.max}`);
+          if (fieldRules.max !== undefined && input[field] > fieldRules.max) {
+            errors.push(`Field '${field}' must be <= ${fieldRules.max}`);
           }
         }
       }
 
       return {
         valid: errors.length === 0,
-        errors: errors.length > 0 ? errors : undefined,
-        warnings: warnings.length > 0 ? warnings : undefined,
+        ...(errors.length > 0 && { errors }),
+        ...(warnings.length > 0 && { warnings }),
         metadata: validationMeta
       };
 
@@ -617,7 +713,7 @@ export class EngineService extends WorkerEntrypoint<EngineServiceEnv> {
         engineName,
         success: result.success,
         data: result.data,
-        error: result.error
+        ...(result.error && { error: String(result.error) })
       };
     });
 

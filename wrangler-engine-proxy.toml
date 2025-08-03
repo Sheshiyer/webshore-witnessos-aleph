@@ -1,5 +1,5 @@
 # Engine Proxy Worker Configuration
-# Handles communication with Railway Python engines
+# Handles communication with Railway Python engines (Swiss Ephemeris + Consciousness Engines)
 
 name = "witnessos-engine-proxy"
 main = "src/workers/engine-proxy-worker.ts"
@@ -21,6 +21,9 @@ preview_id = "317be7d22ee14e51b1bed3d15145dd51"
 [vars]
 ENVIRONMENT = "production"
 RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+CACHE_DURATION = "3600"  # 1 hour cache for engine calculations
 
 # Secrets (set via wrangler secret put)
 # RAILWAY_API_KEY
@@ -32,6 +35,9 @@ name = "witnessos-engine-proxy-dev"
 [env.development.vars]
 ENVIRONMENT = "development"
 RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+CACHE_DURATION = "300"  # 5 minutes cache for development
 
 # Staging configuration
 [env.staging]
@@ -51,6 +57,9 @@ preview_id = "317be7d22ee14e51b1bed3d15145dd51"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+CACHE_DURATION = "1800"  # 30 minutes cache for staging
 
 # Production configuration
 [env.production]
@@ -70,3 +79,6 @@ preview_id = "317be7d22ee14e51b1bed3d15145dd51"
 [env.production.vars]
 ENVIRONMENT = "production"
 RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+CACHE_DURATION = "3600"  # 1 hour cache for production

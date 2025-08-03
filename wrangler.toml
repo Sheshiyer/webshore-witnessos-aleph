@@ -1,25 +1,32 @@
-# Enhanced WitnessOS API Router Configuration
-# Main orchestration worker with service bindings to specialized workers
+# WitnessOS Hybrid Architecture Configuration
+# Main API Router with Railway Python Engine Integration
+# Python engines: Railway (Swiss Ephemeris + Consciousness Engines)
+# Cloudflare: Auth, Storage, API Gateway, Workflows
 
 name = "witnessos-api-router"
-main = "src/workers/enhanced-api-router.ts"
+main = "src/workers/index.ts"
 compatibility_date = "2024-01-15"
 compatibility_flags = ["nodejs_compat"]
+
+# Custom domain routes (managed via Cloudflare Dashboard)
+# routes = [
+#   { pattern = "api.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
+# ]
 
 # Service bindings to specialized workers (RPC)
 [[services]]
 binding = "ENGINE_SERVICE"
-service = "witnessos-engine-proxy"
+service = "witnessos-engine-service"
 
-# [[services]]
-# binding = "FORECAST_SERVICE"
-# service = "witnessos-forecast-service"
+[[services]]
+binding = "FORECAST_SERVICE"
+service = "witnessos-forecast-service"
 
-# [[services]]
-# binding = "AI_SERVICE"
-# service = "witnessos-ai-service"
+[[services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
 
-# Durable Objects
+# Durable Objects for state management
 [[durable_objects.bindings]]
 name = "ENGINE_COORDINATOR"
 class_name = "EngineCoordinator"
@@ -30,18 +37,16 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router"
 
-# Workflows (temporarily disabled due to authentication error)
-# [[workflows]]
-# name = "CONSCIOUSNESS_WORKFLOW"
+# Workflow Service bindings (temporarily disabled for deployment)
+# [[services]]
 # binding = "CONSCIOUSNESS_WORKFLOW"
-# class_name = "ConsciousnessWorkflow"
+# service = "witnessos-consciousness-workflow"
 
-# [[workflows]]
-# name = "INTEGRATION_WORKFLOW"
+# [[services]]
 # binding = "INTEGRATION_WORKFLOW"
-# class_name = "IntegrationWorkflow"
+# service = "witnessos-integration-workflow"
 
-# KV Namespaces
+# KV Namespaces for caching and data
 [[kv_namespaces]]
 binding = "KV_CACHE"
 id = "d5aa9b42b2f948bfa59143d5a56ea58b"
@@ -67,13 +72,13 @@ binding = "KV_SECRETS"
 id = "74748736c9584954b5191d3ebe3300ac"
 preview_id = "74748736c9584954b5191d3ebe3300ac"
 
-# D1 Database
+# D1 Database for persistent data
 [[d1_databases]]
 binding = "DB"
 database_name = "witnessos-db"
 database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
 
-# R2 Buckets
+# R2 Buckets for file storage
 [[r2_buckets]]
 binding = "REPORTS"
 bucket_name = "witnessos-reports"
@@ -87,7 +92,10 @@ ENABLE_ANALYTICS = "true"
 CORS_ORIGIN = "*"
 RATE_LIMIT_MAX = "1000"
 RATE_LIMIT_WINDOW = "60000"
+# Railway Python Engine Integration
 RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
 
 # Secrets (set via wrangler secret put)
 # JWT_SECRET
@@ -98,11 +106,6 @@ RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["EngineCoordinator", "ForecastSession"]
-
-# Routes (temporarily disabled due to conflict)
-# [[routes]]
-# pattern = "api.witnessos.space/*"
-# zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7"
 
 # Build configuration
 [build]
@@ -120,6 +123,9 @@ ENABLE_CACHING = "false"
 CORS_ORIGIN = "*"
 RATE_LIMIT_MAX = "50"
 RATE_LIMIT_WINDOW = "60000"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
 
 # Staging configuration
 [env.staging]
@@ -176,16 +182,14 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router-staging"
 
-# Staging Workflows (disabled - requires additional permissions)
-# [[env.staging.workflows]]
-# name = "CONSCIOUSNESS_WORKFLOW"
-# binding = "CONSCIOUSNESS_WORKFLOW"
-# class_name = "ConsciousnessWorkflow"
+# Staging Workflows - Service bindings to dedicated workflow workers
+[[env.staging.services]]
+binding = "CONSCIOUSNESS_WORKFLOW"
+service = "witnessos-consciousness-workflow-staging"
 
-# [[env.staging.workflows]]
-# name = "INTEGRATION_WORKFLOW"
-# binding = "INTEGRATION_WORKFLOW"
-# class_name = "IntegrationWorkflow"
+[[env.staging.services]]
+binding = "INTEGRATION_WORKFLOW"
+service = "witnessos-integration-workflow-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
@@ -195,6 +199,9 @@ ENABLE_ANALYTICS = "true"
 CORS_ORIGIN = "*"
 RATE_LIMIT_MAX = "100"
 RATE_LIMIT_WINDOW = "60000"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
 
 # Production configuration
 [env.production]
@@ -251,16 +258,14 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router-prod"
 
-# Production Workflows (disabled - requires additional permissions)
-# [[env.production.workflows]]
-# name = "CONSCIOUSNESS_WORKFLOW"
-# binding = "CONSCIOUSNESS_WORKFLOW"
-# class_name = "ConsciousnessWorkflow"
+# Production Workflows - Service bindings to dedicated workflow workers
+[[env.production.services]]
+binding = "CONSCIOUSNESS_WORKFLOW"
+service = "witnessos-consciousness-workflow-prod"
 
-# [[env.production.workflows]]
-# name = "INTEGRATION_WORKFLOW"
-# binding = "INTEGRATION_WORKFLOW"
-# class_name = "IntegrationWorkflow"
+[[env.production.services]]
+binding = "INTEGRATION_WORKFLOW"
+service = "witnessos-integration-workflow-prod"
 
 [env.production.vars]
 ENVIRONMENT = "production"
@@ -270,3 +275,6 @@ ENABLE_ANALYTICS = "true"
 CORS_ORIGIN = "*"
 RATE_LIMIT_MAX = "1000"
 RATE_LIMIT_WINDOW = "60000"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"

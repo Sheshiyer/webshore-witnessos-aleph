@@ -1,0 +1,83 @@
+# Integration Workflow Worker Configuration
+# Specialized worker for external integrations (Raycast, Slack, webhooks, APIs)
+# Integrates with Railway Python engines for consciousness data
+
+name = "witnessos-integration-workflow"
+main = "src/workers/integration-workflow-worker.ts"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# Service dependencies
+[[services]]
+binding = "ENGINE_SERVICE"
+service = "witnessos-engine-service"
+
+[[services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+[[services]]
+binding = "FORECAST_SERVICE"
+service = "witnessos-forecast-service"
+
+[[services]]
+binding = "ENGINE_PROXY"
+service = "witnessos-engine-proxy"
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[kv_namespaces]]
+binding = "KV_USER_PROFILES"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
+
+[[kv_namespaces]]
+binding = "KV_INTEGRATIONS"
+id = "8c9d2e3f4a5b6c7d8e9f0a1b2c3d4e5f"
+preview_id = "8c9d2e3f4a5b6c7d8e9f0a1b2c3d4e5f"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+SERVICE_NAME = "integration-workflow"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Development configuration
+[env.development]
+name = "witnessos-integration-workflow-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+ENABLE_CACHING = "false"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Staging configuration
+[env.staging]
+name = "witnessos-integration-workflow-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
+# Production configuration
+[env.production]
+name = "witnessos-integration-workflow-prod"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"

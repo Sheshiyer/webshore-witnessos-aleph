@@ -1,9 +1,10 @@
 # Forecast Service Worker Configuration
 # Specialized worker for forecast generation
+# Integrates with Railway Python engines for consciousness predictions
 
 name = "witnessos-forecast-service"
 main = "src/workers/forecast-service-worker.ts"
-compatibility_date = "2024-01-15"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # Service dependencies
@@ -15,28 +16,35 @@ service = "witnessos-engine-service"
 binding = "AI_SERVICE"
 service = "witnessos-ai-service"
 
+[[services]]
+binding = "ENGINE_PROXY"
+service = "witnessos-engine-proxy"
+
 # KV Namespaces
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "your-cache-kv-namespace-id"
-preview_id = "your-cache-kv-preview-id"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 [[kv_namespaces]]
 binding = "KV_FORECASTS"
-id = "your-forecasts-kv-namespace-id"
-preview_id = "your-forecasts-kv-preview-id"
+id = "2a075a9931374c22ba032d7c7cdb6054"
+preview_id = "2a075a9931374c22ba032d7c7cdb6054"
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "witnessos-db"
-database_id = "your-database-id"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
 
 # Environment Variables
 [vars]
 ENVIRONMENT = "production"
 SERVICE_NAME = "forecast-service"
 ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 
 # Secrets (set via wrangler secret put)
 # OPENROUTER_API_KEY
@@ -48,11 +56,28 @@ name = "witnessos-forecast-service-dev"
 [env.development.vars]
 ENVIRONMENT = "development"
 ENABLE_CACHING = "false"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 
 # Staging configuration
 [env.staging]
 name = "witnessos-forecast-service-staging"
 
+[env.staging.vars]
+ENVIRONMENT = "staging"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
 # Production configuration
 [env.production]
 name = "witnessos-forecast-service-prod"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app" 

@@ -1,0 +1,270 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "witnessos-consciousness",
+  "title": "WitnessOS Consciousness Platform",
+  "description": "Advanced consciousness technology platform with AI-powered spiritual guidance and comprehensive engine suite",
+  "icon": "extension-icon.png",
+  "author": "witnessos",
+  "contributors": [
+    "sheshnarayan.iyer@gmail.com"
+  ],
+  "owner": "witnessos",
+  "access": "public",
+  "categories": [
+    "Productivity",
+    "AI",
+    "Developer Tools",
+    "Fun"
+  ],
+  "license": "MIT",
+  "version": "1.0.0",
+  "keywords": [
+    "consciousness",
+    "spiritual",
+    "ai",
+    "numerology",
+    "tarot",
+    "human design",
+    "biorhythm",
+    "astrology",
+    "meditation",
+    "wellness"
+  ],
+  "commands": [
+    {
+      "name": "daily-guidance",
+      "title": "Daily Consciousness Guidance",
+      "description": "Get personalized daily insights using consciousness engines and AI synthesis",
+      "mode": "view",
+      "keywords": ["daily", "guidance", "consciousness", "spiritual", "ai"],
+      "preferences": [
+        {
+          "name": "defaultEngines",
+          "type": "textfield",
+          "required": false,
+          "title": "Default Engines",
+          "description": "Comma-separated list of engines to use by default",
+          "default": "numerology,biorhythm,tarot",
+          "placeholder": "numerology,biorhythm,tarot"
+        }
+      ]
+    },
+    {
+      "name": "engine-dashboard",
+      "title": "Consciousness Engine Dashboard",
+      "description": "View, calculate, and manage all consciousness engines with batch processing",
+      "mode": "view",
+      "keywords": ["engines", "dashboard", "consciousness", "calculate", "batch"]
+    },
+    {
+      "name": "ai-synthesis",
+      "title": "AI Consciousness Synthesis",
+      "description": "Generate AI-powered consciousness insights and forecasts",
+      "mode": "view",
+      "keywords": ["ai", "synthesis", "consciousness", "forecast", "insights"]
+    },
+    {
+      "name": "numerology-engine",
+      "title": "Numerology Engine",
+      "description": "Calculate comprehensive numerology profile and life path analysis",
+      "mode": "view",
+      "keywords": ["numerology", "life path", "numbers", "personality"]
+    },
+    {
+      "name": "tarot-engine",
+      "title": "Tarot Reading Engine",
+      "description": "Get personalized tarot guidance with multiple spread options",
+      "mode": "view",
+      "keywords": ["tarot", "cards", "divination", "guidance", "reading"]
+    },
+    {
+      "name": "human-design-engine",
+      "title": "Human Design Engine",
+      "description": "Generate complete Human Design chart and analysis",
+      "mode": "view",
+      "keywords": ["human design", "chart", "type", "strategy", "authority"]
+    },
+    {
+      "name": "biorhythm-engine",
+      "title": "Biorhythm Monitor",
+      "description": "Track physical, emotional, and intellectual cycles",
+      "mode": "view",
+      "keywords": ["biorhythm", "cycles", "energy", "wellness", "tracking"]
+    },
+    {
+      "name": "iching-engine",
+      "title": "I-Ching Oracle",
+      "description": "Consult the ancient Chinese oracle for wisdom and guidance",
+      "mode": "view",
+      "keywords": ["iching", "oracle", "chinese", "wisdom", "hexagram"]
+    },
+    {
+      "name": "consciousness-chat",
+      "title": "Consciousness AI Chat",
+      "description": "Interactive AI chat for spiritual guidance and consciousness exploration",
+      "mode": "view",
+      "keywords": ["ai", "chat", "consciousness", "spiritual", "interactive"]
+    },
+    {
+      "name": "vedicclock-tcm-engine",
+      "title": "VedicClock-TCM Optimization",
+      "description": "Multi-dimensional consciousness optimization combining Vedic time cycles with TCM organ rhythms",
+      "mode": "view",
+      "keywords": ["vedic", "tcm", "optimization", "consciousness", "timing", "organ", "clock"]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "apiToken",
+      "type": "password",
+      "required": true,
+      "title": "WitnessOS API Token",
+      "description": "Your JWT authentication token from WitnessOS platform",
+      "placeholder": "Enter your API token"
+    },
+    {
+      "name": "apiBaseUrl",
+      "type": "textfield",
+      "required": false,
+      "title": "API Base URL",
+      "description": "WitnessOS API endpoint (leave empty for production)",
+      "default": "https://api.witnessos.space",
+      "placeholder": "https://api.witnessos.space"
+    },
+    {
+      "name": "userProfile",
+      "type": "textfield",
+      "required": true,
+      "title": "Full Name",
+      "description": "Your complete name for consciousness calculations",
+      "placeholder": "John Doe"
+    },
+    {
+      "name": "birthDate",
+      "type": "textfield",
+      "required": true,
+      "title": "Birth Date",
+      "description": "Your birth date in YYYY-MM-DD format",
+      "placeholder": "1990-01-15"
+    },
+    {
+      "name": "birthTime",
+      "type": "textfield",
+      "required": false,
+      "title": "Birth Time",
+      "description": "Your birth time in HH:MM format (24-hour, required for Human Design)",
+      "placeholder": "14:30"
+    },
+    {
+      "name": "birthLocation",
+      "type": "textfield",
+      "required": false,
+      "title": "Birth Location",
+      "description": "Your birth location (city, country - required for Human Design)",
+      "placeholder": "New York, NY, USA"
+    },
+    {
+      "name": "birthLatitude",
+      "type": "textfield",
+      "required": false,
+      "title": "Birth Latitude",
+      "description": "Birth location latitude in decimal degrees",
+      "placeholder": "40.7128"
+    },
+    {
+      "name": "birthLongitude",
+      "type": "textfield",
+      "required": false,
+      "title": "Birth Longitude",
+      "description": "Birth location longitude in decimal degrees",
+      "placeholder": "-74.0060"
+    },
+    {
+      "name": "defaultAIModel",
+      "type": "dropdown",
+      "required": false,
+      "title": "Default AI Model",
+      "description": "Preferred AI model for synthesis and forecasting",
+      "default": "anthropic/claude-3-sonnet",
+      "data": [
+        { "title": "Claude 3 Sonnet (Recommended)", "value": "anthropic/claude-3-sonnet" },
+        { "title": "GPT-4", "value": "openai/gpt-4" },
+        { "title": "GPT-4 Turbo", "value": "openai/gpt-4-turbo" },
+        { "title": "Claude 3 Haiku (Fast)", "value": "anthropic/claude-3-haiku" },
+        { "title": "Llama 2 70B", "value": "meta-llama/llama-2-70b" },
+        { "title": "Gemini Pro", "value": "google/gemini-pro" }
+      ]
+    },
+    {
+      "name": "aiCreativity",
+      "type": "dropdown",
+      "required": false,
+      "title": "AI Creativity Level",
+      "description": "Default creativity level for AI responses",
+      "default": "1.5",
+      "data": [
+        { "title": "Focused (0.5)", "value": "0.5" },
+        { "title": "Balanced (1.0)", "value": "1.0" },
+        { "title": "Creative (1.5)", "value": "1.5" },
+        { "title": "Highly Creative (2.0)", "value": "2.0" }
+      ]
+    },
+    {
+      "name": "enableNotifications",
+      "type": "checkbox",
+      "required": false,
+      "title": "Enable Daily Notifications",
+      "description": "Receive daily consciousness guidance notifications",
+      "default": true,
+      "label": "Send daily guidance reminders"
+    },
+    {
+      "name": "cacheEnabled",
+      "type": "checkbox",
+      "required": false,
+      "title": "Enable Caching",
+      "description": "Cache engine results for better performance",
+      "default": true,
+      "label": "Enable intelligent caching"
+    },
+    {
+      "name": "debugMode",
+      "type": "checkbox",
+      "required": false,
+      "title": "Debug Mode",
+      "description": "Enable detailed logging for troubleshooting",
+      "default": false,
+      "label": "Enable debug logging"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.59.0",
+    "@raycast/utils": "^1.10.0",
+    "date-fns": "^2.30.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.0",
+    "@types/react": "18.2.45",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "ray publish",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No tests specified'",
+    "test:ai-integration": "echo 'AI integration tests not implemented'",
+    "clean": "rm -rf dist node_modules/.cache"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

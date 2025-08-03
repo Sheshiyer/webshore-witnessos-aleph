@@ -252,9 +252,31 @@ export class OfflineFallback {
 
   // Get current user (mock)
   async getCurrentUser(): Promise<any> {
+    // Check if there's a stored token (indicating previous login)
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    
+    if (token && token !== 'null' && token !== 'undefined') {
+      // Return mock user data for offline mode
+      return {
+        success: true,
+        data: {
+          user: {
+            id: 'offline-user-1',
+            email: 'offline@witnessos.space',
+            name: 'Offline User',
+            is_admin: false,
+            has_completed_onboarding: true,
+            created_at: new Date().toISOString(),
+            isOfflineUser: true,
+          }
+        }
+      };
+    }
+    
     return {
       success: false,
-      error: 'User authentication requires backend connection'
+      error: 'No authentication token found',
+      message: 'Please log in to continue'
     };
   }
 

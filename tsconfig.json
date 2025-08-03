@@ -59,6 +59,7 @@
     "node_modules",
     "docs/**/*",
     "test/**/*",
+    "witnessos-engines/**/*",
     ".next",
     "out"
   ]

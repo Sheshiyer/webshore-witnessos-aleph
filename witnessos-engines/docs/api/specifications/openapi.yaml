@@ -2,11 +2,11 @@ openapi: 3.0.3
 info:
   title: WitnessOS Consciousness API
   description: |
-    The WitnessOS Consciousness API provides access to 10 different consciousness exploration engines,
+    The WitnessOS Consciousness API provides access to 11 different consciousness exploration engines,
     multi-engine workflows, AI-enhanced interpretations, and user management capabilities.
     
     ## Features
-    - **10 Consciousness Engines**: Numerology, Human Design, Tarot, I-Ching, Enneagram, Sacred Geometry, Biorhythm, Vimshottari, Gene Keys, Sigil Forge
+    - **11 Consciousness Engines**: Numerology, Human Design, Tarot, I-Ching, Enneagram, Sacred Geometry, Biorhythm, Vimshottari, Gene Keys, Sigil Forge, VedicClock-TCM
     - **Multi-Engine Workflows**: Predefined patterns for natal, career, spiritual analysis
     - **AI-Enhanced Interpretations**: LLM-powered personalized insights and synthesis
     - **Global Performance**: Sub-200ms response times via Cloudflare Workers edge network

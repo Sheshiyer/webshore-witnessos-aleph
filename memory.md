@@ -1,149 +1,204 @@
-# PROJECT MEMORY - WitnessOS TypeScript Engine Cleanup
+# WitnessOS PROJECT MEMORY
 
 ## Overview
-Systematic removal of deprecated TypeScript consciousness engines from src/engines directory. These engines have been replaced by proven Python implementations hosted on Railway with 100% accuracy using Swiss Ephemeris integration. The hybrid architecture uses Cloudflare Workers for routing/auth/caching and Railway for computation.
+WitnessOS is a consciousness exploration platform with 10 consciousness engines (Biorhythm, I Ching, Tarot, Numerology, Human Design, Vimshottari, Enneagram, Sacred Geometry, Gene Keys, Sigil Forge). The system uses a hybrid architecture with Cloudflare Workers for the frontend API and a Python backend on Railway for engine calculations.
 
 ## Completed Tasks
 
-### [2025-01-28] Documentation Cleanup: Removed Confusing TypeScript References
-- **Outcome**: Cleaned up documentation that could cause confusion during codebase indexing
-- **Breakthrough**: Identified and removed outdated TypeScript research files and updated API documentation to reflect current hybrid architecture
-- **Files Removed**: 8 TypeScript research files from docs/archive/research-2025-01/ (check-complete-channels.ts, check-gate-46.ts, compare-with-reference-chart.ts, diagnose-sacral-gates.ts, find-correct-design-offset.ts, fine-tune-personality-offset.ts, generate-comprehensive-report.ts, investigate-planetary-offsets.ts)
+### [2025-01-28] Wrangler Configuration Consolidation
+- **Outcome**: Consolidated all wrangler.toml files and removed duplicates
+- **Breakthrough**: Complete hybrid architecture documentation with Railway Python engines + Cloudflare Workers
 - **Files Updated**: 
-  - docs/development/research/API_BACKEND_SUMMARY.md - Updated to reflect hybrid architecture with Python engines on Railway
-  - docs/assets/biofield-viewer/README.md - Changed "TypeScript engine fixes" to "Python engine integration"
-- **Code Changes**: Added hybrid architecture documentation explaining Cloudflare Workers as API gateway and Python engines on Railway for calculations
-- **Next Dependencies**: This cleanup prevents confusion about engine implementation and supports the ongoing TypeScript engine removal process
+  - Removed duplicate wrangler(1).toml, wrangler-ai-service(1).toml, wrangler-engine-service(1).toml, wrangler-forecast-service(1).toml
+  - Updated all service configurations with proper Railway integration
+  - Added PYTHON_ENGINES_ENABLED and SWISS_EPHEMERIS_ENABLED environment variables
+- **New Files**: 
+  - deploy-consolidated.sh: Comprehensive deployment script
+  - ARCHITECTURE.md: Complete system documentation
+  - Updated CHANGELOG.md: Version 2.6.0 with consolidation details
+- **Next Dependencies**: Ready for production deployment with proper service orchestration
 
-### [2025-01-28] Engine Cleanup: Verified TypeScript Engine Removal Complete
-- **Outcome**: Confirmed that deprecated TypeScript engines have been successfully removed from src/engines directory
-- **Breakthrough**: The hybrid architecture is properly implemented - no individual engine files exist, calculators directory is empty, and index.ts correctly throws errors directing users to Python backend
-- **Files Verified**: 
-  - src/engines/calculators/ - Empty directory (confirmed)
-  - src/engines/index.ts - Properly configured for hybrid architecture with Python backend references
-  - No individual engine files found (human-design-engine.ts, numerology-engine.ts, etc.)
-- **Code Changes**: Engine registry properly throws errors and directs to Python backend via Cloudflare Workers
-- **Next Dependencies**: Focus on remaining worker imports and service worker updates
-
-### [2025-01-28] Import Cleanup: Fixed Broken Engine Type Imports
-- **Outcome**: Successfully updated all component imports that referenced non-existent TypeScript engine files
-- **Files Updated**:
-  - `NadaBrahmanEngine.tsx` - Updated to use BaseEngineInput/Output with custom interfaces
-  - `src/app/page.tsx` - Fixed BiofieldViewerOutput import and added type definition
-  - `src/app/cosmic-temple/page.tsx` - Fixed BiofieldViewerOutput import with enhanced type
-  - `UnifiedAdminDebugSystem.tsx` - Updated BiofieldViewerOutput import
-- **Breakthrough**: All component-level imports now use core types from engines/core/types.ts
-- **Code Changes**: Replaced imports from non-existent engine files with base types and custom interfaces
-- **Remaining Work**: 600+ TypeScript compilation errors across workers, handlers, and services need resolution
-- **Next Dependencies**: Focus on fixing broader TypeScript compilation issues and type mismatches
-
-### [2025-01-28] Railway Deployment: Python Engines Successfully Deployed
-- **Outcome**: Railway deployment completed with production URL: webshore-witnessos-aleph-production.up.railway.app
-- **Breakthrough**: Hybrid architecture now fully operational with Cloudflare Workers + Railway Python engines
-- **Files Updated**:
-  - `docs/project/backend-constants.md` - Added Railway production URL to API endpoints
-  - `todo.md` - Marked Railway deployment tasks as completed
-  - All hybrid architecture documentation updated from Render.com to Railway
-- **Code Changes**: Updated API endpoint constants to include Railway Python engine URL
-- **Next Dependencies**: Implement Railway API client with retry logic in engine-proxy-worker.ts
-
-### [2025-01-28] Railway API Client Implementation Complete
-- **Outcome**: Created comprehensive engine proxy worker and updated API routing for Railway integration
-- **Breakthrough**: Full end-to-end hybrid architecture with caching, retry logic, and health monitoring
-- **Files Created/Updated**:
-  - `src/workers/engine-proxy-worker.ts` - New Railway API client with caching, retry logic, health checks
-  - `wrangler-engine-proxy.toml` - Configuration for engine proxy worker
-  - `wrangler.toml` - Updated with ENGINE_SERVICE binding and Railway environment variables
-  - `src/workers/enhanced-api-router.ts` - Updated engine request handling for Railway integration
-- **Features Implemented**:
-  - Exponential backoff retry mechanism
-  - KV-based response caching
-  - Health monitoring for Railway services
-  - Batch calculation support
-  - Legacy endpoint compatibility
-  - Comprehensive error handling
-- **Next Dependencies**: Deploy engine-proxy-worker to Cloudflare and test end-to-end routing
-
-### [2025-01-28] Railway Integration Deployment and Testing Complete
-- **Outcome**: Successfully deployed engine-proxy-worker to Cloudflare and verified end-to-end Railway integration
-- **Breakthrough**: Full hybrid architecture now operational with confirmed Railway connectivity and proper JSON responses
-- **Deployment Results**:
-  - `witnessos-engine-proxy` worker deployed to: https://witnessos-engine-proxy.sheshnarayan-iyer.workers.dev
-  - Health check endpoint returning proper JSON: {"status":"healthy","service":"witnessos-engines","engines_available":["human_design","numerology","biorhythm"],"swiss_ephemeris":true}
-  - Main API routing through proxy worker confirmed working
-- **Code Changes**: Fixed missing fetch handler export in engine-proxy-worker.ts
-- **Testing Verified**:
-  - Direct proxy worker health checks
-  - Direct proxy worker engine endpoints
-  - Main API routing through proxy to Railway
-  - End-to-end calculation requests
-- **Next Dependencies**: Update API documentation and project constants with Railway production URL
-
-### [2025-01-28] FastAPI Engine Endpoints Implementation Complete
-- **Outcome**: Successfully implemented and tested all 10 consciousness engine endpoints in Python backend
-- **Breakthrough**: Complete consciousness engine ecosystem now operational with comprehensive input validation and error handling
-- **Engines Implemented**:
-  - `human_design` - Birth chart analysis with Swiss Ephemeris integration
-  - `numerology` - Life path and expression number calculations
-  - `biorhythm` - Physical, emotional, and intellectual cycle analysis
-  - `vimshottari` - Vedic planetary period timeline mapping
-  - `tarot` - Card spread interpretation and guidance
-  - `iching` - Hexagram mutation and wisdom oracle
-  - `gene_keys` - Genetic pathway and shadow work analysis
-  - `enneagram` - Personality type resonance mapping
-  - `sacred_geometry` - Pattern generation and visualization
-  - `sigil_forge` - Intention-based symbol synthesis
-- **Code Changes**: 
-  - Extended `/engines/{engine_name}/calculate` endpoint with conditional routing
-  - Resolved variable naming conflicts with datetime imports
-  - Added comprehensive input validation using Pydantic models
-  - Implemented proper error handling and success/failure responses
-- **Testing Verified**:
-  - Health endpoint shows all 10 engines available
-  - Individual engine calculations return `success: true`
-  - Swiss Ephemeris integration working correctly
-  - Input validation preventing malformed requests
-- **Dependencies Resolved**: Installed missing packages (pyswisseph, matplotlib, numpy, pillow)
-- **Next Dependencies**: Update API documentation for new engine endpoints
-
-### [2025-01-28] Birth Location Validation Fix: Coordinate-Only Input System
-- **Outcome**: Successfully removed geocoding dependency and enforced coordinate-only input for all engines
-- **Breakthrough**: Eliminated string location parsing errors by requiring direct latitude/longitude coordinates
-- **Errors Fixed**: 
-  - Pydantic validation errors for string inputs like "Bangalore, India"
-  - "too many values to unpack (expected 2)" errors from geocode_location function
-  - Tuple conversion issues in app.py causing character-by-character parsing
+### [2025-01-24] Complete Engine Integration Achievement
+- **Outcome**: All 10 consciousness engines fully integrated with real calculations
+- **Breakthrough**: Successfully bypassed broken calculateEngine() function with direct Railway API calls
+- **Errors Fixed**: Missing engine integrations, mock data replaced with real calculations
 - **Code Changes**:
-  - `witnessos-engines/engines/human_design_models.py` - Removed geocode_location function and location_map
-  - Updated HumanDesignInput.birth_location to strictly require Tuple[float, float]
-  - Removed field_validator that called geocoding for string inputs
-  - Previous app.py fixes already handled tuple() conversion removal
-- **Files Modified**: 
-  - `human_design_models.py` - Simplified birth_location validation to coordinates only
-  - Verified other engines (vimshottari, gene_keys) already used coordinate-only validation
-  - Confirmed sacred_geometry doesn't use birth_location
-- **Testing Verified**:
-  - Railway endpoint: `curl` with coordinates [12.9716, 77.5946] returns success: true
-  - Cloudflare Workers endpoint: Both proxy layers working correctly with coordinate inputs
-  - Vimshottari engine: Confirmed coordinate input compatibility
-- **User Experience**: Users now provide coordinates directly instead of city names, ensuring consistent global location support
-- **Next Dependencies**: Update API documentation to reflect coordinate-only input requirements
+  - All engines now use direct Railway API integration via calculateRealEngine() and callRailwayEngine() methods
+  - Complete routing: enhanced-api-router.ts → engine-proxy-worker.ts → Railway Python backend
+  - Both test-index.ts and enhanced-api-router.ts using real Railway calculations
+- **Next Dependencies**: Foundation complete for frontend integration and workflow systems
+
+### [2025-01-24] Timeline & Analytics Implementation Achievement
+- **Outcome**: Successfully implemented comprehensive Timeline & Analytics endpoints
+- **Breakthrough**: Complete timeline visualization system with cosmic data integration
+- **Implementation Details**:
+  - Added `/api/timeline`, `/api/timeline/stats`, and `/api/optimal-timing` endpoints
+  - Integrated cosmic events, biorhythm calculations, and personalized recommendations
+  - Advanced analytics including reading frequency patterns and optimal timing
+  - Biorhythm alignment calculations with lunar phase integration
+- **Code Changes**:
+  - Added `calculateMostActivePeriod()`, `calculateReadingFrequency()`, `getOptimalDaysThisWeek()`
+  - Added `getLunarPhase()`, `suggestOptimalEngine()`, `calculateIntegrationTime()`
+  - Implemented cosmic events integration with planetary aspects
+  - Added biorhythm alignment calculations (physical, emotional, intellectual)
+- **Next Dependencies**: Timeline analytics complete, ready for workflow system implementation
+
+### [2025-01-24] Forecast Service Type Issues Resolution
+- **Outcome**: Resolved all TypeScript compilation errors in forecast-service.ts
+- **Breakthrough**: Fixed complex type compatibility issues with AI integration and optional properties
+- **Errors Fixed**: 
+  - userContext type mismatch (string vs object with context/focusArea properties)
+  - enhancedInterpretation usage instead of deprecated summary/detailed_interpretation
+  - Optional property handling with exactOptionalPropertyTypes: true
+  - Array type validation for changingLines in I Ching results
+- **Code Changes**:
+  - Updated userContext to use AIInterpretationConfig structure with focusArea
+  - Replaced synthesis.summary with synthesis.enhancedInterpretation
+  - Added proper type casting and array validation for changingLines
+  - Fixed predictiveInsights optional property handling with spread operator
+- **Next Dependencies**: Forecast service now TypeScript compliant, ready for AI synthesis integration
+
+### [2025-01-24] Date/Time Handling System Completion
+- **Outcome**: Verified and documented proper date/time handling across all services
+- **Breakthrough**: All services already using dynamic date generation with proper current date awareness
+- **Implementation Verified**: 
+  - test-index.ts: Uses `new Date().toISOString().split('T')[0]` for targetDate defaults
+  - forecast-service.ts: Proper date range generation with `generateDateRange()` and `generateWeekDates()`
+  - All workers: Dynamic date handling with `getCurrentWeekStart()` and current date fallbacks
+  - Swiss Ephemeris: Proper date formatting for astronomical calculations
+- **Code Status**: No hardcoded dates found in source code, all using dynamic generation
+- **Next Dependencies**: Date/time handling complete, ready for AI synthesis integration
+
+### [2025-01-24] AI Integration System Completion
+- **Outcome**: Complete AI integration system with OpenRouter API and multi-model support
+- **Breakthrough**: Full AI synthesis working with multiple engine correlation and personalized interpretations
+- **Implementation Details**:
+  - AI Service Worker: Complete `AIService` class in `ai-service-worker.ts` with RPC interface
+  - API Endpoints: `/ai/synthesize` and `/ai/interpret` endpoints in `enhanced-api-router.ts`
+  - OpenRouter Integration: `AIInterpreter` class with circuit breaker pattern
+  - Model Support: `anthropic/claude-3-haiku`, `meta-llama/llama-3.1-8b-instruct:free`, `microsoft/wizardlm-2-8x22b`
+  - Forecast Integration: AI synthesis working in `forecast-service.ts` with `synthesizeMultipleReadings()`
+  - Caching: KV_AI_CACHE integration for performance optimization
+  - Error Handling: Circuit breaker pattern with fallback models
+- **Code Status**: Production-ready AI integration with multiple engine correlation
+- **Next Dependencies**: AI synthesis complete, ready for workflow system implementation
+
+### [2025-01-24] Workflow Systems Implementation
+- **Outcome**: Complete workflow system with dedicated Cloudflare Workers
+- **Breakthrough**: Multi-engine workflow orchestration with AI synthesis and parallel processing
+- **Implementation Details**:
+  - Consciousness Workflow: `ConsciousnessWorkflow` in `consciousness-workflow-worker.ts`
+  - Integration Workflow: `IntegrationWorkflow` in `integration-workflow-worker.ts`
+  - Endpoints: `/workflows/natal`, `/workflows/career`, `/workflows/spiritual`, `/workflows/integration`
+  - Configuration: Complete wrangler.toml setup with service bindings for all environments
+  - Features: Specialized workers for consciousness workflows (natal, career, spiritual) and integration workflows (Raycast, Slack, webhooks)
+- **Code Status**: Production-ready workflow workers configured and ready for deployment
+- **Next Dependencies**: Workflow systems complete, ready for frontend integration
+
+### [2025-01-19] Engine Metadata Endpoint Integration
+- **Outcome**: Added `/engines/{engine}/metadata` endpoint support across the full stack
+- **Breakthrough**: Complete metadata flow from Railway Python backend to frontend
+- **Errors Fixed**: Missing metadata endpoint in enhanced-api-router.ts, engine-proxy-worker.ts, and app.py
+- **Code Changes**: 
+  - Updated enhanced-api-router.ts to handle GET /engines/{engine}/metadata
+  - Added metadata handler in engine-proxy-worker.ts
+  - Implemented /engines/{engine_name}/metadata endpoint in Railway app.py
+- **Next Dependencies**: Engine metadata now available for frontend discovery and configuration
+
+### [2025-01-19] Direct Railway Engine Integration
+- **Outcome**: Replaced problematic calculateEngine calls with direct Railway API calls
+- **Breakthrough**: Eliminated dependency on broken src/engines/index.ts calculateEngine function
+- **Errors Fixed**: Engine calculation failures due to broken calculateEngine implementation
+- **Code Changes**:
+  - Updated test-index.ts with calculateRealEngine method for direct Railway calls
+  - Modified engine-service-worker.ts to use callRailwayEngine method
+  - Both workers now call https://webshore-witnessos-aleph-production.up.railway.app/engines/{engineName}/calculate
+- **Next Dependencies**: Enables real engine calculations, foundation for remaining 7 engines
+
+### [2025-01-19] JWT Authentication System Implementation
+- **Outcome**: Complete JWT authentication using jose library (Cloudflare recommended)
+- **Breakthrough**: Real JWT validation with user profile integration
+- **Functions**: `AuthService.login()`, `AuthService.validateToken()`, `AuthService.verifyJWT()` in `src/lib/auth.ts`
+- **Features**: JWT token generation, session management, user profile integration
+- **Results**: `/auth/login` and `/auth/profile` endpoints working with production database
+- **Status**: Production ready - Real JWT validation with user profile integration
+
+### [2025-01-19] Tiered Onboarding System Implementation
+- **Outcome**: Complete 3-tier progressive onboarding with engine access control
+- **Functions**: `handleTier1Onboarding()`, `handleTier2Onboarding()`, `handleTier3Onboarding()` in `src/workers/api-handlers.ts`
+- **Features**: Tier 1 (auth), Tier 2 (birth data), Tier 3 (preferences), engine access gating
+- **Results**: Users must complete Tier 1+2 for engine access, maintains backward compatibility
+- **Status**: Production ready - Deployed with comprehensive testing and admin user configured
+
+### [2025-01-19] Individual Engine Calculation Endpoints
+- **Outcome**: `/engines/{engine}/calculate` endpoints working with authentication
+- **Functions**: `TestWorker.handleEngineCalculation()` in `src/workers/test-index.ts`
+- **Features**: Biorhythm, I Ching, Tarot engines validated with real calculations
+- **Results**: All 3 core engines returning professional-grade calculations with <1s response time
+- **Status**: Production ready - Engine calculations authenticated and functional
+
+### [2025-01-19] Enhanced Architecture Foundation
+- **Outcome**: Complete enhanced architecture with service workers and durable objects
+- **Service Workers**: Engine, Forecast, AI service workers created
+- **Durable Objects**: Engine Coordinator, Forecast Session implemented
+- **Workflows**: Consciousness and Integration workflows created
+- **Health Monitoring**: Service health monitoring with circuit breakers
+- **Migration Scripts**: Automated migration and rollback capabilities
+
+### [2025-01-19] Core Infrastructure Completion
+- **Outcome**: All core infrastructure components operational
+- **Cloudflare Workers**: API gateway, authentication, storage operational
+- **D1 Database**: Persistent user data and analytics working
+- **Python Backend**: Railway engines operational with Swiss Ephemeris
+- **Date/Time Handling**: Dynamic date generation implemented across all services
 
 ## Key Breakthroughs
-- **Hybrid Architecture Understanding**: Cloudflare Workers handle edge logic while Railway Python engines handle accurate calculations
-- **Python Engine Superiority**: 100% accurate results vs 60% TypeScript fallback accuracy
-- **Clean Separation**: Edge computing (Cloudflare) vs computation layer (Railway)
-- **Human Design Accuracy Validated**: Railway production deployment matches local validation results
-  - Type: Generator ✓
-  - Profile: 4/5 Opportunist/Heretic ✓
-  - Strategy: To Respond ✓
-  - Authority: Sacral Authority ✓
+
+### Hybrid Architecture Success
+- **Discovery**: Cloudflare Workers + Railway Python backend architecture is operational
+- **Evidence**: All 10 engines working with real calculations
+- **Impact**: Validates the technical approach for complete system integration
+
+### Direct API Integration Pattern
+- **Discovery**: Bypassing src/engines/index.ts and calling Railway directly is the correct approach
+- **Evidence**: calculateEngine function explicitly throws errors, forcing direct API calls
+- **Impact**: Clear implementation pattern for all engine integrations
 
 ## Error Patterns & Solutions
-[Will be populated as issues are encountered]
+
+### calculateEngine Function Issues
+- **Problem**: src/engines/index.ts calculateEngine function throws errors when called directly
+- **Root Cause**: Designed to force routing through Cloudflare Workers to Python backend
+- **Solution**: Use direct HTTP calls to Railway backend via fetch()
+- **Pattern**: All engine calculations must use https://webshore-witnessos-aleph-production.up.railway.app/engines/{engineName}/calculate
+
+### Missing Endpoint Integration
+- **Problem**: Frontend expects metadata endpoints that weren't implemented
+- **Root Cause**: Incomplete endpoint mapping between frontend expectations and backend reality
+- **Solution**: Systematic endpoint mapping and implementation across all layers
+- **Pattern**: Check enhanced-api-router.ts → engine-proxy-worker.ts → Railway app.py for complete flow
 
 ## Architecture Decisions
-- **Keep Cloudflare Workers**: Enhanced API router, engine service worker, and other orchestration workers remain
-- **Remove TypeScript Engines**: All engine calculation logic moved to Python on Railway
-- **Maintain API Compatibility**: External API endpoints remain unchanged
-- **Preserve Types**: Keep necessary type definitions for API contracts
+
+### Engine Calculation Flow
+1. Frontend → Cloudflare Workers (enhanced-api-router.ts)
+2. Workers → Engine Proxy (engine-proxy-worker.ts) 
+3. Proxy → Railway Python Backend (app.py)
+4. Response flows back through the same chain
+
+### Authentication Integration
+- JWT tokens validated at Cloudflare Worker level
+- User authentication required for engine calculations
+- Tiered access control implemented (Tier 1+2 required for engines)
+
+### Current Engine Status
+- **Working (10/10)**: All engines now working with real calculations ✅
+  - Biorhythm, I Ching, Tarot, Numerology, Human Design, Vimshottari, Enneagram, Sacred Geometry, Gene Keys, Sigil Forge
+- All engines properly routed through enhanced-api-router.ts → engine-proxy-worker.ts → Railway Python backend
+- Both test-index.ts and enhanced-api-router.ts using real Railway calculations
+
+## Next Dependencies
+- **Frontend Integration:** Connect engine components and forecast displays to real API
+- **Reading History Management:** Complete reading CRUD operations with correlation analysis
+- **Advanced Caching:** Sophisticated caching with confidence-based TTL
+- **Performance Monitoring:** Real-time performance metrics and dashboard

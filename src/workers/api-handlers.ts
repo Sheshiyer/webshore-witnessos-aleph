@@ -199,6 +199,14 @@ export class WitnessOSAPIHandler {
         return await this.handleCacheStats(requestId);
       }
 
+      if (path === '/cache/invalidate' && method === 'POST') {
+        return await this.handleCacheInvalidation(request, requestId);
+      }
+
+      if (path === '/cache/warm' && method === 'POST') {
+        return await this.handleCacheWarming(request, requestId);
+      }
+
       if (path === '/performance/database' && method === 'GET') {
         return await this.handleDatabasePerformance(requestId);
       }
@@ -315,6 +323,15 @@ export class WitnessOSAPIHandler {
         return await this.handleRaycastCustomIntegration(request, requestId);
       }
 
+      // Specific Raycast API endpoints
+      if (path === '/api/raycast/daily-forecast' && method === 'GET') {
+        return await this.handleRaycastDailyForecast(request, requestId);
+      }
+
+      if (path === '/api/raycast/quick-reading' && method === 'POST') {
+        return await this.handleRaycastQuickReading(request, requestId);
+      }
+
       if (path === '/workflows/custom' && method === 'POST') {
         return await this.handleCustomWorkflow(request, requestId);
       }
@@ -399,6 +416,10 @@ export class WitnessOSAPIHandler {
         return await this.handleGetPredictiveInsights(request, requestId);
       }
 
+      if (path === '/analytics/usage' && method === 'GET') {
+        return await this.handleGetUsageAnalytics(request, requestId);
+      }
+
       if (path.startsWith('/timeline/entry/') && method === 'PUT') {
         const entryId = path.split('/')[3];
         return await this.handleUpdateTimelineEntry(request, requestId, entryId);
@@ -440,6 +461,23 @@ export class WitnessOSAPIHandler {
       }
 
       if (path === '/api/onboarding/status' && method === 'GET') {
+        return await this.handleOnboardingStatus(request, requestId);
+      }
+
+      // User Profile Management endpoints
+      if (path === '/api/user/profile/update' && method === 'PUT') {
+        return await this.handleUpdateUserProfile(request, requestId);
+      }
+
+      if (path === '/api/user/preferences' && method === 'GET') {
+        return await this.handleGetUserPreferences(request, requestId);
+      }
+
+      if (path === '/api/user/preferences' && method === 'PUT') {
+        return await this.handleUpdateUserPreferences(request, requestId);
+      }
+
+      if (path === '/api/user/onboarding-status' && method === 'GET') {
         return await this.handleOnboardingStatus(request, requestId);
       }
 
@@ -5292,6 +5330,145 @@ export class WitnessOSAPIHandler {
     }
   }
 
+  // User Profile Management Handlers
+  private async handleUpdateUserProfile(request: Request, requestId: string): Promise<Response> {
+    try {
+      // Authenticate user
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', 'Missing or invalid authorization token', requestId);
+      }
+
+      const token = authHeader.substring(7);
+      const validation = await this.authService.validateToken(token);
+      if (!validation.valid || !validation.user) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', validation.error || 'Invalid token', requestId);
+      }
+
+      const userId = validation.user.id.toString();
+      const requestBody = await request.json();
+      const { profileData } = requestBody;
+
+      if (!profileData) {
+        return this.createErrorResponse(400, 'MISSING_DATA', 'Profile data is required', requestId);
+      }
+
+      console.log(`[${requestId}] Updating user profile for user ${userId}`);
+
+      // Update user profile using auth service
+      const result = await this.authService.updateUserProfile(userId, profileData);
+
+      if (!result.success || !result.user) {
+        console.error(`[${requestId}] Failed to update user profile:`, result.error);
+        return this.createErrorResponse(500, 'UPDATE_FAILED', result.error || 'Failed to update user profile', requestId);
+      }
+
+      console.log(`[${requestId}] User profile updated successfully`);
+
+      return this.createResponse(200, {}, {
+        success: true,
+        message: 'User profile updated successfully',
+        user: result.user,
+        requestId
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Error in handleUpdateUserProfile:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user profile';
+      return this.createErrorResponse(500, 'PROFILE_UPDATE_FAILED', errorMessage, requestId);
+    }
+  }
+
+  private async handleGetUserPreferences(request: Request, requestId: string): Promise<Response> {
+    try {
+      // Authenticate user
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', 'Missing or invalid authorization token', requestId);
+      }
+
+      const token = authHeader.substring(7);
+      const validation = await this.authService.validateToken(token);
+      if (!validation.valid || !validation.user) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', validation.error || 'Invalid token', requestId);
+      }
+
+      const user = validation.user;
+
+      // Parse preferences from user data
+      let preferences = {};
+      if (user.preferences) {
+        try {
+          preferences = typeof user.preferences === 'string' ? JSON.parse(user.preferences) : user.preferences;
+        } catch (e) {
+          console.warn(`[${requestId}] Failed to parse user preferences:`, e);
+          preferences = {};
+        }
+      }
+
+      return this.createResponse(200, {}, {
+        success: true,
+        preferences,
+        requestId
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Error in handleGetUserPreferences:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get user preferences';
+      return this.createErrorResponse(500, 'PREFERENCES_FETCH_FAILED', errorMessage, requestId);
+    }
+  }
+
+  private async handleUpdateUserPreferences(request: Request, requestId: string): Promise<Response> {
+    try {
+      // Authenticate user
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', 'Missing or invalid authorization token', requestId);
+      }
+
+      const token = authHeader.substring(7);
+      const validation = await this.authService.validateToken(token);
+      if (!validation.valid || !validation.user) {
+        return this.createErrorResponse(401, 'UNAUTHORIZED', validation.error || 'Invalid token', requestId);
+      }
+
+      const userId = validation.user.id.toString();
+      const requestBody = await request.json();
+      const { preferences } = requestBody;
+
+      if (!preferences) {
+        return this.createErrorResponse(400, 'MISSING_DATA', 'Preferences data is required', requestId);
+      }
+
+      console.log(`[${requestId}] Updating user preferences for user ${userId}`);
+
+      // Update user preferences using auth service
+      const result = await this.authService.updateUserProfile(userId, {
+        preferences: preferences
+      });
+
+      if (!result.success || !result.user) {
+        console.error(`[${requestId}] Failed to update user preferences:`, result.error);
+        return this.createErrorResponse(500, 'UPDATE_FAILED', result.error || 'Failed to update user preferences', requestId);
+      }
+
+      console.log(`[${requestId}] User preferences updated successfully`);
+
+      return this.createResponse(200, {}, {
+        success: true,
+        message: 'User preferences updated successfully',
+        preferences: result.user.preferences,
+        requestId
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Error in handleUpdateUserPreferences:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user preferences';
+      return this.createErrorResponse(500, 'PREFERENCES_UPDATE_FAILED', errorMessage, requestId);
+    }
+  }
+
   // Authentication Helper
   private async authenticateRequest(request: Request): Promise<{ success: boolean; user?: any; error?: string }> {
     try {
@@ -5585,6 +5762,636 @@ export class WitnessOSAPIHandler {
       console.error(`[${requestId}] Predictive insights failed:`, error);
       return this.createErrorResponse(500, 'PREDICTIVE_INSIGHTS_FAILED', 'Failed to generate predictive insights', requestId);
     }
+  }
+
+  private async handleGetUsageAnalytics(request: Request, requestId: string): Promise<Response> {
+    try {
+      const authResult = await this.authenticateRequest(request);
+      if (!authResult.success || !authResult.user) {
+        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for usage analytics', requestId);
+      }
+
+      const url = new URL(request.url);
+      const timeRange = url.searchParams.get('timeRange') || '30d';
+      const includeEngineBreakdown = url.searchParams.get('includeEngineBreakdown') === 'true';
+
+      // Get cache statistics
+      const cacheStats = await this.kvData.getCacheStats();
+
+      // Get user's reading history for usage patterns
+      const userId = authResult.user.id.toString();
+      const readingHistory = await this.kvData.getUserReadings(userId, 100, timeRange);
+
+      // Analyze usage patterns
+      const usageAnalytics = {
+        timeRange,
+        totalReadings: readingHistory.length,
+        cachePerformance: {
+          hitRate: cacheStats.hitRate,
+          totalRequests: cacheStats.totalRequests,
+          totalHits: cacheStats.totalHits,
+          totalMisses: cacheStats.totalMisses
+        },
+        engineUsage: {},
+        activityPattern: this.analyzeActivityPattern(readingHistory),
+        performanceMetrics: {
+          averageResponseTime: this.calculateAverageResponseTime(readingHistory),
+          peakUsageHours: this.identifyPeakUsageHours(readingHistory),
+          mostUsedEngines: this.getMostUsedEngines(readingHistory)
+        }
+      };
+
+      // Add engine breakdown if requested
+      if (includeEngineBreakdown) {
+        usageAnalytics.engineUsage = this.analyzeEngineUsage(readingHistory);
+        usageAnalytics.cachePerformance.engineStats = cacheStats.engineStats;
+      }
+
+      return this.createResponse(200, {}, {
+        success: true,
+        data: usageAnalytics,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Usage analytics failed:`, error);
+      return this.createErrorResponse(500, 'USAGE_ANALYTICS_FAILED', 'Failed to generate usage analytics', requestId);
+    }
+  }
+
+  // Usage Analytics Helper Methods
+  private analyzeActivityPattern(readings: any[]): any {
+    const hourlyActivity = new Array(24).fill(0);
+    const dailyActivity = new Array(7).fill(0);
+
+    readings.forEach(reading => {
+      const date = new Date(reading.timestamp || reading.createdAt);
+      const hour = date.getHours();
+      const day = date.getDay();
+
+      hourlyActivity[hour]++;
+      dailyActivity[day]++;
+    });
+
+    return {
+      hourlyDistribution: hourlyActivity,
+      dailyDistribution: dailyActivity,
+      peakHour: hourlyActivity.indexOf(Math.max(...hourlyActivity)),
+      peakDay: dailyActivity.indexOf(Math.max(...dailyActivity))
+    };
+  }
+
+  private calculateAverageResponseTime(readings: any[]): number {
+    const responseTimes = readings
+      .map(r => r.results?.metadata?.calculationTime || r.results?.calculationTime)
+      .filter(time => typeof time === 'number');
+
+    if (responseTimes.length === 0) return 0;
+    return responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
+  }
+
+  private identifyPeakUsageHours(readings: any[]): number[] {
+    const hourlyCount = new Array(24).fill(0);
+
+    readings.forEach(reading => {
+      const hour = new Date(reading.timestamp || reading.createdAt).getHours();
+      hourlyCount[hour]++;
+    });
+
+    const maxCount = Math.max(...hourlyCount);
+    return hourlyCount
+      .map((count, hour) => ({ hour, count }))
+      .filter(item => item.count >= maxCount * 0.8) // Top 80% of peak usage
+      .map(item => item.hour);
+  }
+
+  private getMostUsedEngines(readings: any[]): Array<{ engine: string; count: number; percentage: number }> {
+    const engineCounts: Record<string, number> = {};
+
+    readings.forEach(reading => {
+      if (reading.engines && Array.isArray(reading.engines)) {
+        reading.engines.forEach((engine: string) => {
+          engineCounts[engine] = (engineCounts[engine] || 0) + 1;
+        });
+      }
+    });
+
+    const total = Object.values(engineCounts).reduce((sum, count) => sum + count, 0);
+
+    return Object.entries(engineCounts)
+      .map(([engine, count]) => ({
+        engine,
+        count,
+        percentage: total > 0 ? (count / total) * 100 : 0
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 engines
+  }
+
+  private analyzeEngineUsage(readings: any[]): Record<string, any> {
+    const engineStats: Record<string, any> = {};
+
+    readings.forEach(reading => {
+      if (reading.engines && Array.isArray(reading.engines)) {
+        reading.engines.forEach((engine: string) => {
+          if (!engineStats[engine]) {
+            engineStats[engine] = {
+              totalUsage: 0,
+              averageResponseTime: 0,
+              successRate: 0,
+              lastUsed: null,
+              responseTimes: []
+            };
+          }
+
+          engineStats[engine].totalUsage++;
+          engineStats[engine].lastUsed = reading.timestamp || reading.createdAt;
+
+          // Track response times if available
+          const responseTime = reading.results?.metadata?.calculationTime || reading.results?.calculationTime;
+          if (typeof responseTime === 'number') {
+            engineStats[engine].responseTimes.push(responseTime);
+          }
+        });
+      }
+    });
+
+    // Calculate averages and success rates
+    Object.keys(engineStats).forEach(engine => {
+      const stats = engineStats[engine];
+      if (stats.responseTimes.length > 0) {
+        stats.averageResponseTime = stats.responseTimes.reduce((sum: number, time: number) => sum + time, 0) / stats.responseTimes.length;
+        stats.successRate = 100; // Assume success if we have response times
+      }
+      delete stats.responseTimes; // Remove raw data from response
+    });
+
+    return engineStats;
+  }
+
+  // Cache Management Handlers
+  private async handleCacheInvalidation(request: Request, requestId: string): Promise<Response> {
+    try {
+      const body = await request.json();
+      const { type, target } = body;
+
+      if (!type) {
+        return this.createErrorResponse(400, 'MISSING_TYPE', 'Cache invalidation type is required (engine, user, all)', requestId);
+      }
+
+      let result: any = {};
+
+      switch (type) {
+        case 'engine':
+          if (!target) {
+            return this.createErrorResponse(400, 'MISSING_TARGET', 'Engine name is required for engine cache invalidation', requestId);
+          }
+          await this.kvData.invalidateEngineCache(target);
+          result = { message: `Cache invalidated for engine: ${target}` };
+          break;
+
+        case 'user':
+          if (!target) {
+            return this.createErrorResponse(400, 'MISSING_TARGET', 'User ID is required for user cache invalidation', requestId);
+          }
+          await this.kvData.invalidateUserCache(target);
+          result = { message: `Cache invalidated for user: ${target}` };
+          break;
+
+        case 'all':
+          await this.kvData.clearCache();
+          result = { message: 'All cache cleared' };
+          break;
+
+        default:
+          return this.createErrorResponse(400, 'INVALID_TYPE', 'Invalid cache invalidation type. Use: engine, user, or all', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        success: true,
+        ...result,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Cache invalidation failed:`, error);
+      return this.createErrorResponse(500, 'CACHE_INVALIDATION_FAILED', 'Failed to invalidate cache', requestId);
+    }
+  }
+
+  private async handleCacheWarming(request: Request, requestId: string): Promise<Response> {
+    try {
+      const body = await request.json();
+      const { type, target, options = {} } = body;
+
+      if (!type) {
+        return this.createErrorResponse(400, 'MISSING_TYPE', 'Cache warming type is required (engine, user, forecast)', requestId);
+      }
+
+      let result: any = {};
+
+      switch (type) {
+        case 'engine':
+          if (!target) {
+            return this.createErrorResponse(400, 'MISSING_TARGET', 'Engine name is required for engine cache warming', requestId);
+          }
+
+          // Get common inputs for the engine
+          const commonInputs = this.getCommonEngineInputs(target);
+          const engineResult = await this.kvData.warmEngineCache(target, commonInputs);
+          result = {
+            message: `Cache warmed for engine: ${target}`,
+            warmed: engineResult.warmed,
+            failed: engineResult.failed
+          };
+          break;
+
+        case 'user':
+          if (!target) {
+            return this.createErrorResponse(400, 'MISSING_TARGET', 'User ID is required for user cache warming', requestId);
+          }
+
+          const days = options.days || 7;
+          const userResult = await this.kvData.warmUserForecastCache(target, days);
+          result = {
+            message: `Forecast cache warmed for user: ${target}`,
+            days,
+            warmed: userResult.warmed,
+            failed: userResult.failed
+          };
+          break;
+
+        case 'forecast':
+          // Warm forecast cache for multiple users or system-wide
+          const userIds = options.userIds || [];
+          const forecastDays = options.days || 7;
+
+          if (userIds.length === 0) {
+            return this.createErrorResponse(400, 'MISSING_USER_IDS', 'User IDs array is required for forecast cache warming', requestId);
+          }
+
+          const forecastResults = await Promise.all(
+            userIds.map((userId: string) => this.kvData.warmUserForecastCache(userId, forecastDays))
+          );
+
+          const totalWarmed = forecastResults.reduce((sum, r) => sum + r.warmed, 0);
+          const totalFailed = forecastResults.reduce((sum, r) => sum + r.failed, 0);
+
+          result = {
+            message: `Forecast cache warmed for ${userIds.length} users`,
+            users: userIds.length,
+            days: forecastDays,
+            totalWarmed,
+            totalFailed
+          };
+          break;
+
+        default:
+          return this.createErrorResponse(400, 'INVALID_TYPE', 'Invalid cache warming type. Use: engine, user, or forecast', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        success: true,
+        ...result,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Cache warming failed:`, error);
+      return this.createErrorResponse(500, 'CACHE_WARMING_FAILED', 'Failed to warm cache', requestId);
+    }
+  }
+
+  // Helper method to get common inputs for engine cache warming
+  private getCommonEngineInputs(engineName: string): any[] {
+    const commonInputs: Record<string, any[]> = {
+      numerology: [
+        { fullName: 'John Smith', birthDate: '1990-01-01', system: 'pythagorean' },
+        { fullName: 'Jane Doe', birthDate: '1985-06-15', system: 'pythagorean' },
+        { fullName: 'Michael Johnson', birthDate: '1992-12-25', system: 'chaldean' }
+      ],
+      biorhythm: [
+        { birth_date: '1990-01-01', target_date: new Date().toISOString().split('T')[0] },
+        { birth_date: '1985-06-15', target_date: new Date().toISOString().split('T')[0] },
+        { birth_date: '1992-12-25', target_date: new Date().toISOString().split('T')[0] }
+      ],
+      tarot: [
+        { question: 'What guidance do I need today?', spreadType: 'three_card' },
+        { question: 'What should I focus on?', spreadType: 'single_card' },
+        { question: 'How can I improve my relationships?', spreadType: 'three_card' }
+      ],
+      iching: [
+        { question: 'What wisdom do I need today?', method: 'coins' },
+        { question: 'How should I approach this situation?', method: 'yarrow' },
+        { question: 'What is the best path forward?', method: 'coins' }
+      ]
+    };
+
+    return commonInputs[engineName] || [];
+  }
+
+  // Specific Raycast API Handlers
+  private async handleRaycastDailyForecast(request: Request, requestId: string): Promise<Response> {
+    try {
+      const authResult = await this.authenticateRequest(request);
+      if (!authResult.success || !authResult.user) {
+        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for Raycast daily forecast', requestId);
+      }
+
+      const url = new URL(request.url);
+      const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+      const user = authResult.user;
+
+      // Check Raycast-specific cache first
+      const cachedRaycast = await this.kvData.getRaycastCache(user.id.toString(), 'daily-forecast', date);
+      if (cachedRaycast) {
+        console.log(`[${requestId}] Raycast daily forecast cache hit for ${date}`);
+        return this.createResponse(200, {}, {
+          ...cachedRaycast.data,
+          cached: true,
+          cachedAt: cachedRaycast.cachedAt,
+          requestId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      const userProfile = await this.getUserProfileFromAuth(user);
+      if (!userProfile) {
+        return this.createErrorResponse(400, 'PROFILE_REQUIRED', 'User profile with birth data required for Raycast daily forecast', requestId);
+      }
+
+      // Generate daily forecast optimized for Raycast
+      const forecast = await this.generateEnhancedDailyForecast(userProfile, date, requestId, true);
+
+      // Create Raycast-specific response format
+      const raycastResponse = {
+        success: true,
+        date,
+        forecast: {
+          energyLevel: forecast.energyProfile.overallEnergy,
+          trend: forecast.energyProfile.trend,
+          summary: forecast.guidance.synthesis.split('\n')[0].substring(0, 100) + '...',
+          keyThemes: forecast.guidance.keyThemes,
+          recommendations: forecast.recommendations.slice(0, 3),
+          criticalDays: forecast.energyProfile.criticalDays.length > 0,
+          biorhythm: forecast.energyProfile.biorhythm ? {
+            physical: Math.round(forecast.energyProfile.biorhythm.physical),
+            emotional: Math.round(forecast.energyProfile.biorhythm.emotional),
+            intellectual: Math.round(forecast.energyProfile.biorhythm.intellectual)
+          } : null
+        },
+        raycast: forecast.raycastOptimized,
+        metadata: {
+          confidence: 85,
+          cached: false,
+          requestId,
+          source: 'raycast-api',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      // Cache the Raycast response (2 hours TTL for daily forecasts)
+      await this.kvData.setRaycastCache(user.id.toString(), 'daily-forecast', date, raycastResponse, 2 * 3600);
+
+      // Create timeline entry
+      await this.createTimelineEntry(
+        user.id.toString(),
+        'raycast_integration',
+        { date, type: 'daily-forecast' },
+        raycastResponse,
+        {
+          confidence: 85,
+          cached: false,
+          requestId,
+          source: 'raycast-api'
+        }
+      );
+
+      return this.createResponse(200, {}, raycastResponse);
+
+    } catch (error) {
+      console.error(`[${requestId}] Raycast daily forecast failed:`, error);
+      return this.createErrorResponse(500, 'RAYCAST_DAILY_FORECAST_FAILED', 'Raycast daily forecast failed', requestId);
+    }
+  }
+
+  private async handleRaycastQuickReading(request: Request, requestId: string): Promise<Response> {
+    try {
+      const authResult = await this.authenticateRequest(request);
+      if (!authResult.success || !authResult.user) {
+        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for Raycast quick reading', requestId);
+      }
+
+      const body = await request.json();
+      const { question, engines = ['tarot', 'iching'], includeAI = true } = body;
+
+      if (!question) {
+        return this.createErrorResponse(400, 'MISSING_QUESTION', 'Question is required for quick reading', requestId);
+      }
+
+      const user = authResult.user;
+      const userProfile = await this.getUserProfileFromAuth(user);
+
+      // Generate cache key for quick reading
+      const quickReadingHash = this.generateInputHash({ question, engines, userId: user.id });
+      const cachedReading = await this.kvData.getRaycastCache(user.id.toString(), 'quick-reading', quickReadingHash);
+
+      if (cachedReading) {
+        console.log(`[${requestId}] Raycast quick reading cache hit`);
+        return this.createResponse(200, {}, {
+          ...cachedReading.data,
+          cached: true,
+          cachedAt: cachedReading.cachedAt,
+          requestId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Execute quick reading with selected engines
+      const engineResults = await Promise.all(
+        engines.map(async (engineName: string) => {
+          try {
+            const input = this.prepareQuickReadingInput(engineName, question, userProfile);
+            const result = await this.calculateEngine(engineName as any, input, { useCache: true, userId: user.id.toString() });
+
+            return {
+              engine: engineName,
+              success: result.success,
+              data: result.success ? result.data : null,
+              error: result.success ? null : result.error
+            };
+          } catch (error) {
+            return {
+              engine: engineName,
+              success: false,
+              data: null,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            };
+          }
+        })
+      );
+
+      // Filter successful results
+      const successfulResults = engineResults.filter(r => r.success);
+
+      let aiInterpretation = null;
+      if (includeAI && successfulResults.length > 0) {
+        try {
+          const aiInterpreter = await this.initializeAIInterpreter();
+          if (aiInterpreter) {
+            aiInterpretation = await aiInterpreter.synthesizeMultipleReadings(
+              successfulResults,
+              {
+                question,
+                focusArea: 'quick_guidance',
+                userContext: userProfile ? { name: userProfile.name } : undefined
+              }
+            );
+          }
+        } catch (aiError) {
+          console.warn(`[${requestId}] AI interpretation failed for quick reading:`, aiError);
+        }
+      }
+
+      // Create Raycast-optimized response
+      const raycastResponse = {
+        success: true,
+        question,
+        engines: engines,
+        results: successfulResults.map(r => ({
+          engine: r.engine,
+          summary: this.extractEngineSummary(r.data),
+          keyInsight: this.extractKeyInsight(r.data),
+          confidence: r.data?.confidenceScore || r.data?.confidence || 75
+        })),
+        aiSynthesis: aiInterpretation ? {
+          summary: aiInterpretation.summary || aiInterpretation.synthesis,
+          keyMessage: aiInterpretation.keyMessage || aiInterpretation.guidance,
+          confidence: aiInterpretation.confidence || 80
+        } : null,
+        raycast: {
+          title: `Quick Reading: ${question.substring(0, 50)}...`,
+          subtitle: `${successfulResults.length} engines • ${aiInterpretation ? 'AI Enhanced' : 'Direct Reading'}`,
+          summary: aiInterpretation?.summary || successfulResults[0]?.data?.formattedOutput?.substring(0, 100) + '...' || 'Reading complete',
+          actions: [
+            'View Full Reading',
+            'Save to History',
+            'Share Reading',
+            'Ask Follow-up'
+          ]
+        },
+        metadata: {
+          totalEngines: engines.length,
+          successfulEngines: successfulResults.length,
+          hasAI: !!aiInterpretation,
+          confidence: aiInterpretation?.confidence || (successfulResults.length > 0 ? 75 : 0),
+          cached: false,
+          requestId,
+          source: 'raycast-api',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      // Cache the quick reading (30 minutes TTL)
+      await this.kvData.setRaycastCache(user.id.toString(), 'quick-reading', quickReadingHash, raycastResponse, 30 * 60);
+
+      // Save reading to history
+      await this.kvData.saveReading(user.id.toString(), {
+        type: 'quick_reading',
+        question,
+        engines,
+        results: successfulResults,
+        aiInterpretation,
+        timestamp: new Date().toISOString(),
+        source: 'raycast-api'
+      });
+
+      // Create timeline entry
+      await this.createTimelineEntry(
+        user.id.toString(),
+        'engine_calculation',
+        { question, engines },
+        raycastResponse,
+        {
+          confidence: raycastResponse.metadata.confidence,
+          cached: false,
+          requestId,
+          source: 'raycast-api'
+        }
+      );
+
+      return this.createResponse(200, {}, raycastResponse);
+
+    } catch (error) {
+      console.error(`[${requestId}] Raycast quick reading failed:`, error);
+      return this.createErrorResponse(500, 'RAYCAST_QUICK_READING_FAILED', 'Raycast quick reading failed', requestId);
+    }
+  }
+
+  // Helper methods for Raycast quick reading
+  private prepareQuickReadingInput(engineName: string, question: string, userProfile: any): any {
+    const baseInput = { question };
+
+    switch (engineName) {
+      case 'tarot':
+        return {
+          ...baseInput,
+          spreadType: 'single_card',
+          focusArea: 'general'
+        };
+      case 'iching':
+        return {
+          ...baseInput,
+          method: 'coins',
+          includeChangingLines: false
+        };
+      case 'numerology':
+        return userProfile ? {
+          fullName: userProfile.name || userProfile.fullName,
+          birthDate: userProfile.birthDate,
+          system: 'pythagorean'
+        } : baseInput;
+      case 'biorhythm':
+        return userProfile ? {
+          birth_date: userProfile.birthDate,
+          target_date: new Date().toISOString().split('T')[0]
+        } : baseInput;
+      default:
+        return baseInput;
+    }
+  }
+
+  private extractEngineSummary(engineData: any): string {
+    if (!engineData) return 'No data available';
+
+    return engineData.formattedOutput?.substring(0, 150) + '...' ||
+           engineData.summary ||
+           engineData.interpretation ||
+           'Reading complete';
+  }
+
+  private extractKeyInsight(engineData: any): string {
+    if (!engineData) return 'No insight available';
+
+    return engineData.keyInsight ||
+           engineData.guidance ||
+           engineData.recommendations?.[0] ||
+           engineData.formattedOutput?.split('\n')[0] ||
+           'Insight generated';
+  }
+
+  private generateInputHash(input: any): string {
+    const inputString = JSON.stringify(input, Object.keys(input).sort());
+    let hash = 0;
+    for (let i = 0; i < inputString.length; i++) {
+      const char = inputString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
 
   // Helper method to create timeline entries for forecasts and calculations

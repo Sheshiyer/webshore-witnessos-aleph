@@ -9,6 +9,7 @@ import { ShaderPortalGateway } from '@/components/ui/ShaderPortalGateway';
 import { CyberpunkAuthModal } from '@/components/auth/CyberpunkAuthModal';
 import { OfflineModeBanner } from '@/components/ui/ConnectionStatusIndicator';
 import APIConnectionTest, { useAPIConnectionTest } from '@/components/debug/APIConnectionTest';
+import { DeveloperDashboard } from '@/components/developer/DeveloperDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { BaseEngineOutput } from '@/engines/core/types';
@@ -49,6 +50,7 @@ export default function Home() {
   const [focusedPanel, setFocusedPanel] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [biofieldActive, setBiofieldActive] = useState(false);
+  const [showDeveloperDashboard, setShowDeveloperDashboard] = useState(false);
 
   // Ref to access biofield capture function
   const biofieldEngineRef = useRef<{ capture: () => void } | null>(null);
@@ -346,13 +348,27 @@ export default function Home() {
                 WITNESSOS v2.5.4
               </div>
 
+              {/* Developer Dashboard Toggle */}
+              <button
+                onClick={() => setShowDeveloperDashboard(!showDeveloperDashboard)}
+                className={`
+                  px-4 py-2 rounded-lg font-mono text-sm transition-all duration-200
+                  ${showDeveloperDashboard
+                    ? 'bg-cyan-600/80 hover:bg-cyan-500/80'
+                    : 'bg-gray-600/80 hover:bg-gray-500/80'
+                  } text-white shadow-lg hover:scale-105 active:scale-95
+                `}
+              >
+                🔧 API
+              </button>
+
               {/* Capture Button */}
               <button
                 onClick={handleCaptureBiofield}
                 disabled={isCapturing}
                 className={`
                   px-4 py-2 rounded-lg font-mono text-sm transition-all duration-200
-                  bg-purple-600/80 hover:bg-purple-500/80 disabled:bg-purple-700/50 
+                  bg-purple-600/80 hover:bg-purple-500/80 disabled:bg-purple-700/50
                   disabled:cursor-not-allowed text-white shadow-lg
                   hover:scale-105 active:scale-95
                   ${isCapturing ? 'animate-pulse' : ''}
@@ -363,6 +379,24 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Developer Dashboard Panel */}
+        {showDeveloperDashboard && isAuthenticated && (
+          <div className="absolute inset-0 z-30 bg-black/90 backdrop-blur-sm overflow-y-auto">
+            <div className="container mx-auto px-4 py-8">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowDeveloperDashboard(false)}
+                className="fixed top-6 right-6 z-40 p-3 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 hover:bg-red-600/30 transition-colors"
+              >
+                ✕
+              </button>
+
+              {/* Developer Dashboard */}
+              <DeveloperDashboard className="max-w-6xl mx-auto" />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -379,9 +413,10 @@ export default function Home() {
       {/* Main Biofield Interface - Full Screen */}
       <div className="absolute inset-0">
         <BiofieldViewerEngine
-          onBiofieldCaptured={handleBiofieldCaptured}
+          question={{ question: "Capture biofield snapshot for consciousness analysis" }}
+          onCalculationComplete={handleBiofieldCaptured}
           captureMode="snapshot"
-          className="w-full h-full"
+          analysisDepth="deep"
         />
       </div>
 

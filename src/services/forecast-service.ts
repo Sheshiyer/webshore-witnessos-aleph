@@ -155,7 +155,7 @@ export class ForecastService {
     const { dates, days = 7, includeWeekly = false, raycastOptimized = false, userProfile } = request;
 
     // Generate date range
-    const targetDates = dates || this.generateDateRange(days);
+    const targetDates = dates || this.generateDateRange(days || 7);
     
     // Generate daily forecasts in parallel
     const dailyForecasts = await Promise.all(
@@ -263,7 +263,7 @@ export class ForecastService {
     
     // Generate predictive insights
     const predictiveInsights = biorhythmResult ? 
-      await PredictiveAnalyzer.generatePredictiveInsights(biorhythmResult, targetDate) : 
+      await PredictiveAnalyzer.generatePredictiveInsights(biorhythmResult as any, targetDate) : 
       undefined;
 
     // Generate AI synthesis
@@ -273,12 +273,13 @@ export class ForecastService {
     const guidance: ForecastGuidance = {
       iching: ichingResult ? {
         hexagram: ichingResult.data?.rawData?.hexagram || ichingResult.data?.hexagram,
-             interpretation: ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput,
-             changingLines: ichingResult.data?.rawData?.changingLines || ichingResult.data?.changingLines
+        interpretation: String(ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput || ''),
+        changingLines: Array.isArray(ichingResult.data?.rawData?.changingLines) ? ichingResult.data.rawData.changingLines : 
+                      Array.isArray(ichingResult.data?.changingLines) ? ichingResult.data.changingLines : undefined
       } : undefined,
       tarot: tarotResult ? {
         card: tarotResult.data?.rawData?.card || tarotResult.data?.card,
-             interpretation: tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput,
+        interpretation: String(tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput || ''),
         focusArea: 'daily_guidance'
       } : undefined,
       synthesis,
@@ -293,7 +294,7 @@ export class ForecastService {
       energyProfile,
       guidance,
       recommendations,
-      predictiveInsights
+      ...(predictiveInsights && { predictiveInsights })
     };
 
     // Add Raycast optimization if requested
@@ -377,10 +378,12 @@ export class ForecastService {
               model: 'anthropic/claude-3-haiku',
               maxTokens: 1200,
               temperature: 0.7,
-              userContext: `Enhanced daily forecast synthesis for ${targetDate}`
+              userContext: {
+                focusArea: 'daily_forecast'
+              }
             }
           );
-          return synthesis.summary || synthesis.detailed_interpretation || 'AI synthesis generated';
+          return synthesis.enhancedInterpretation || 'AI synthesis generated';
         }
       } catch (error) {
         console.error(`[${requestId}] AI synthesis failed:`, error);

@@ -92,7 +92,7 @@ export class CloudflareKVDataAccess implements KVOperations {
       compress?: boolean;
       metadata?: any;
     } = {}
-  ): Promise<{ timestamp: string; size: number; compressed: boolean }> {
+  ): Promise<string> {
     const timestamp = new Date().toISOString();
     const key = KVKeyGenerator.userProfile(userId, engineName, timestamp);
     const { priority = 'normal', compress = false, metadata } = options;
@@ -161,11 +161,7 @@ export class CloudflareKVDataAccess implements KVOperations {
         );
       }
 
-      return {
-        timestamp,
-        size: serializedData.length,
-        compressed: isCompressed
-      };
+      return timestamp;
     } catch (error) {
       console.error(`Failed to set user profile ${key}:`, error);
       throw error;
@@ -243,11 +239,15 @@ export class CloudflareKVDataAccess implements KVOperations {
 
     try {
       do {
-        const list = await this.userProfiles.list({ 
+        const listOptions: any = {
           prefix, 
-          limit: 1000,
-          ...(cursor && { cursor })
-        });
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
+        }
+        
+        const list = await this.userProfiles.list(listOptions);
         
         keys.push(...list.keys.map(k => k.name));
         cursor = list.cursor;
@@ -277,66 +277,12 @@ export class CloudflareKVDataAccess implements KVOperations {
     engineName: string,
     inputHash: string,
     data: T,
-    ttl: number = CACHE_TTL_CONFIG.default,
-    options: {
-      confidenceScore?: number;
-      forceCache?: boolean;
-      metadata?: any;
-    } = {}
-  ): Promise<{ cached: boolean; reason?: string }> {
+    ttl: number = CACHE_TTL_CONFIG.default
+  ): Promise<void> {
     const key = KVKeyGenerator.cache(engineName, inputHash);
-    const { confidenceScore, forceCache = false, metadata } = options;
 
     try {
-      // Phase 1: Intelligent Caching Strategy - Confidence-based caching
-      const CONFIDENCE_THRESHOLD = 0.7;
-
-      // Check if we should cache based on confidence score
-      if (!forceCache && confidenceScore !== undefined && confidenceScore < CONFIDENCE_THRESHOLD) {
-        return {
-          cached: false,
-          reason: `Confidence score ${confidenceScore} below threshold ${CONFIDENCE_THRESHOLD}`
-        };
-      }
-
-      // Determine TTL based on engine complexity and confidence
-      let adjustedTtl = ttl;
-      if (confidenceScore !== undefined) {
-        // Higher confidence = longer cache time
-        const confidenceMultiplier = Math.max(0.5, Math.min(2.0, confidenceScore * 2));
-        adjustedTtl = Math.floor(ttl * confidenceMultiplier);
-      }
-
-      // Apply engine-specific TTL from CACHE_STRATEGY
-      const engineComplexityTtl = this.getEngineComplexityTtl(engineName);
-      if (engineComplexityTtl) {
-        adjustedTtl = Math.min(adjustedTtl, engineComplexityTtl);
-      }
-
-      const cacheData = {
-        data,
-        engineName,
-        inputHash,
-        cachedAt: new Date().toISOString(),
-        confidenceScore,
-        ttl: adjustedTtl,
-        metadata: {
-          ...metadata,
-          cacheVersion: '1.1',
-          intelligentCaching: true
-        }
-      };
-
-      await this.cache.put(
-        key,
-        JSON.stringify(cacheData),
-        { expirationTtl: adjustedTtl }
-      );
-
-      return {
-        cached: true,
-        reason: `Cached with confidence ${confidenceScore || 'N/A'}, TTL: ${adjustedTtl}s`
-      };
+      await this.cache.put(key, JSON.stringify(data), { expirationTtl: ttl });
 
     } catch (error) {
       console.error(`Failed to set cache ${key}:`, error);
@@ -661,11 +607,15 @@ export class CloudflareKVDataAccess implements KVOperations {
 
     try {
       do {
-        const list = await this.engineData.list({ 
+        const listOptions: any = {
           prefix, 
-          limit: 1000,
-          ...(cursor && { cursor })
-        });
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
+        }
+        
+        const list = await this.engineData.list(listOptions);
         
         keys.push(...list.keys.map(k => k.name));
         cursor = list.cursor;
@@ -707,18 +657,22 @@ export class CloudflareKVDataAccess implements KVOperations {
 
     try {
       do {
-        const list = await this.cache.list({ 
-          prefix, 
-          limit: 1000,
-          ...(cursor && { cursor })
-        });
-        
-        const deletePromises = list.keys.map(key => 
+        const listOptions: any = {
+          prefix,
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
+        }
+
+        const list = await this.cache.list(listOptions);
+
+        const deletePromises = list.keys.map(key =>
           this.cache.delete(key.name).catch(error =>
             console.error(`Failed to delete cache ${key.name}:`, error)
           )
         );
-        
+
         await Promise.all(deletePromises);
         cursor = list.cursor;
       } while (cursor);
@@ -728,169 +682,182 @@ export class CloudflareKVDataAccess implements KVOperations {
     }
   }
 
-  // Reading History Operations
-  async saveReading(userId: string, reading: any): Promise<{ success: boolean; readingId?: string; error?: string }> {
+  // Cache Invalidation Methods
+  async invalidateEngineCache(engineName: string): Promise<void> {
+    const prefix = `cache:${engineName}:`;
+    let cursor: string | undefined;
+    let deletedCount = 0;
+
     try {
-      const readingId = crypto.randomUUID();
-      const timestamp = new Date().toISOString();
-      const key = `reading:${userId}:${readingId}`;
-      
-      const readingData = {
-        id: readingId,
-        userId,
-        timestamp,
-        ...reading,
-        favorite: false,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      };
-
-      await this.userProfiles.put(
-        key,
-        JSON.stringify(readingData),
-        { expirationTtl: CACHE_TTL_CONFIG.user_profiles }
-      );
-
-      return { success: true, readingId };
-    } catch (error) {
-      console.error(`Failed to save reading for user ${userId}:`, error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
-
-  async getReading(readingId: string): Promise<any | null> {
-    try {
-      // Search for the reading across all user namespaces
-      // This is a simplified approach - in production you'd want to include userId in the request
-      const prefix = 'reading:';
-      const list = await this.userProfiles.list({ prefix, limit: 1000 });
-      
-      for (const key of list.keys) {
-        if (key.name.includes(readingId)) {
-          const data = await this.userProfiles.get(key.name, { type: 'json' });
-          if (data && data.id === readingId) {
-            return data;
-          }
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error(`Failed to get reading ${readingId}:`, error);
-      return null;
-    }
-  }
-
-  async getUserReadings(userId: string, limit: number = 10, timeRange: string = '30d'): Promise<any[]> {
-    try {
-      const prefix = `reading:${userId}:`;
-      const readings: any[] = [];
-      let cursor: string | undefined;
-
-      // Calculate time threshold
-      const now = new Date();
-      const timeThreshold = new Date();
-      if (timeRange.endsWith('d')) {
-        const days = parseInt(timeRange.slice(0, -1));
-        timeThreshold.setDate(now.getDate() - days);
-      } else if (timeRange.endsWith('m')) {
-        const months = parseInt(timeRange.slice(0, -1));
-        timeThreshold.setMonth(now.getMonth() - months);
-      }
-
       do {
-        const list = await this.userProfiles.list({ 
-          prefix, 
-          limit: Math.min(limit * 2, 1000), // Get more than needed to filter
-          ...(cursor && { cursor })
-        });
-
-        for (const key of list.keys) {
-          if (readings.length >= limit) break;
-          
-          const data = await this.userProfiles.get(key.name, { type: 'json' });
-          if (data && data.timestamp) {
-            const readingDate = new Date(data.timestamp);
-            if (readingDate >= timeThreshold) {
-              readings.push(data);
-            }
-          }
+        const listOptions: any = {
+          prefix,
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
         }
 
+        const list = await this.cache.list(listOptions);
+
+        const deletePromises = list.keys.map(key =>
+          this.cache.delete(key.name).catch(error =>
+            console.error(`Failed to delete cache ${key.name}:`, error)
+          )
+        );
+
+        await Promise.all(deletePromises);
+        deletedCount += list.keys.length;
         cursor = list.cursor;
-      } while (cursor && readings.length < limit);
+      } while (cursor);
 
-      // Sort by timestamp (newest first) and limit
-      return readings
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, limit);
-
+      console.log(`Invalidated ${deletedCount} cache entries for engine: ${engineName}`);
     } catch (error) {
-      console.error(`Failed to get user readings for ${userId}:`, error);
-      return [];
+      console.error(`Failed to invalidate cache for engine ${engineName}:`, error);
+      throw error;
     }
   }
 
-  async deleteReading(readingId: string): Promise<{ success: boolean; error?: string }> {
+  async invalidateUserCache(userId: string): Promise<void> {
+    const prefixes = [`forecast:daily:${userId}:`, `forecast:weekly:${userId}:`, `raycast:`, `user_profile:${userId}:`];
+    let totalDeleted = 0;
+
     try {
-      // Find and delete the reading
-      const prefix = 'reading:';
-      const list = await this.userProfiles.list({ prefix, limit: 1000 });
-      
-      for (const key of list.keys) {
-        if (key.name.includes(readingId)) {
-          const data = await this.userProfiles.get(key.name, { type: 'json' });
-          if (data && data.id === readingId) {
-            await this.userProfiles.delete(key.name);
-            return { success: true };
+      for (const prefix of prefixes) {
+        let cursor: string | undefined;
+
+        do {
+          const listOptions: any = {
+            prefix,
+            limit: 1000
+          };
+          if (cursor) {
+            listOptions.cursor = cursor;
           }
+
+          const list = await this.cache.list(listOptions);
+
+          // Filter for user-specific keys
+          const userKeys = list.keys.filter(key =>
+            key.name.includes(userId) || key.name.startsWith(prefix)
+          );
+
+          const deletePromises = userKeys.map(key =>
+            this.cache.delete(key.name).catch(error =>
+              console.error(`Failed to delete cache ${key.name}:`, error)
+            )
+          );
+
+          await Promise.all(deletePromises);
+          totalDeleted += userKeys.length;
+          cursor = list.cursor;
+        } while (cursor);
+      }
+
+      console.log(`Invalidated ${totalDeleted} cache entries for user: ${userId}`);
+    } catch (error) {
+      console.error(`Failed to invalidate cache for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Cache Warming Methods
+  async warmEngineCache(engineName: string, commonInputs: any[]): Promise<{ warmed: number; failed: number }> {
+    let warmed = 0;
+    let failed = 0;
+
+    try {
+      // Import engine calculation function
+      const { calculateEngine } = await import('../engines');
+
+      for (const input of commonInputs) {
+        try {
+          // Calculate and cache the result
+          const result = await calculateEngine(engineName as any, input);
+
+          if (result.success) {
+            // Generate input hash for caching
+            const inputHash = this.generateInputHash(input);
+            await this.setCached(engineName, inputHash, result, this.getEngineComplexityTtl(engineName) || CACHE_TTL_CONFIG.default);
+            warmed++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          console.error(`Failed to warm cache for ${engineName} with input:`, input, error);
+          failed++;
         }
       }
-      
-      return { success: false, error: 'Reading not found' };
+
+      console.log(`Cache warming for ${engineName}: ${warmed} warmed, ${failed} failed`);
+      return { warmed, failed };
     } catch (error) {
-      console.error(`Failed to delete reading ${readingId}:`, error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      console.error(`Failed to warm cache for engine ${engineName}:`, error);
+      return { warmed, failed: commonInputs.length };
     }
   }
 
-  async toggleFavorite(readingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  async warmUserForecastCache(userId: string, days: number = 7): Promise<{ warmed: number; failed: number }> {
+    let warmed = 0;
+    let failed = 0;
+
     try {
-      // Find the reading
-      const prefix = 'reading:';
-      const list = await this.userProfiles.list({ prefix, limit: 1000 });
-      
-      for (const key of list.keys) {
-        if (key.name.includes(readingId)) {
-          const data = await this.userProfiles.get(key.name, { type: 'json' });
-          if (data && data.id === readingId) {
-            // Toggle favorite status
-            const updatedData = {
-              ...data,
-              favorite: !data.favorite,
-              updatedAt: new Date().toISOString()
-            };
-            
-            await this.userProfiles.put(
-              key.name,
-              JSON.stringify(updatedData),
-              { expirationTtl: CACHE_TTL_CONFIG.user_profiles }
-            );
-            
-            return { 
-              success: true, 
-              message: updatedData.favorite ? 'Reading marked as favorite' : 'Reading removed from favorites'
-            };
+      // Get user profile for forecast generation
+      const userProfile = await this.getUserProfileOptimized(userId, 'numerology');
+      if (!userProfile || !userProfile.input?.birthDate) {
+        console.warn(`Cannot warm forecast cache for user ${userId}: missing birth data`);
+        return { warmed: 0, failed: days };
+      }
+
+      // Import forecast generation
+      const { generateDailyForecast } = await import('../handlers/forecast-handler');
+
+      // Generate forecasts for the next N days
+      for (let i = 0; i < days; i++) {
+        try {
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + i);
+          const dateString = targetDate.toISOString().split('T')[0];
+
+          // Check if already cached
+          const existing = await this.getDailyForecastCache(userId, dateString);
+          if (existing) {
+            warmed++; // Already warmed
+            continue;
           }
+
+          // Generate and cache forecast
+          const forecast = await generateDailyForecast(userProfile, dateString, `cache-warm-${Date.now()}`);
+          await this.setDailyForecastCache(userId, dateString, forecast);
+          warmed++;
+        } catch (error) {
+          console.error(`Failed to warm forecast cache for user ${userId}, day ${i}:`, error);
+          failed++;
         }
       }
-      
-      return { success: false, error: 'Reading not found' };
+
+      console.log(`Forecast cache warming for user ${userId}: ${warmed} warmed, ${failed} failed`);
+      return { warmed, failed };
     } catch (error) {
-      console.error(`Failed to toggle favorite for reading ${readingId}:`, error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      console.error(`Failed to warm forecast cache for user ${userId}:`, error);
+      return { warmed: 0, failed: days };
     }
   }
+
+  // Cache Utility Methods
+  private generateInputHash(input: any): string {
+    // Simple hash generation for input data
+    const inputString = JSON.stringify(input, Object.keys(input).sort());
+    let hash = 0;
+    for (let i = 0; i < inputString.length; i++) {
+      const char = inputString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+
 
   // Utility Methods
   async healthCheck(): Promise<{ status: string; details: Record<string, any> }> {
@@ -1001,7 +968,9 @@ export class CloudflareKVDataAccess implements KVOperations {
       await this.timelineData.put(key, JSON.stringify(entry));
 
       // Update daily index
-      await this.updateTimelineIndex(entry.userId, entry.timestamp.split('T')[0], entry.id, 'add');
+      if (entry.timestamp) {
+        await this.updateTimelineIndex(entry.userId, entry.timestamp.split('T')[0], entry.id, 'add');
+      }
 
     } catch (error) {
       console.error(`Failed to create timeline entry ${key}:`, error);
@@ -1038,7 +1007,9 @@ export class CloudflareKVDataAccess implements KVOperations {
       await this.timelineData.delete(key);
 
       // Update daily index
-      await this.updateTimelineIndex(userId, timestamp.split('T')[0], entryId, 'remove');
+      if (timestamp) {
+        await this.updateTimelineIndex(userId, timestamp.split('T')[0], entryId, 'remove');
+      }
 
     } catch (error) {
       console.error(`Failed to delete timeline entry ${key}:`, error);
@@ -1056,14 +1027,18 @@ export class CloudflareKVDataAccess implements KVOperations {
 
       // Get all keys for the user
       do {
-        const result = await this.timelineData.list({
+        const listOptions: any = {
           prefix,
-          limit: 1000,
-          cursor
-        });
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
+        }
+        
+        const result = await this.timelineData.list(listOptions);
 
         allKeys.push(...result.keys.map(k => k.name));
-        cursor = result.cursor;
+        cursor = result.cursor || undefined;
       } while (cursor);
 
       // Filter keys by date range if specified
@@ -1082,8 +1057,8 @@ export class CloudflareKVDataAccess implements KVOperations {
 
       // Sort keys by timestamp
       filteredKeys.sort((a, b) => {
-        const timestampA = a.split(':')[2];
-        const timestampB = b.split(':')[2];
+        const timestampA = a.split(':')[2] || '';
+        const timestampB = b.split(':')[2] || '';
         return sortOrder === 'desc'
           ? timestampB.localeCompare(timestampA)
           : timestampA.localeCompare(timestampB);
@@ -1110,12 +1085,16 @@ export class CloudflareKVDataAccess implements KVOperations {
         }
       }
 
-      return {
+      const hasMore = offset + limit < filteredKeys.length;
+      const response: TimelineResponse = {
         entries,
         total: filteredKeys.length,
-        hasMore: offset + limit < filteredKeys.length,
-        nextOffset: offset + limit < filteredKeys.length ? offset + limit : undefined
+        hasMore
       };
+      if (hasMore) {
+        response.nextOffset = offset + limit;
+      }
+      return response;
 
     } catch (error) {
       console.error(`Failed to get timeline entries for user ${userId}:`, error);
@@ -1179,19 +1158,31 @@ export class CloudflareKVDataAccess implements KVOperations {
       stats.entriesByType = typeCounts as Record<TimelineEntryType, number>;
       stats.entriesByEngine = engineCounts;
       stats.averageConfidence = totalConfidence / entries.entries.length;
-      stats.averageAccuracy = accuracyCount > 0 ? totalAccuracy / accuracyCount : undefined;
+      if (accuracyCount > 0) {
+        stats.averageAccuracy = totalAccuracy / accuracyCount;
+      }
 
       // Most used engine and workflow
-      stats.mostUsedEngine = Object.keys(engineCounts).reduce((a, b) =>
-        engineCounts[a] > engineCounts[b] ? a : b, '');
-      stats.mostUsedWorkflow = Object.keys(workflowCounts).reduce((a, b) =>
-        workflowCounts[a] > workflowCounts[b] ? a : b, '');
+      const engineKeys = Object.keys(engineCounts);
+      const workflowKeys = Object.keys(workflowCounts);
+      stats.mostUsedEngine = engineKeys.length > 0 ? engineKeys.reduce((a, b) => {
+        const countA = engineCounts[a] || 0;
+        const countB = engineCounts[b] || 0;
+        return countA > countB ? a : b;
+      }) : '';
+      stats.mostUsedWorkflow = workflowKeys.length > 0 ? workflowKeys.reduce((a, b) => {
+        const countA = workflowCounts[a] || 0;
+        const countB = workflowCounts[b] || 0;
+        return countA > countB ? a : b;
+      }) : '';
 
       // First and last entries
       const sortedEntries = entries.entries.sort((a, b) =>
-        a.timestamp.localeCompare(b.timestamp));
-      stats.firstEntry = sortedEntries[0]?.timestamp.split('T')[0] || '';
-      stats.lastEntry = sortedEntries[sortedEntries.length - 1]?.timestamp.split('T')[0] || '';
+        (a.timestamp || '').localeCompare(b.timestamp || ''));
+      const firstEntry = sortedEntries[0];
+      const lastEntry = sortedEntries[sortedEntries.length - 1];
+      stats.firstEntry = (firstEntry && firstEntry.timestamp) ? firstEntry.timestamp.split('T')[0] : '';
+      stats.lastEntry = (lastEntry && lastEntry.timestamp) ? lastEntry.timestamp.split('T')[0] : '';
 
       // Calculate streak days
       stats.streakDays = this.calculateStreakDays(entries.entries);
@@ -1235,13 +1226,20 @@ export class CloudflareKVDataAccess implements KVOperations {
   private calculateStreakDays(entries: TimelineEntry[]): number {
     if (entries.length === 0) return 0;
 
-    const dates = [...new Set(entries.map(e => e.timestamp.split('T')[0]))].sort();
+    const dateSet = new Set(entries.map(e => e.timestamp?.split('T')[0]).filter(Boolean));
+    const dates = Array.from(dateSet).sort();
+    if (dates.length === 0) return 0;
+    
     let streak = 1;
     let currentStreak = 1;
 
     for (let i = 1; i < dates.length; i++) {
-      const prevDate = new Date(dates[i - 1]);
-      const currDate = new Date(dates[i]);
+      const prevDateStr = dates[i - 1];
+      const currDateStr = dates[i];
+      if (!prevDateStr || !currDateStr) continue;
+      
+      const prevDate = new Date(prevDateStr);
+      const currDate = new Date(currDateStr);
       const diffTime = currDate.getTime() - prevDate.getTime();
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
@@ -1254,6 +1252,203 @@ export class CloudflareKVDataAccess implements KVOperations {
     }
 
     return streak;
+  }
+
+  // Reading History Management Methods
+  async saveReading(userId: string, reading: any): Promise<{ success: boolean; readingId?: string; error?: string }> {
+    try {
+      // Generate reading ID if not provided
+      if (!reading.id) {
+        reading.id = `reading_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      }
+      
+      // Add metadata
+      reading.userId = userId;
+      reading.timestamp = reading.timestamp || new Date().toISOString();
+      reading.createdAt = reading.createdAt || new Date().toISOString();
+      reading.updatedAt = new Date().toISOString();
+      
+      const key = `reading:${userId}:${reading.id}`;
+      const userKey = `user_readings:${userId}`;
+      
+      // Save the reading
+      await this.userProfiles.put(key, JSON.stringify(reading));
+      
+      // Update user's reading list
+      const userReadings = await this.userProfiles.get(userKey, { type: 'json' }) || [];
+      const readingList = Array.isArray(userReadings) ? userReadings : [];
+      
+      // Add reading ID if not already present
+      if (!readingList.includes(reading.id)) {
+        readingList.unshift(reading.id); // Add to beginning for chronological order
+        
+        // Keep only last 1000 readings to prevent unlimited growth
+        if (readingList.length > 1000) {
+          readingList.splice(1000);
+        }
+        
+        await this.userProfiles.put(userKey, JSON.stringify(readingList));
+      }
+      
+      return { success: true, readingId: reading.id };
+    } catch (error) {
+      console.error(`Failed to save reading for user ${userId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async getUserReadings(userId: string, limit: number = 10, timeRange: string = '30d'): Promise<any[]> {
+    const userKey = `user_readings:${userId}`;
+    
+    try {
+      const readingIds = await this.userProfiles.get(userKey, { type: 'json' }) || [];
+      const readingList = Array.isArray(readingIds) ? readingIds : [];
+      
+      // Apply limit
+      const limitedIds = readingList.slice(0, limit);
+      
+      // Fetch reading details
+      const readings = [];
+      for (const readingId of limitedIds) {
+        try {
+          const readingKey = `reading:${userId}:${readingId}`;
+          const reading = await this.userProfiles.get(readingKey, { type: 'json' });
+          if (reading) {
+            // Apply time range filter if specified
+            if (timeRange && reading.timestamp) {
+              const readingDate = new Date(reading.timestamp);
+              const cutoffDate = this.getTimeRangeCutoff(timeRange);
+              if (readingDate < cutoffDate) {
+                continue;
+              }
+            }
+            readings.push(reading);
+          }
+        } catch (error) {
+          console.error(`Failed to get reading ${readingId}:`, error);
+        }
+      }
+      
+      return readings;
+    } catch (error) {
+      console.error(`Failed to get user readings for ${userId}:`, error);
+      return [];
+    }
+  }
+
+  async getReading(readingId: string): Promise<any | null> {
+    try {
+      // Since we don't have userId in this method signature, we need to search
+      // This is less efficient but matches the expected API
+      const prefix = 'reading:';
+      let cursor: string | undefined;
+      
+      do {
+        const listOptions: any = {
+          prefix,
+          limit: 1000
+        };
+        if (cursor) {
+          listOptions.cursor = cursor;
+        }
+        
+        const result = await this.userProfiles.list(listOptions);
+        
+        for (const key of result.keys) {
+          if (key.name.endsWith(`:${readingId}`)) {
+            const reading = await this.userProfiles.get(key.name, { type: 'json' });
+            return reading || null;
+          }
+        }
+        
+        cursor = result.cursor;
+      } while (cursor);
+      
+      return null;
+    } catch (error) {
+      console.error(`Failed to get reading ${readingId}:`, error);
+      return null;
+    }
+  }
+
+  async deleteReading(readingId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Find the reading first to get userId
+      const reading = await this.getReading(readingId);
+      if (!reading) {
+        return { success: false, error: 'Reading not found' };
+      }
+      
+      const userId = reading.userId;
+      const key = `reading:${userId}:${readingId}`;
+      const userKey = `user_readings:${userId}`;
+      
+      // Delete the reading
+      await this.userProfiles.delete(key);
+      
+      // Remove from user's reading list
+      const userReadings = await this.userProfiles.get(userKey, { type: 'json' }) || [];
+      const readingList = Array.isArray(userReadings) ? userReadings : [];
+      
+      const updatedList = readingList.filter(id => id !== readingId);
+      await this.userProfiles.put(userKey, JSON.stringify(updatedList));
+      
+      return { success: true };
+    } catch (error) {
+      console.error(`Failed to delete reading ${readingId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async toggleFavorite(readingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      // Find the reading first to get userId
+      const reading = await this.getReading(readingId);
+      if (!reading) {
+        return { success: false, error: 'Reading not found' };
+      }
+      
+      const userId = reading.userId;
+      const key = `reading:${userId}:${readingId}`;
+      
+      // Toggle favorite status
+      reading.isFavorite = !reading.isFavorite;
+      reading.updatedAt = new Date().toISOString();
+      
+      await this.userProfiles.put(key, JSON.stringify(reading));
+      
+      const message = reading.isFavorite ? 'Reading added to favorites' : 'Reading removed from favorites';
+      return { success: true, message };
+    } catch (error) {
+      console.error(`Failed to toggle favorite for reading ${readingId}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  private getTimeRangeCutoff(timeRange: string): Date {
+    const now = new Date();
+    const match = timeRange.match(/(\d+)([dwmy])/);
+    
+    if (!match || !match[1] || !match[2]) {
+      // Default to 30 days if invalid format
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    
+    switch (unit) {
+      case 'd': // days
+        return new Date(now.getTime() - value * 24 * 60 * 60 * 1000);
+      case 'w': // weeks
+        return new Date(now.getTime() - value * 7 * 24 * 60 * 60 * 1000);
+      case 'm': // months (approximate)
+        return new Date(now.getTime() - value * 30 * 24 * 60 * 60 * 1000);
+      case 'y': // years (approximate)
+        return new Date(now.getTime() - value * 365 * 24 * 60 * 60 * 1000);
+      default:
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
   }
 }
 

@@ -5,6 +5,16 @@
  * in Cloudflare Workers KV for optimal performance and organization.
  */
 
+// Import Cloudflare Workers types
+declare global {
+  interface KVNamespace {
+    get(key: string, options?: { type?: 'text' | 'json' | 'arrayBuffer' | 'stream' }): Promise<any>;
+    put(key: string, value: string | ArrayBuffer | ArrayBufferView | ReadableStream, options?: any): Promise<void>;
+    delete(key: string): Promise<void>;
+    list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: { name: string }[]; cursor?: string }>;
+  }
+}
+
 // KV Namespace Structure:
 // - engine_data: Static engine reference data (JSON files)
 // - user_profiles: User calculation results and preferences
@@ -165,4 +175,4 @@ export interface WorkerKVBindings {
   ENGINE_DATA: KVNamespace;
   USER_PROFILES: KVNamespace;
   CACHE: KVNamespace;
-} 
+}

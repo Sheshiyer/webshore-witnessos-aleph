@@ -1,27 +1,33 @@
 # AI Service Worker Configuration
 # Specialized worker for AI-powered synthesis and interpretation
+# Integrates with Railway Python engines for consciousness calculations
 
 name = "witnessos-ai-service"
 main = "src/workers/ai-service-worker.ts"
-compatibility_date = "2024-01-15"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+
+# Service dependencies
+[[services]]
+binding = "ENGINE_PROXY"
+service = "witnessos-engine-proxy"
 
 # KV Namespaces
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "your-cache-kv-namespace-id"
-preview_id = "your-cache-kv-preview-id"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 [[kv_namespaces]]
 binding = "KV_AI_CACHE"
-id = "your-ai-cache-kv-namespace-id"
-preview_id = "your-ai-cache-kv-preview-id"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "witnessos-db"
-database_id = "your-database-id"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
 
 # Environment Variables
 [vars]
@@ -29,6 +35,8 @@ ENVIRONMENT = "production"
 SERVICE_NAME = "ai-service"
 ENABLE_CACHING = "true"
 DEFAULT_AI_MODEL = "anthropic/claude-3-haiku"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
 
 # Secrets (set via wrangler secret put)
 # OPENROUTER_API_KEY
@@ -40,11 +48,25 @@ name = "witnessos-ai-service-dev"
 [env.development.vars]
 ENVIRONMENT = "development"
 ENABLE_CACHING = "false"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
 
 # Staging configuration
 [env.staging]
 name = "witnessos-ai-service-staging"
 
+[env.staging.vars]
+ENVIRONMENT = "staging"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+
 # Production configuration
 [env.production]
 name = "witnessos-ai-service-prod"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true" 

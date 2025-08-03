@@ -900,3 +900,30 @@ export class AuthService {
     }
   }
 }
+
+// Export singleton instance for use across the application
+export const authService = AuthService.getInstance();
+
+/**
+ * Standalone JWT verification function for API endpoints
+ * Simplified version that doesn't require full AuthService initialization
+ */
+export async function verifyJWT(token: string): Promise<{ id: number; email: string; is_admin: boolean } | null> {
+  try {
+    const secret = encoder.encode(process.env.JWT_SECRET || 'default-secret-key');
+
+    // Verify and decode JWT using jose library
+    const { payload } = await jose.jwtVerify(token, secret, {
+      algorithms: ['HS256']
+    });
+
+    return {
+      id: parseInt(payload.sub as string),
+      email: payload.email as string,
+      is_admin: payload.is_admin as boolean
+    };
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return null;
+  }
+}

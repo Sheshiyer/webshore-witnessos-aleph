@@ -6,7 +6,7 @@
  * Includes fallback mode for offline/disconnected operation
  */
 
-import type { EngineName } from '@/types/engines';
+import type { EngineName } from '../types/engines';
 import { offlineFallback, shouldUseOfflineFallback } from './offline-fallback';
 
 // Environment-aware API configuration
@@ -17,10 +17,9 @@ const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // ALWAYS use custom domain for Railway consciousness engines
-  // This ensures proper CORS and accessibility from witnessos.space frontend
-  console.log('🚀 Using Railway consciousness engines via custom domain');
-  return 'https://engines.witnessos.space';
+  // Use deployed Cloudflare Workers API for production
+  console.log('🚀 Using deployed Cloudflare Workers API');
+  return 'https://witnessos-api-router.sheshnarayan-iyer.workers.dev';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -147,13 +146,6 @@ const generateMockEngineData = (engineName: EngineName, input: Record<string, an
       elements: ['fire', 'water', 'earth', 'air'][Math.floor(Math.random() * 4)],
       interpretation: "Mock Sigil Forge reading - backend disconnected",
       metadata: { consciousnessLevel: 0.5 + Math.random() * 0.4 }
-    },
-    nadabrahman: {
-      primaryTone: "OM",
-      resonance: Math.random(),
-      harmonics: [1, 5, 8],
-      interpretation: "Mock Nada Brahman reading - backend disconnected",
-      metadata: { consciousnessLevel: 0.7 + Math.random() * 0.2 }
     }
   };
 
@@ -337,7 +329,12 @@ class WitnessOSAPIClient {
       const response = await fetch(url, fetchOptions);
       
       console.log('📡 Response status:', response.status, response.statusText);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      // Log response headers (Headers object doesn't have entries() in all environments)
+      const headerObj: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headerObj[key] = value;
+      });
+      console.log('📡 Response headers:', headerObj);
 
       // Handle 401 Unauthorized - token expired
       if (response.status === 401 && this.defaultHeaders['Authorization']) {
@@ -390,7 +387,7 @@ class WitnessOSAPIClient {
       const errorMessage = errorAnalysis.message;
       
       // Completely disable auto-fallback for production backend
-      if (!FALLBACK_MODE && shouldRetryWithFallback && !isProductionBackend) {
+      if (!FALLBACK_MODE && !isProductionBackend) {
         console.log('🔄 Network error detected, but auto-fallback disabled for production backend');
         // Don't enable fallback mode - let the error propagate
       }
@@ -431,33 +428,32 @@ class WitnessOSAPIClient {
     // Health check
     if (endpoint === '/health') {
       const result = await offlineFallback.healthCheck();
-      return { success: true, data: result, error: null };
+      return { success: true, data: result };
     }
 
     // List engines
     if (endpoint === '/engines') {
       const engines = offlineFallback.getAvailableEngines();
-      return { success: true, data: { engines }, error: null };
+      return { success: true, data: { engines } };
     }
 
     // Engine metadata
     const metadataMatch = endpoint.match(/^\/engines\/([^\/]+)\/metadata$/);
-    if (metadataMatch) {
+    if (metadataMatch && metadataMatch[1]) {
       const engineName = metadataMatch[1];
       const metadata = offlineFallback.getEngineMetadata(engineName);
-      return { success: true, data: metadata, error: null };
+      return { success: true, data: metadata };
     }
 
     // Engine calculation
     const calculateMatch = endpoint.match(/^\/engines\/([^\/]+)\/calculate$/);
-    if (calculateMatch && method === 'POST') {
+    if (calculateMatch && calculateMatch[1] && method === 'POST') {
       const engineName = calculateMatch[1];
 
       if (!offlineFallback.isEngineAvailable(engineName)) {
         return {
           success: false,
-          error: `Engine ${engineName} not available in offline mode`,
-          data: null
+          error: `Engine ${engineName} not available in offline mode`
         };
       }
 
@@ -465,12 +461,11 @@ class WitnessOSAPIClient {
         const body = options?.body ? JSON.parse(options.body as string) : {};
         const input = body.input || {};
         const result = await offlineFallback.calculateEngine(engineName, input);
-        return { success: true, data: result, error: null };
+        return { success: true, data: result };
       } catch (error) {
         return {
           success: false,
-          error: `Offline calculation failed: ${error}`,
-          data: null
+          error: `Offline calculation failed: ${error instanceof Error ? error.message : String(error)}`
         };
       }
     }
@@ -484,8 +479,7 @@ class WitnessOSAPIClient {
       } catch (error) {
         return {
           success: false,
-          error: `Offline login failed: ${error}`,
-          data: null
+          error: `Offline login failed: ${error instanceof Error ? error.message : String(error)}`
         };
       }
     }
@@ -499,7 +493,7 @@ class WitnessOSAPIClient {
     // System status (admin)
     if (endpoint === '/admin/system/status') {
       const status = offlineFallback.getSystemStatus();
-      return { success: true, data: status, error: null };
+      return { success: true, data: status };
     }
 
     // Not handled by offline fallback
@@ -776,7 +770,7 @@ class WitnessOSAPIClient {
           data: data.user || data
         };
       } else {
-        console.error('🚨 Failed to get current user:', response.error);
+        console.error('🚨 Failed to get current user:', response.error || response.message || 'Unknown error');
         return response;
       }
     } catch (error) {

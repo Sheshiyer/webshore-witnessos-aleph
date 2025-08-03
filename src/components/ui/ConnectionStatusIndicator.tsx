@@ -27,15 +27,12 @@ export default function ConnectionStatusIndicator({
   const [connectionState, setConnectionState] = useState<ConnectionState>(connectionManager.getState());
   const [isVisible, setIsVisible] = useState(false);
   const [lastConnectionState, setLastConnectionState] = useState<boolean>(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // Position classes
-  const positionClasses = {
-    'top-left': 'top-4 left-4',
-    'top-right': 'top-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
-    'bottom-right': 'bottom-4 right-4',
-    'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
-  };
+  // Ensure this only renders on client to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Subscribe to connection state changes
   useEffect(() => {
@@ -73,6 +70,20 @@ export default function ConnectionStatusIndicator({
       connectionManager.stopHealthChecks();
     };
   }, [showDuringBoot, lastConnectionState, onConnectionRestored, onConnectionLost]);
+
+  // Don't render on server to prevent hydration mismatch
+  if (!isClient) {
+    return null;
+  }
+
+  // Position classes
+  const positionClasses = {
+    'top-left': 'top-4 left-4',
+    'top-right': 'top-4 right-4',
+    'bottom-left': 'bottom-4 left-4',
+    'bottom-right': 'bottom-4 right-4',
+    'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
+  };
 
   // Don't render if not visible
   if (!isVisible && !showDuringBoot) {
@@ -220,6 +231,17 @@ export function useConnectionState() {
 // Offline mode banner component
 export function OfflineModeBanner() {
   const { shouldShowOfflineMode, statusMessage, forceCheck } = useConnectionState();
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure this only renders on client to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render on server to prevent hydration mismatch
+  if (!isClient) {
+    return null;
+  }
 
   if (!shouldShowOfflineMode) {
     return null;

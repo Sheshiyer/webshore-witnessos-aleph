@@ -1,7 +1,7 @@
 # 🌊 WitnessOS Webshore
 
 > **Consciousness Technology Platform**  
-> A revolutionary web application that implements "consciousness as technology" with breath-as-interface, featuring 10 consciousness engines and generative personal environments.
+> A revolutionary web application that implements "consciousness as technology" with breath-as-interface, featuring 11 consciousness engines and generative personal environments.
 
 ## 🎯 **Vision: Consciousness as Technology**
 
@@ -11,12 +11,12 @@ WitnessOS Webshore is pioneering a new category of technology where consciousnes
 - **🫁 Breath as Primary Interface** - All interactions driven by breath patterns, not clicks
 - **🌍 Generative Personal Environments** - Worlds generated from your specific birth parameters  
 - **🧠 Consciousness-Driven Technology** - Technology that responds to and enhances consciousness states
-- **🔄 Integrated Consciousness Journey** - 10 engines building unified spiritual development
+- **🔄 Integrated Consciousness Journey** - 11 engines building unified spiritual development
 - **📈 Progressive Consciousness Evolution** - Feature unlocking based on consciousness growth
 
 ---
 
-## 🔮 **10 Consciousness Engines**
+## 🔮 **11 Consciousness Engines**
 
 1. **Numerology** - Life path, expression, and karmic analysis
 2. **Human Design** - Type, profile, and authority determination  
@@ -28,6 +28,7 @@ WitnessOS Webshore is pioneering a new category of technology where consciousnes
 8. **Vimshottari** - Vedic planetary periods and timing
 9. **Gene Keys** - Archetypal pathworking and transformation
 10. **Sigil Forge** - Intention manifestation and symbol creation
+11. **VedicClock-TCM** - Multi-dimensional consciousness optimization combining Vedic time cycles with TCM organ rhythms
 
 ---
 

@@ -1,9 +1,10 @@
 # Engine Service Worker Configuration
 # Specialized worker for consciousness engine calculations
+# Coordinates with Railway Python engines via engine-proxy
 
 name = "witnessos-engine-service"
 main = "src/workers/engine-service-worker.ts"
-compatibility_date = "2024-01-15"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # Service dependencies
@@ -11,28 +12,35 @@ compatibility_flags = ["nodejs_compat"]
 binding = "AI_SERVICE"
 service = "witnessos-ai-service"
 
+[[services]]
+binding = "ENGINE_PROXY"
+service = "witnessos-engine-proxy"
+
 # KV Namespaces
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "your-cache-kv-namespace-id"
-preview_id = "your-cache-kv-preview-id"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
 
 [[kv_namespaces]]
 binding = "KV_USER_PROFILES"
-id = "your-profiles-kv-namespace-id"
-preview_id = "your-profiles-kv-preview-id"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "witnessos-db"
-database_id = "your-database-id"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
 
 # Environment Variables
 [vars]
 ENVIRONMENT = "production"
 SERVICE_NAME = "engine-service"
 ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 
 # Development configuration
 [env.development]
@@ -41,11 +49,28 @@ name = "witnessos-engine-service-dev"
 [env.development.vars]
 ENVIRONMENT = "development"
 ENABLE_CACHING = "false"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 
 # Staging configuration
 [env.staging]
 name = "witnessos-engine-service-staging"
 
+[env.staging.vars]
+ENVIRONMENT = "staging"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
+
 # Production configuration
 [env.production]
 name = "witnessos-engine-service-prod"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ENABLE_CACHING = "true"
+PYTHON_ENGINES_ENABLED = "true"
+SWISS_EPHEMERIS_ENABLED = "true"
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app" 

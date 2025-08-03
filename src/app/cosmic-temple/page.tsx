@@ -44,7 +44,7 @@ export default function CosmicTemplePage() {
 
   const handleBiofieldCaptured = (biofield: BiofieldViewerOutput) => {
     setCurrentBiofield(biofield);
-    setConsciousnessLevel(biofield.consciousnessLevel);
+    setConsciousnessLevel(biofield.consciousnessLevel ?? 0.5);
     
     // Store biofield snapshot for timeline analysis
     if (typeof window !== 'undefined') {
@@ -93,10 +93,9 @@ export default function CosmicTemplePage() {
       {/* Main Biofield Interface - Full Screen */}
       <div className="absolute inset-0">
         <BiofieldViewerEngine
-          onBiofieldCaptured={handleBiofieldCaptured}
-          onEngineRecommendation={handleEngineRecommendation}
+          question={{ question: "Analyze consciousness state for cosmic temple access" }}
+          onCalculationComplete={handleBiofieldCaptured}
           captureMode="continuous"
-          className="w-full h-full"
         />
       </div>
 
