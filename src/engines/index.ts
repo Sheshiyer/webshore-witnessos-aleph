@@ -54,7 +54,10 @@ export function listEngines(): EngineName[] {
     'vimshottari',
     'gene_keys',
     'sigil_forge',
-    'biorhythm'
+    'biorhythm',
+    'vedicclock_tcm',
+    'face_reading',
+    'biofield'
   ];
 }
 
@@ -116,7 +119,10 @@ export const AVAILABLE_ENGINES: EngineName[] = [
   'vimshottari',
   'gene_keys',
   'sigil_forge',
-  'biorhythm'
+  'biorhythm',
+  'vedicclock_tcm',
+  'face_reading',
+  'biofield'
 ];
 
 // Engine metadata for discovery (kept for API compatibility)
