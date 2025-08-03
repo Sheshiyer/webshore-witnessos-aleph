@@ -45,6 +45,8 @@ from engines.vedicclock_tcm import VedicClockTCMEngine
 from engines.vedicclock_tcm_models import VedicClockTCMInput
 from engines.face_reading import FaceReadingEngine
 from engines.face_reading_models import FaceReadingInput
+from engines.biofield import BiofieldEngine
+from engines.biofield_models import BiofieldInput
 
 # Configure logging
 logging.basicConfig(
@@ -90,6 +92,7 @@ async def lifespan(app: FastAPI):
             "sigil_forge": SigilForgeSynthesizer(),
             "vedicclock_tcm": VedicClockTCMEngine(),
             "face_reading": FaceReadingEngine(),
+            "biofield": BiofieldEngine(),
         }
 
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
@@ -370,6 +373,17 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
                 timezone=request.input.get("timezone", "UTC"),
                 processing_consent=request.input.get("processing_consent", False)
             )
+        elif engine_name == "biofield":
+            input_obj = BiofieldInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
+                timezone=request.input.get("timezone", "UTC"),
+                analysis_depth=request.input.get("analysis_depth", "comprehensive"),
+                include_pip_analysis=request.input.get("include_pip_analysis", True),
+                include_color_analysis=request.input.get("include_color_analysis", True),
+                include_composite_scores=request.input.get("include_composite_scores", True)
+            )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
 
@@ -582,6 +596,24 @@ async def get_engine_metadata(engine_name: str):
             "outputs": ["constitutional_analysis", "personality_traits", "health_indicators", "privacy_compliance"],
             "calculation_time": "~1-3 seconds",
             "accuracy": "High (Physiognomy)"
+        },
+        "biofield": {
+            "name": "Biofield Analysis",
+            "description": "Advanced PIP (Poly-contrast Interference Photography) biofield analysis with energy field mapping",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "birth_time": {"type": "string", "format": "time", "required": True, "description": "Birth time in HH:MM:SS format"},
+                "birth_location": {"type": "array", "items": "number", "required": True, "description": "[latitude, longitude] coordinates"},
+                "timezone": {"type": "string", "required": False, "default": "UTC", "description": "Timezone identifier"},
+                "analysis_depth": {"type": "string", "required": False, "default": "comprehensive", "description": "Analysis depth: basic, detailed, comprehensive"},
+                "include_pip_analysis": {"type": "boolean", "required": False, "default": True, "description": "Include PIP biofield analysis"},
+                "include_color_analysis": {"type": "boolean", "required": False, "default": True, "description": "Include color spectrum analysis"},
+                "include_composite_scores": {"type": "boolean", "required": False, "default": True, "description": "Include composite consciousness scores"}
+            },
+            "outputs": ["biofield_metrics", "color_analysis", "composite_scores", "energy_field_mapping"],
+            "calculation_time": "~2-5 seconds",
+            "accuracy": "High (Electromagnetic)"
         }
     }
     

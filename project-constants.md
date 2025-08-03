@@ -3,7 +3,7 @@
 ## 🎯 Project Vision & Mission
 
 ### **Core Mission**
-WitnessOS is a consciousness exploration platform that bridges ancient wisdom with modern technology, providing users with deep insights through 11 consciousness engines while maintaining the highest standards of accuracy and user experience.
+WitnessOS is a consciousness exploration platform that bridges ancient wisdom with modern technology, providing users with deep insights through 13 consciousness engines while maintaining the highest standards of accuracy and user experience.
 
 ### **Macro Vision**
 Create the world's most comprehensive consciousness technology platform that serves as a digital gateway for spiritual exploration, personal growth, and archetypal understanding through scientifically-grounded calculations and AI-powered synthesis.
@@ -84,7 +84,7 @@ Create the world's most comprehensive consciousness technology platform that ser
 ### **Engine Organization**
 - **Tier 1 Engines:** Numerology, Biorhythm, Tarot, I Ching
 - **Tier 2 Engines:** Human Design, Gene Keys, Vimshottari, Enneagram
-- **Tier 3 Engines:** Sacred Geometry, Sigil Forge
+- **Tier 3 Engines:** Sacred Geometry, Sigil Forge, VedicClock-TCM, Face Reading, Biofield
 
 ### **Admin User Configuration**
 - **Email:** `sheshnarayan.iyer@gmail.com`
@@ -109,7 +109,7 @@ Create the world's most comprehensive consciousness technology platform that ser
 
 ## 📊 Business Constants
 
-### **Consciousness Engines (11 Total)**
+### **Consciousness Engines (13 Total)**
 1. **Human Design** - Bodygraph, type, profile, authority
 2. **Numerology** - Life path, expression, soul urge numbers
 3. **Biorhythm** - Physical, emotional, intellectual cycles
@@ -121,6 +121,8 @@ Create the world's most comprehensive consciousness technology platform that ser
 9. **Sacred Geometry** - Mandala and pattern generation
 10. **Sigil Forge** - Intention-based sigil creation
 11. **VedicClock-TCM** - Multi-dimensional consciousness optimization combining Vedic time cycles with TCM organ rhythms
+12. **Face Reading** - Constitutional analysis through facial features and physiognomy
+13. **Biofield** - Energy field analysis and electromagnetic consciousness mapping
 
 ### **Target Markets**
 - **Primary:** Spiritual seekers, consciousness explorers

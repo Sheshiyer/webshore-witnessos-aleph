@@ -20,7 +20,7 @@ Root endpoint with service information.
   "service": "WitnessOS Consciousness Engines",
   "status": "operational",
   "version": "1.0.0",
-  "engines_available": 12,
+  "engines_available": 13,
   "endpoints": {
     "health": "/health",
     "engines": "/engines",
@@ -50,8 +50,8 @@ List all available consciousness engines.
 **Response:**
 ```json
 {
-  "engines": ["human_design", "numerology", "biorhythm", "vimshottari", "tarot", "iching", "gene_keys", "enneagram", "sacred_geometry", "sigil_forge", "vedicclock_tcm", "face_reading"],
-  "count": 12,
+  "engines": ["human_design", "numerology", "biorhythm", "vimshottari", "tarot", "iching", "gene_keys", "enneagram", "sacred_geometry", "sigil_forge", "vedicclock_tcm", "face_reading", "biofield"],
+  "count": 13,
   "service": "witnessos-engines"
 }
 ```
