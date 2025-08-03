@@ -155,8 +155,6 @@ class FaceReadingOutput(BaseEngineOutput):
     processing_timestamp: str = Field(..., description="Analysis timestamp")
     privacy_compliance: Dict[str, bool] = Field(..., description="Privacy compliance indicators")
     cultural_context: List[str] = Field(..., description="Cultural context and educational information")
-    
-    [key: str]: unknown;
 
 
 # ===== DATA MODELS =====
