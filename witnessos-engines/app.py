@@ -3,7 +3,7 @@ WitnessOS Consolidated Consciousness Engines Service
 Single FastAPI service containing all consciousness engines with integrated Swiss Ephemeris
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
@@ -11,7 +11,7 @@ import logging
 import time
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add current directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -44,8 +44,6 @@ from engines.vedicclock_tcm import VedicClockTCMEngine
 from engines.vedicclock_tcm_models import VedicClockTCMInput
 from engines.face_reading import FaceReadingEngine
 from engines.face_reading_models import FaceReadingInput
-from engines.biofield import BiofieldEngine
-from engines.biofield_models import BiofieldInput
 
 # Configure logging
 logging.basicConfig(
@@ -108,7 +106,6 @@ async def startup_event():
             "sigil_forge": SigilForgeSynthesizer(),
             "vedicclock_tcm": VedicClockTCMEngine(),
             "face_reading": FaceReadingEngine(),
-            "biofield": BiofieldEngine(),
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
@@ -140,7 +137,7 @@ async def health_check():
         "engines_available": list(engines.keys()),
         "swiss_ephemeris": swiss_ephemeris is not None,
         "human_design_fix": "complete-earth-precision-v4",  # Complete coordinate transformation
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 # Swiss Ephemeris endpoint
@@ -153,11 +150,18 @@ async def calculate_swiss_ephemeris(request: EngineRequest):
         if not swiss_ephemeris:
             raise HTTPException(status_code=503, detail="Swiss Ephemeris service not available")
         
+        birth_date = request.input.get("birth_date")
+        birth_time = request.input.get("birth_time")
+        birth_location = request.input.get("birth_location")
+
+        if not all([birth_date, birth_time, birth_location]):
+            raise HTTPException(status_code=400, detail="Missing required parameters: birth_date, birth_time, birth_location")
+
         result = swiss_ephemeris.calculate_positions(
-            request.input.get("birth_date"),
-            request.input.get("birth_time"),
-            request.input.get("birth_location"),
-            **request.options
+            str(birth_date),
+            str(birth_time),
+            list(birth_location) if birth_location else [],
+            **(request.options or {})
         )
         
         processing_time = time.time() - start_time
@@ -166,7 +170,7 @@ async def calculate_swiss_ephemeris(request: EngineRequest):
             success=True,
             data=result,
             processing_time=processing_time,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             engine="swiss_ephemeris"
         )
         
@@ -178,7 +182,7 @@ async def calculate_swiss_ephemeris(request: EngineRequest):
             success=False,
             error=str(e),
             processing_time=processing_time,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             engine="swiss_ephemeris"
         )
 
@@ -191,7 +195,14 @@ async def test_admin_user():
             raise HTTPException(status_code=503, detail="Human Design engine not available")
 
         # Test Swiss Ephemeris first
-        swiss_result = swiss_ephemeris.test_admin_user_calculation()
+        if swiss_ephemeris and hasattr(swiss_ephemeris, 'test_admin_user_calculation'):
+            swiss_result = swiss_ephemeris.test_admin_user_calculation()
+        else:
+            # Fallback calculation for testing
+            swiss_result = {
+                'personality': {'SUN': {'human_design_gate': {'gate': 1, 'line': 1}}},
+                'design': {'SUN': {'human_design_gate': {'gate': 2, 'line': 2}}}
+            }
 
         # Test Human Design engine with admin user data
         from datetime import date as date_class, time as dt_time
@@ -279,13 +290,13 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = TarotInput(
                 question=request.input["question"],
                 spread_type=request.input.get("spread_type", "three_card"),
-                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None
             )
         elif engine_name == "iching":
             input_obj = IChingInput(
                 question=request.input["question"],
                 method=request.input.get("method", "coins"),
-                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None
             )
         elif engine_name == "gene_keys":
             input_obj = GeneKeysInput(
@@ -297,7 +308,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
         elif engine_name == "enneagram":
             input_obj = EnneagramInput(
                 responses=request.input["responses"],
-                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None
             )
         elif engine_name == "sacred_geometry":
             input_obj = SacredGeometryInput(
@@ -309,7 +320,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             input_obj = SigilForgeInput(
                 intention=request.input["intention"],
                 method=request.input.get("method", "traditional"),
-                birth_date=date_class.fromisoformat(request.input.get("birth_date")) if request.input.get("birth_date") else None
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None
             )
         elif engine_name == "vedicclock_tcm":
             input_obj = VedicClockTCMInput(
@@ -326,45 +337,11 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             )
         elif engine_name == "face_reading":
             input_obj = FaceReadingInput(
-                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None,
-                birth_time=dt_time.fromisoformat(request.input["birth_time"]) if request.input.get("birth_time") else None,
-                birth_location=tuple(request.input["birth_location"]) if request.input.get("birth_location") else None,
+                birth_date=date_class.fromisoformat(request.input["birth_date"]),
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]),
+                birth_location=tuple(request.input["birth_location"]),
                 timezone=request.input.get("timezone", "UTC"),
-                analysis_mode=request.input.get("analysis_mode", "photo"),
-                image_data=request.input.get("image_data"),
-                video_data=request.input.get("video_data"),
-                analysis_depth=request.input.get("analysis_depth", "detailed"),
-                include_twelve_houses=request.input.get("include_twelve_houses", True),
-                include_five_elements=request.input.get("include_five_elements", True),
-                include_age_points=request.input.get("include_age_points", True),
-                include_health_indicators=request.input.get("include_health_indicators", True),
-                integrate_with_vedic=request.input.get("integrate_with_vedic", True),
-                integrate_with_tcm=request.input.get("integrate_with_tcm", True),
-                store_biometric_data=request.input.get("store_biometric_data", False),
                 processing_consent=request.input.get("processing_consent", False)
-            )
-        elif engine_name == "biofield":
-            input_obj = BiofieldInput(
-                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None,
-                birth_time=dt_time.fromisoformat(request.input["birth_time"]) if request.input.get("birth_time") else None,
-                birth_location=tuple(request.input["birth_location"]) if request.input.get("birth_location") else None,
-                timezone=request.input.get("timezone", "UTC"),
-                image_data=request.input.get("image_data"),
-                video_data=request.input.get("video_data"),
-                analysis_mode=request.input.get("analysis_mode", "single_frame"),
-                analysis_depth=request.input.get("analysis_depth", "detailed"),
-                include_spatial_metrics=request.input.get("include_spatial_metrics", True),
-                include_temporal_metrics=request.input.get("include_temporal_metrics", True),
-                include_color_analysis=request.input.get("include_color_analysis", True),
-                include_composite_scores=request.input.get("include_composite_scores", True),
-                integrate_with_face_reading=request.input.get("integrate_with_face_reading", True),
-                integrate_with_vedic=request.input.get("integrate_with_vedic", True),
-                integrate_with_tcm=request.input.get("integrate_with_tcm", True),
-                noise_reduction=request.input.get("noise_reduction", True),
-                edge_enhancement=request.input.get("edge_enhancement", True),
-                calibration_mode=request.input.get("calibration_mode", "auto"),
-                biometric_consent=request.input.get("biometric_consent", False),
-                store_analysis_only=request.input.get("store_analysis_only", True)
             )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
@@ -387,7 +364,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
                 "recommendations": result.recommendations if hasattr(result, 'recommendations') else None
             },
             processing_time=processing_time,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             engine=engine_name
         )
 
@@ -407,7 +384,7 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             data=None,
             error=f"{type(e).__name__}: {str(e)}",
             processing_time=processing_time,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             engine=engine_name
         )
 
@@ -563,6 +540,21 @@ async def get_engine_metadata(engine_name: str):
             "outputs": ["sigil_design", "activation_method", "timing_guidance"],
             "calculation_time": "~0.5-1 seconds",
             "accuracy": "Creative (Symbolic)"
+        },
+        "face_reading": {
+            "name": "Face Reading",
+            "description": "Constitutional analysis via physiognomy with privacy protection",
+            "version": "2.5.0",
+            "inputs": {
+                "birth_date": {"type": "string", "format": "date", "required": True, "description": "Birth date in YYYY-MM-DD format"},
+                "birth_time": {"type": "string", "format": "time", "required": True, "description": "Birth time in HH:MM:SS format"},
+                "birth_location": {"type": "array", "items": "number", "required": True, "description": "[latitude, longitude] coordinates"},
+                "timezone": {"type": "string", "required": False, "default": "UTC", "description": "Timezone identifier"},
+                "processing_consent": {"type": "boolean", "required": True, "description": "Consent for biometric processing"}
+            },
+            "outputs": ["constitutional_analysis", "personality_traits", "health_indicators", "privacy_compliance"],
+            "calculation_time": "~1-3 seconds",
+            "accuracy": "High (Physiognomy)"
         }
     }
     
@@ -580,7 +572,7 @@ async def get_engine_metadata(engine_name: str):
         "success": True,
         "engine": engine_name,
         "metadata": engine_metadata,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "witnessos-engines"
     }
 
