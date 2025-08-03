@@ -42,6 +42,8 @@ from engines.sigil_forge import SigilForgeSynthesizer
 from engines.sigil_forge_models import SigilForgeInput
 from engines.vedicclock_tcm import VedicClockTCMEngine
 from engines.vedicclock_tcm_models import VedicClockTCMInput
+from engines.face_reading import FaceReadingEngine
+from engines.face_reading_models import FaceReadingInput
 
 # Configure logging
 logging.basicConfig(
@@ -103,6 +105,7 @@ async def startup_event():
             "sacred_geometry": SacredGeometryMapper(),
             "sigil_forge": SigilForgeSynthesizer(),
             "vedicclock_tcm": VedicClockTCMEngine(),
+            "face_reading": FaceReadingEngine(),
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
@@ -317,6 +320,25 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
                 optimization_focus=request.input.get("optimization_focus", []),
                 include_predictions=request.input.get("include_predictions", True),
                 prediction_hours=request.input.get("prediction_hours", 24)
+            )
+        elif engine_name == "face_reading":
+            input_obj = FaceReadingInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None,
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]) if request.input.get("birth_time") else None,
+                birth_location=tuple(request.input["birth_location"]) if request.input.get("birth_location") else None,
+                timezone=request.input.get("timezone", "UTC"),
+                analysis_mode=request.input.get("analysis_mode", "photo"),
+                image_data=request.input.get("image_data"),
+                video_data=request.input.get("video_data"),
+                analysis_depth=request.input.get("analysis_depth", "detailed"),
+                include_twelve_houses=request.input.get("include_twelve_houses", True),
+                include_five_elements=request.input.get("include_five_elements", True),
+                include_age_points=request.input.get("include_age_points", True),
+                include_health_indicators=request.input.get("include_health_indicators", True),
+                integrate_with_vedic=request.input.get("integrate_with_vedic", True),
+                integrate_with_tcm=request.input.get("integrate_with_tcm", True),
+                store_biometric_data=request.input.get("store_biometric_data", False),
+                processing_consent=request.input.get("processing_consent", False)
             )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
