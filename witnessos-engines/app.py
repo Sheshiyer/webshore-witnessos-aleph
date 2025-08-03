@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
+from contextlib import asynccontextmanager
 import logging
 import time
 import sys
@@ -52,45 +53,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="WitnessOS Consciousness Engines",
-    description="Consolidated consciousness technology calculation service with integrated Swiss Ephemeris",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Global services
 swiss_ephemeris = None
 engines = {}
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize all engines and services on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events"""
     global swiss_ephemeris, engines
-    
+
+    # Startup
     logger.info("🚀 Initializing WitnessOS Consolidated Consciousness Engines...")
-    
+
     try:
         # Initialize Swiss Ephemeris service first
         swiss_ephemeris = SwissEphemerisService()
         logger.info("✅ Swiss Ephemeris service initialized")
-        
+
         # Test Swiss Ephemeris with admin user data
         logger.info("🧪 Testing Swiss Ephemeris accuracy...")
         test_result = swiss_ephemeris.test_admin_user_calculation()
         logger.info(f"🎯 Test completed - Personality Sun: Gate {test_result['personality']['SUN']['human_design_gate']['gate']}.{test_result['personality']['SUN']['human_design_gate']['line']}")
-        
+
         # Initialize all consciousness engines
         logger.info("🔧 Initializing all consciousness engines...")
         engines = {
@@ -107,12 +91,38 @@ async def startup_event():
             "vedicclock_tcm": VedicClockTCMEngine(),
             "face_reading": FaceReadingEngine(),
         }
-        
+
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to initialize services: {e}")
         raise
+
+    yield
+
+    # Shutdown
+    logger.info("🔄 Shutting down WitnessOS services...")
+    engines.clear()
+    logger.info("✅ Shutdown complete")
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="WitnessOS Consciousness Engines",
+    description="Consolidated consciousness technology calculation service with integrated Swiss Ephemeris",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Common request/response models
 class EngineRequest(BaseModel):
@@ -126,6 +136,23 @@ class EngineResponse(BaseModel):
     processing_time: float
     timestamp: str
     engine: str
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint for Railway routing verification"""
+    return {
+        "service": "WitnessOS Consciousness Engines",
+        "status": "operational",
+        "version": "1.0.0",
+        "engines_available": len(engines) if engines else 0,
+        "endpoints": {
+            "health": "/health",
+            "engines": "/engines",
+            "docs": "/docs",
+            "calculate": "/engines/{engine_name}/calculate"
+        }
+    }
 
 # Health check endpoint
 @app.get("/health")
