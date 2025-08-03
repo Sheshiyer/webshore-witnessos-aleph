@@ -40,8 +40,8 @@ from engines.sacred_geometry import SacredGeometryMapper
 from engines.sacred_geometry_models import SacredGeometryInput
 from engines.sigil_forge import SigilForgeSynthesizer
 from engines.sigil_forge_models import SigilForgeInput
-# from engines.vedicclock_tcm import VedicClockTCMEngine
-# from engines.vedicclock_tcm_models import VedicClockTCMInput
+from engines.vedicclock_tcm import VedicClockTCMEngine
+from engines.vedicclock_tcm_models import VedicClockTCMInput
 
 # Configure logging
 logging.basicConfig(
@@ -102,7 +102,7 @@ async def startup_event():
             "enneagram": EnneagramResonator(),
             "sacred_geometry": SacredGeometryMapper(),
             "sigil_forge": SigilForgeSynthesizer(),
-            # "vedicclock_tcm": VedicClockTCMEngine(),  # Temporarily disabled for debugging
+            "vedicclock_tcm": VedicClockTCMEngine(),
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")

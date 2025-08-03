@@ -5,7 +5,7 @@ Debug script to test the exact input format that's failing on Railway
 
 import json
 from datetime import date, time
-from engines.human_design_models import HumanDesignInput
+from human_design_models import HumanDesignInput
 
 def test_input_parsing():
     """Test the exact input that's being sent to the API"""
@@ -34,7 +34,7 @@ def test_input_parsing():
         print(f"Parsed object: {input_obj}")
         
         # Now try to import and run the Human Design engine
-        from engines.human_design import HumanDesignScanner
+        from human_design_scanner import HumanDesignScanner
         
         print("\nTesting Human Design calculation...")
         engine = HumanDesignScanner()
