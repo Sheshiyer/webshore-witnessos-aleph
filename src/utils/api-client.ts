@@ -17,9 +17,9 @@ const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Use deployed Railway backend API for production
+  // Use deployed Railway backend API for production (Cloudflare Workers proxy has routing issues)
   console.log('🚀 Using deployed Railway backend API');
-  return 'https://witnessos-engines-production.up.railway.app';
+  return 'https://webshore-witnessos-aleph-production.up.railway.app';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -45,10 +45,9 @@ async function checkBackendHealth(): Promise<boolean> {
 
   backendHealthCheckInProgress = true;
   try {
-    const response = await fetch(`${API_BASE_URL}/calculate/numerology`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: { birth_date: '1991-08-13', full_name: 'Health Check' } }),
     });
 
     const isHealthy = response.ok;
@@ -652,7 +651,7 @@ class WitnessOSAPIClient {
       ...(options && { options }),
     };
 
-    return this.makeRequest(`/calculate/${engineName}`, {
+    return this.makeRequest(`/engines/${engineName}/calculate`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
