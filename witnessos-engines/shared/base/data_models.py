@@ -72,7 +72,8 @@ class CloudflareEngineInput(BaseEngineInput):
 
     def generate_user_key(self, engine_name: str, data_type: str = "reading") -> str:
         """Generate user-specific key for KV storage."""
-        return f"user:{self.user_id}:{engine_name}:{data_type}:{self.reading_id}"
+        reading_id = self.reading_id or str(uuid.uuid4())
+        return f"user:{self.user_id}:{engine_name}:{data_type}:{reading_id}"
 
 
 class BaseEngineOutput(BaseModel):
@@ -100,7 +101,7 @@ class CloudflareEngineOutput(BaseEngineOutput):
     """Enhanced base output model with Cloudflare D1/KV integration support."""
 
     # Storage metadata
-    reading_id: str = Field(..., description="Unique reading identifier")
+    reading_id: Optional[str] = Field(None, description="Unique reading identifier")
     user_id: Optional[str] = Field(None, description="User who requested this reading")
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
@@ -130,8 +131,10 @@ class CloudflareEngineOutput(BaseEngineOutput):
 
     def to_d1_record(self) -> Dict[str, Any]:
         """Convert to D1 database record format."""
+        # Generate reading_id if not provided
+        reading_id = self.reading_id or str(uuid.uuid4())
         return {
-            'id': self.reading_id,
+            'id': reading_id,
             'user_id': self.user_id,
             'engine_name': self.engine_name,
             'data': self.model_dump_json(),
