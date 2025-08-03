@@ -6,7 +6,10 @@ Defines input/output structures and Enneagram-specific data types.
 
 from typing import Optional, Dict, List, Any, Literal
 from pydantic import BaseModel, Field, field_validator
-from shared.base.data_models import BaseEngineOutput, BaseEngineInput
+from shared.base.data_models import (
+    BaseEngineInput, BaseEngineOutput, BirthDataInput,
+    CloudflareEngineInput, CloudflareEngineOutput
+)
 
 
 class EnneagramWing(BaseModel):
@@ -109,7 +112,7 @@ class EnneagramProfile(BaseModel):
     secondary_types: List[int] = Field(default_factory=list, description="Other possible types")
 
 
-class EnneagramInput(BaseEngineInput):
+class EnneagramInput(CloudflareEngineInput):
     """Input model for Enneagram Resonator."""
     
     # Type identification method
@@ -182,7 +185,21 @@ class EnneagramInput(BaseEngineInput):
         return v
 
 
-class EnneagramOutput(BaseEngineOutput):
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for enneagram engine data."""
+        engine_name = "enneagram"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_enneagram_readings"
+
+class EnneagramOutput(CloudflareEngineOutput):
     """Output model for Enneagram Resonator."""
     
     # The base class provides: engine_name, calculation_time, confidence_score, 

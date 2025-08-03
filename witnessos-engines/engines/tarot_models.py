@@ -6,7 +6,10 @@ Defines input/output structures and tarot-specific data types.
 
 from typing import Optional, Dict, List, Any, Literal
 from pydantic import BaseModel, Field, field_validator
-from shared.base.data_models import BaseEngineOutput, QuestionInput
+from shared.base.data_models import (
+    BaseEngineInput, BaseEngineOutput, BirthDataInput,
+    CloudflareEngineInput, CloudflareEngineOutput, QuestionInput
+)
 
 
 class TarotCard(BaseModel):
@@ -74,7 +77,21 @@ class TarotInput(QuestionInput):
         return v
 
 
-class TarotOutput(BaseEngineOutput):
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for tarot engine data."""
+        engine_name = "tarot"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_tarot_readings"
+
+class TarotOutput(CloudflareEngineOutput):
     """Output model for Tarot Sequence Decoder."""
 
     # The base class provides: engine_name, calculation_time, confidence_score,

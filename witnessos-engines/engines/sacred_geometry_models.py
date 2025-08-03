@@ -9,10 +9,10 @@ from datetime import date
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 
 
-class SacredGeometryInput(BaseEngineInput):
+class SacredGeometryInput(CloudflareEngineInput):
     """Input model for Sacred Geometry Mapper calculations."""
     
     # Core intention and focus
@@ -51,6 +51,20 @@ class SacredGeometryInput(BaseEngineInput):
     meditation_focus: bool = Field(default=True, description="Optimize pattern for meditation and contemplation")
 
 
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for sacredgeometry engine data."""
+        engine_name = "sacredgeometry"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_sacredgeometry_readings"
+
 class GeometricPattern(BaseModel):
     """Represents a generated geometric pattern."""
     
@@ -62,7 +76,7 @@ class GeometricPattern(BaseModel):
     symbolism: str = Field(..., description="Symbolic meaning and interpretation")
 
 
-class SacredGeometryOutput(BaseEngineOutput):
+class SacredGeometryOutput(CloudflareEngineOutput):
     """Output model for Sacred Geometry Mapper results."""
     
     # Generated pattern data

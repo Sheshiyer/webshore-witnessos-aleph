@@ -9,10 +9,10 @@ from datetime import date
 from typing import Optional, Dict, List, Any
 from pydantic import Field, field_validator
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 
 
-class NumerologyInput(BaseEngineInput):
+class NumerologyInput(CloudflareEngineInput):
     """Input model for numerology calculations."""
     
     full_name: str = Field(..., min_length=1, description="Complete birth name as it appears on birth certificate")
@@ -59,7 +59,21 @@ class NumerologyInput(BaseEngineInput):
         return v
 
 
-class NumerologyOutput(BaseEngineOutput):
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for numerology engine data."""
+        engine_name = "numerology"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_numerology_readings"
+
+class NumerologyOutput(CloudflareEngineOutput):
     """Output model for numerology calculations."""
     
     # Core numerology numbers

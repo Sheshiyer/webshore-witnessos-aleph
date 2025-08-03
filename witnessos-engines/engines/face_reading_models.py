@@ -12,12 +12,15 @@ from datetime import datetime, time, date
 from typing import Dict, List, Any, Optional, Literal, Tuple
 from pydantic import BaseModel, Field, field_validator
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput, BirthDataInput
+from shared.base.data_models import (
+    BaseEngineInput, BaseEngineOutput, BirthDataInput,
+    CloudflareEngineInput, CloudflareEngineOutput, BiometricDataConfig
+)
 
 
 # ===== INPUT MODELS =====
 
-class FaceReadingInput(BaseEngineInput, BirthDataInput):
+class FaceReadingInput(CloudflareEngineInput, BirthDataInput):
     """Input model for Face Reading Engine."""
 
     # Face Analysis Parameters
@@ -50,6 +53,14 @@ class FaceReadingInput(BaseEngineInput, BirthDataInput):
     store_biometric_data: bool = Field(default=False, description="Store facial landmarks (privacy setting)")
     processing_consent: bool = Field(default=False, description="Explicit consent for biometric processing")
 
+    # Cloudflare-specific biometric settings
+    biometric_config: Optional[BiometricDataConfig] = Field(
+        default_factory=BiometricDataConfig,
+        description="Biometric data handling configuration"
+    )
+    anonymize_results: bool = Field(default=True, description="Anonymize analysis results for storage")
+    max_retention_hours: int = Field(default=24, description="Maximum data retention in hours")
+
     @field_validator('processing_consent')
     @classmethod
     def validate_consent(cls, v):
@@ -57,8 +68,31 @@ class FaceReadingInput(BaseEngineInput, BirthDataInput):
             raise ValueError("Explicit consent required for biometric processing")
         return v
 
+    def get_biometric_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for biometric data storage."""
+        return {
+            'analysis': self.generate_user_key('face_reading', 'analysis'),
+            'constitution': self.generate_user_key('face_reading', 'constitution'),
+            'privacy_config': self.generate_user_key('face_reading', 'privacy'),
+            'consent': self.generate_user_key('face_reading', 'consent')
+        }
+
 
 # ===== OUTPUT MODELS =====
+
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for facereading engine data."""
+        engine_name = "facereading"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_facereading_readings"
 
 class FacialLandmarks(BaseModel):
     """MediaPipe facial landmarks data."""
@@ -128,7 +162,7 @@ class BiometricIntegration(BaseModel):
     consciousness_alignment_score: float = Field(..., description="Overall consciousness alignment score")
 
 
-class FaceReadingOutput(BaseEngineOutput):
+class FaceReadingOutput(CloudflareEngineOutput):
     """Complete Face Reading Engine output."""
     
     # Core Analysis Results

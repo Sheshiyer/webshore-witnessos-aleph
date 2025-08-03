@@ -12,12 +12,12 @@ from datetime import datetime, time, date
 from typing import Dict, List, Any, Optional, Literal, Tuple
 from pydantic import BaseModel, Field, field_validator
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput, BirthDataInput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 
 
 # ===== INPUT MODELS =====
 
-class VedicClockTCMInput(BaseEngineInput, BirthDataInput):
+class VedicClockTCMInput(CloudflareEngineInput, BirthDataInput):
     """Input model for VedicClock-TCM Integration Engine."""
 
     # Birth data is required for VedicClock-TCM
@@ -124,7 +124,7 @@ class OptimizationWindow(BaseModel):
     potency_score: float = Field(..., ge=0, le=1, description="Potency of this window (0-1)")
 
 
-class VedicClockTCMOutput(BaseEngineOutput):
+class VedicClockTCMOutput(CloudflareEngineOutput):
     """Output model for VedicClock-TCM Integration Engine."""
     
     # Core Analysis

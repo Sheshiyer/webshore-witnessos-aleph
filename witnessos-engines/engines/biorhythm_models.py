@@ -9,11 +9,11 @@ from datetime import date, timedelta
 from typing import Optional, Dict, List, Any
 from pydantic import Field, field_validator
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 from pydantic import BaseModel
 
 
-class BiorhythmInput(BaseEngineInput):
+class BiorhythmInput(CloudflareEngineInput):
     """Input model for biorhythm calculations."""
 
     birth_date: date = Field(..., description="Date of birth")
@@ -54,6 +54,20 @@ class BiorhythmInput(BaseEngineInput):
             raise ValueError("Forecast days must be between 1 and 90")
         return v
 
+
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for biorhythm engine data."""
+        engine_name = "biorhythm"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_biorhythm_readings"
 
 class BiorhythmCompatibilityInput(BaseEngineInput):
     """Input model for biorhythm compatibility calculations."""
@@ -96,7 +110,7 @@ class CycleData(BaseModel):
     next_critical_date: date = Field(..., description="Date of next critical day")
 
 
-class BiorhythmOutput(BaseEngineOutput):
+class BiorhythmOutput(CloudflareEngineOutput):
     """Output model for biorhythm calculations."""
 
     # Target information

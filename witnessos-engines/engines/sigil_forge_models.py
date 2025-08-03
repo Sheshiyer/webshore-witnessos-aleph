@@ -9,10 +9,10 @@ from datetime import date
 from typing import Optional, List, Dict, Any, Literal, Tuple
 from pydantic import BaseModel, Field
 
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 
 
-class SigilForgeInput(BaseEngineInput):
+class SigilForgeInput(CloudflareEngineInput):
     """Input model for Sigil Forge Synthesizer calculations."""
     
     # Core intention
@@ -61,6 +61,20 @@ class SigilForgeInput(BaseEngineInput):
     )
 
 
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for sigilforge engine data."""
+        engine_name = "sigilforge"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_sigilforge_readings"
+
 class SigilElement(BaseModel):
     """Represents a single element in the sigil."""
     
@@ -102,7 +116,7 @@ class ActivationGuidance(BaseModel):
     destruction_guidance: str = Field(..., description="When and how to destroy the sigil")
 
 
-class SigilForgeOutput(BaseEngineOutput):
+class SigilForgeOutput(CloudflareEngineOutput):
     """Output model for Sigil Forge Synthesizer results."""
     
     # Generated sigil data

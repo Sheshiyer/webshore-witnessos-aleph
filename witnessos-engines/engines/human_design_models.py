@@ -7,13 +7,13 @@ Defines input/output structures and Human Design specific data types.
 from datetime import datetime, date, time
 from typing import Optional, Dict, List, Tuple, Any, Union
 from pydantic import BaseModel, Field, field_validator
-from shared.base.data_models import BaseEngineInput, BaseEngineOutput, BirthDataInput
+from shared.base.data_models import (    BaseEngineInput, BaseEngineOutput, BirthDataInput,    CloudflareEngineInput, CloudflareEngineOutput)
 
 
 # Removed geocoding function - users must provide coordinates directly
 
 
-class HumanDesignInput(BaseEngineInput, BirthDataInput):
+class HumanDesignInput(CloudflareEngineInput, BirthDataInput):
     """Input model for Human Design calculations."""
 
     # Birth data is required for Human Design
@@ -49,6 +49,20 @@ class HumanDesignInput(BaseEngineInput, BirthDataInput):
         
         raise ValueError("Birth location must be coordinates [latitude, longitude]. Example: [12.9716, 77.5946] for Bangalore")
 
+
+    def get_engine_kv_keys(self) -> Dict[str, str]:
+        """Generate KV keys for humandesign engine data."""
+        engine_name = "humandesign"
+        return {
+            'reading': self.generate_user_key(engine_name, 'reading'),
+            'analysis': self.generate_user_key(engine_name, 'analysis'),
+            'cache': self.generate_cache_key(engine_name),
+            'metadata': f"user:{self.user_id}:{engine_name}:metadata"
+        }
+    
+    def get_d1_table_name(self) -> str:
+        """Get D1 table name for this engine."""
+        return "engine_humandesign_readings"
 
 class HumanDesignGate(BaseModel):
     """Represents a Human Design gate with its properties."""
@@ -128,7 +142,7 @@ class HumanDesignChart(BaseModel):
     variables: Dict[str, str] = Field(default_factory=dict, description="PHS variables")
 
 
-class HumanDesignOutput(BaseEngineOutput):
+class HumanDesignOutput(CloudflareEngineOutput):
     """Output model for Human Design Scanner."""
 
     # Core chart data
