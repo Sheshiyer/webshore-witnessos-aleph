@@ -44,6 +44,8 @@ from engines.vedicclock_tcm import VedicClockTCMEngine
 from engines.vedicclock_tcm_models import VedicClockTCMInput
 from engines.face_reading import FaceReadingEngine
 from engines.face_reading_models import FaceReadingInput
+from engines.biofield import BiofieldEngine
+from engines.biofield_models import BiofieldInput
 
 # Configure logging
 logging.basicConfig(
@@ -106,6 +108,7 @@ async def startup_event():
             "sigil_forge": SigilForgeSynthesizer(),
             "vedicclock_tcm": VedicClockTCMEngine(),
             "face_reading": FaceReadingEngine(),
+            "biofield": BiofieldEngine(),
         }
         
         logger.info(f"✅ Initialized consolidated service with {len(engines)} engines")
@@ -339,6 +342,29 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
                 integrate_with_tcm=request.input.get("integrate_with_tcm", True),
                 store_biometric_data=request.input.get("store_biometric_data", False),
                 processing_consent=request.input.get("processing_consent", False)
+            )
+        elif engine_name == "biofield":
+            input_obj = BiofieldInput(
+                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None,
+                birth_time=dt_time.fromisoformat(request.input["birth_time"]) if request.input.get("birth_time") else None,
+                birth_location=tuple(request.input["birth_location"]) if request.input.get("birth_location") else None,
+                timezone=request.input.get("timezone", "UTC"),
+                image_data=request.input.get("image_data"),
+                video_data=request.input.get("video_data"),
+                analysis_mode=request.input.get("analysis_mode", "single_frame"),
+                analysis_depth=request.input.get("analysis_depth", "detailed"),
+                include_spatial_metrics=request.input.get("include_spatial_metrics", True),
+                include_temporal_metrics=request.input.get("include_temporal_metrics", True),
+                include_color_analysis=request.input.get("include_color_analysis", True),
+                include_composite_scores=request.input.get("include_composite_scores", True),
+                integrate_with_face_reading=request.input.get("integrate_with_face_reading", True),
+                integrate_with_vedic=request.input.get("integrate_with_vedic", True),
+                integrate_with_tcm=request.input.get("integrate_with_tcm", True),
+                noise_reduction=request.input.get("noise_reduction", True),
+                edge_enhancement=request.input.get("edge_enhancement", True),
+                calibration_mode=request.input.get("calibration_mode", "auto"),
+                biometric_consent=request.input.get("biometric_consent", False),
+                store_analysis_only=request.input.get("store_analysis_only", True)
             )
         else:
             raise HTTPException(status_code=400, detail=f"Input model not implemented for {engine_name}")
