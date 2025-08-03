@@ -199,7 +199,7 @@ class VedicClockTCMEngine(BaseEngine):
             vimshottari, panchanga, tcm, elemental, optimization, resonance
         )
 
-    async def calculate(self, input_data: VedicClockTCMInput) -> VedicClockTCMOutput:
+    def calculate(self, input_data: VedicClockTCMInput) -> VedicClockTCMOutput:
         """
         Main calculation method for VedicClock-TCM integration.
 
