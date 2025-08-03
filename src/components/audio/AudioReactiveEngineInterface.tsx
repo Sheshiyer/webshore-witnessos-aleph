@@ -43,7 +43,7 @@ export default function AudioReactiveEngineInterface({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   
   const [audioData, setAudioData] = useState<AudioAnalysisData | null>(null);
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
@@ -100,8 +100,9 @@ export default function AudioReactiveEngineInterface({
     let dominantFrequency = 0;
     
     for (let i = 0; i < bufferLength; i++) {
-      if (dataArray[i] > maxAmplitude) {
-        maxAmplitude = dataArray[i];
+      const amplitude = dataArray[i];
+      if (amplitude !== undefined && amplitude > maxAmplitude) {
+        maxAmplitude = amplitude;
         dominantFrequency = (i * audioContextRef.current!.sampleRate) / (2 * bufferLength);
       }
     }

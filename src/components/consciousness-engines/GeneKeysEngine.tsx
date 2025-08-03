@@ -137,10 +137,10 @@ export const GeneKeysEngine: React.FC<GeneKeysEngineProps> = ({
     if (geneKeysData?.profile) {
       Object.entries(geneKeysData.profile as Record<string, unknown>).forEach(([, keyData], index) => {
         const keyDataRecord = keyData as Record<string, unknown>;
-        const gate = keyDataRecord.gate || index + 1;
-        const codon = keyDataRecord.codon || 'UUU';
-        const aminoAcid = keyDataRecord.amino_acid || 'Phe';
-        const sphere = keyDataRecord.sphere || 'physical';
+        const gate = Number(keyDataRecord.gate) || index + 1;
+        const codon = String(keyDataRecord.codon) || 'UUU';
+        const aminoAcid = String(keyDataRecord.amino_acid) || 'Phe';
+        const sphere = String(keyDataRecord.sphere) || 'physical';
 
         // Calculate position in DNA helix
         const angle = (index / 64) * Math.PI * 4; // 2 full rotations for 64 codons
@@ -151,9 +151,9 @@ export const GeneKeysEngine: React.FC<GeneKeysEngineProps> = ({
           gate,
           codon,
           aminoAcid,
-          shadow: keyData.shadow || 'Unknown',
-          gift: keyData.gift || 'Unknown',
-          siddhi: keyData.siddhi || 'Unknown',
+          shadow: String(keyDataRecord.shadow) || 'Unknown',
+          gift: String(keyDataRecord.gift) || 'Unknown',
+          siddhi: String(keyDataRecord.siddhi) || 'Unknown',
           position: new Vector3(Math.cos(angle) * radius, height, Math.sin(angle) * radius),
           color: AMINO_ACID_COLORS[aminoAcid] || new Color('#FFFFFF'),
           frequency: CODON_FREQUENCIES[codon] || 528,

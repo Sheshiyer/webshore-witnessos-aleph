@@ -95,7 +95,7 @@ export default function CosmicTempleClient() {
           >
             {templateNames.map(template => (
               <option key={template} value={template}>
-                {TEMPLE_TEMPLATES[template].name}
+                {TEMPLE_TEMPLATES[template]?.name || template}
               </option>
             ))}
           </select>

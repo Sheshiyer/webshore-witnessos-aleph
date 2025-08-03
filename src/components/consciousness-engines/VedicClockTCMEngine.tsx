@@ -119,7 +119,7 @@ const VedicClockTCMEngine: React.FC<VedicClockTCMEngineProps> = ({
               <input
                 id="birth_date"
                 type="date"
-                value={input.birth_date || ''}
+                value={String(input.birth_date) || ''}
                 onChange={(e) => setInput(prev => ({ ...prev, birth_date: e.target.value }))}
                 required
               />
@@ -130,7 +130,7 @@ const VedicClockTCMEngine: React.FC<VedicClockTCMEngineProps> = ({
               <input
                 id="birth_time"
                 type="time"
-                value={input.birth_time || ''}
+                value={String(input.birth_time) || ''}
                 onChange={(e) => setInput(prev => ({ ...prev, birth_time: e.target.value }))}
                 required
               />
@@ -312,7 +312,7 @@ const VedicClockTCMEngine: React.FC<VedicClockTCMEngineProps> = ({
           <div className="formatted-output">
             <details>
               <summary>View Complete Analysis</summary>
-              <pre>{result.formatted_output}</pre>
+              <pre>{String(result.formatted_output)}</pre>
             </details>
           </div>
         </motion.div>

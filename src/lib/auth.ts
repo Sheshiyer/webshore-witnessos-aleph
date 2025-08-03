@@ -901,8 +901,8 @@ export class AuthService {
   }
 }
 
-// Export singleton instance for use across the application
-export const authService = AuthService.getInstance();
+// Export singleton instance factory for use across the application
+export const getAuthService = () => AuthService.getInstance();
 
 /**
  * Standalone JWT verification function for API endpoints

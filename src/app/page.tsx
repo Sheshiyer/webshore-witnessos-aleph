@@ -4,15 +4,20 @@ import { type ConsciousnessProfile } from '@/components/ui/ConsciousnessDataColl
 import EnhancedWitnessOSBootSequence from '@/components/ui/EnhancedWitnessOSBootSequence';
 import IntegratedConsciousnessOnboarding from '@/components/ui/IntegratedConsciousnessOnboarding';
 import BiofieldViewerEngine from '@/components/consciousness-engines/BiofieldViewerEngine';
+import EngineNavigationHub from '@/components/navigation/EngineNavigationHub';
 import { PortalGateway } from '@/components/ui/PortalGateway';
 import { ShaderPortalGateway } from '@/components/ui/ShaderPortalGateway';
 import { CyberpunkAuthModal } from '@/components/auth/CyberpunkAuthModal';
 import { OfflineModeBanner } from '@/components/ui/ConnectionStatusIndicator';
 import APIConnectionTest, { useAPIConnectionTest } from '@/components/debug/APIConnectionTest';
+import BackendConnectivityTest from '@/components/debug/BackendConnectivityTest';
+import BackendStatusIndicator from '@/components/ui/BackendStatusIndicator';
 import { DeveloperDashboard } from '@/components/developer/DeveloperDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { BaseEngineOutput } from '@/engines/core/types';
+import type { EngineName } from '@/types/engines';
 
 // BiofieldViewer-specific types
 interface BiofieldViewerOutput extends BaseEngineOutput {
@@ -41,6 +46,7 @@ export default function Home() {
   const profileState = useConsciousnessProfile();
   const { isAuthenticated, user } = useAuth();
   const apiTest = useAPIConnectionTest();
+  const router = useRouter();
 
   const [bootComplete, setBootComplete] = useState(false);
   const [showPortalGateway, setShowPortalGateway] = useState(false);
@@ -48,6 +54,8 @@ export default function Home() {
   const [currentBiofield, setCurrentBiofield] = useState<BiofieldViewerOutput | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [focusedPanel, setFocusedPanel] = useState<string | null>(null);
+  const [showEngineHub, setShowEngineHub] = useState(false);
+  const [selectedEngine, setSelectedEngine] = useState<EngineName | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [biofieldActive, setBiofieldActive] = useState(false);
   const [showDeveloperDashboard, setShowDeveloperDashboard] = useState(false);
@@ -129,12 +137,24 @@ export default function Home() {
     if (isCapturing) return;
     setIsCapturing(true);
     setBiofieldActive(true);
-    
+
     // Reset capturing state after a short delay to allow BiofieldViewerEngine to initialize
     setTimeout(() => {
       setIsCapturing(false);
     }, 2000);
   };
+
+  const handleEngineSelect = useCallback((engine: EngineName) => {
+    console.log('🧠 Engine selected:', engine);
+    setSelectedEngine(engine);
+    // Navigate to engine page
+    router.push(`/engines/${engine}`);
+  }, [router]);
+
+  const handleShowEngineHub = useCallback(() => {
+    console.log('🎯 Showing engine hub...');
+    setShowEngineHub(true);
+  }, []);
 
   // Auto-trigger biofield capture when biofield becomes active
   useEffect(() => {
@@ -343,6 +363,9 @@ export default function Home() {
                 SNAPSHOTS: {typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('biofield_snapshots') || '[]').length : 0}
               </div>
 
+              {/* Backend Status */}
+              <BackendStatusIndicator />
+
               {/* Version */}
               <div className="text-orange-300">
                 WITNESSOS v2.5.4
@@ -362,6 +385,20 @@ export default function Home() {
                 🔧 API
               </button>
 
+              {/* Engine Hub Button */}
+              <button
+                onClick={handleShowEngineHub}
+                className={`
+                  px-4 py-2 rounded-lg font-mono text-sm transition-all duration-200
+                  ${showEngineHub
+                    ? 'bg-green-600/80 hover:bg-green-500/80'
+                    : 'bg-cyan-600/80 hover:bg-cyan-500/80'
+                  } text-white shadow-lg hover:scale-105 active:scale-95
+                `}
+              >
+                🧠 ENGINES
+              </button>
+
               {/* Capture Button */}
               <button
                 onClick={handleCaptureBiofield}
@@ -379,6 +416,34 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Engine Hub Panel */}
+        {showEngineHub && isAuthenticated && (
+          <div className="absolute inset-0 z-30 bg-black/90 backdrop-blur-sm overflow-y-auto">
+            <div className="container mx-auto px-4 py-8">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowEngineHub(false)}
+                className="fixed top-6 right-6 z-40 p-3 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 hover:bg-red-600/30 transition-colors"
+              >
+                ✕
+              </button>
+
+              {/* Engine Navigation Hub */}
+              <EngineNavigationHub
+                userTier={3}
+                unlockedEngines={[
+                  'numerology', 'human_design', 'tarot', 'iching', 'enneagram',
+                  'sacred_geometry', 'biorhythm', 'vimshottari', 'gene_keys',
+                  'sigil_forge', 'vedicclock_tcm', 'face_reading', 'biofield'
+                ]}
+                onEngineSelect={handleEngineSelect}
+                currentEngine={selectedEngine || undefined}
+                showCategories={true}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Developer Dashboard Panel */}
         {showDeveloperDashboard && isAuthenticated && (
@@ -422,6 +487,12 @@ export default function Home() {
 
       {/* API Connection Test (Development Only) */}
       <APIConnectionTest isVisible={apiTest.isVisible} />
+
+      {/* Backend Connectivity Test */}
+      <BackendConnectivityTest isVisible={true} autoTest={true} />
+
+      {/* Backend Connectivity Test */}
+      <BackendConnectivityTest isVisible={true} autoTest={true} />
 
       {/* Glassmorphic Navigation Pill - Always Visible */}
       <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">

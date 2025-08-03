@@ -111,11 +111,14 @@ export const HumanDesignEngine: React.FC<HumanDesignEngineProps> = ({
     const hdData = state.data as Record<string, unknown>; // Type assertion for engine-specific data
 
     // Create energy centers with definition status
-    const centers: EnergyCenter[] = ENERGY_CENTERS.map(center => ({
-      ...center,
-      defined: hdData?.centers?.[center.name.toLowerCase()]?.defined || false,
-      gates: hdData?.centers?.[center.name.toLowerCase()]?.gates || [],
-    }));
+    const centers: EnergyCenter[] = ENERGY_CENTERS.map(center => {
+      const centerData = (hdData?.centers as Record<string, any>)?.[center.name.toLowerCase()];
+      return {
+        ...center,
+        defined: centerData?.defined || false,
+        gates: centerData?.gates || [],
+      };
+    });
 
     // Create gates from chart data
     const gateList: Gate[] = [];
@@ -141,8 +144,8 @@ export const HumanDesignEngine: React.FC<HumanDesignEngineProps> = ({
           gateList.push({
             number: parseInt(gateNum),
             position: gatePos,
-            line: gateDataRecord.line || 1,
-            planet: gateDataRecord.planet || 'Earth',
+            line: Number(gateDataRecord.line) || 1,
+            planet: String(gateDataRecord.planet) || 'Earth',
             color: new Color().setHSL(parseInt(gateNum) / 64, 0.7, 0.6),
           });
         }

@@ -1,0 +1,18 @@
+# Cloudflare Pages Redirects and Routing Configuration
+# This file configures custom domain routing for WitnessOS
+
+# API routes redirect to api.witnessos.space
+/api/* https://api.witnessos.space/api/:splat 200
+/docs https://api.witnessos.space/api/docs 302
+/redoc https://api.witnessos.space/api/redoc 302
+
+# Health check routes
+/health https://api.witnessos.space/api/health 200
+/status https://api.witnessos.space/api/health 200
+
+# Engine calculation routes
+/engines/*/calculate https://api.witnessos.space/api/engines/:splat/calculate 200
+/swiss_ephemeris/* https://api.witnessos.space/api/swiss_ephemeris/:splat 200
+
+# Fallback for all other routes - serve from frontend
+/* /index.html 200

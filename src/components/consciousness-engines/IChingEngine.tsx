@@ -128,17 +128,17 @@ export const IChingEngine: React.FC<IChingEngineProps> = ({
         .then(result => {
           if (result.success) {
             // Auto-save the I-Ching reading result
-            saveEngineResult({
-              engineName: 'iching',
-              result: result.data,
-              question: question.question,
-              timestamp: new Date().toISOString(),
-              metadata: {
+            saveEngineResult(
+              'iching',
+              result.data,
+              { question: question.question },
+              {
                 hexagram: result.data?.hexagram?.number,
                 changingLines: result.data?.changing_lines?.length || 0,
                 consciousnessLevel,
+                timestamp: new Date().toISOString(),
               }
-            });
+            );
             
             if (onCalculationComplete) {
               onCalculationComplete(result.data);

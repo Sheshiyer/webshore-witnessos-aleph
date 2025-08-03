@@ -60,6 +60,7 @@
     "docs/**/*",
     "test/**/*",
     "witnessos-engines/**/*",
+    "src/api-routes-backup/**/*",
     ".next",
     "out"
   ]

@@ -272,7 +272,7 @@ export const EnneagramEngine: React.FC<EnneagramEngineProps> = ({
 
     // Calculate wings
     const wingTypes: EnneagramType[] = [];
-    if (primary && enneagramData?.wings) {
+    if (primary && enneagramData?.wings && Array.isArray(enneagramData.wings)) {
       enneagramData.wings.forEach((wingNum: number) => {
         const wingType = ENNEAGRAM_TYPES.find(t => t.number === wingNum);
         if (wingType) {
@@ -423,8 +423,8 @@ export const EnneagramEngine: React.FC<EnneagramEngineProps> = ({
             </mesh>
 
             {/* Fractal pattern for significant types */}
-            {typeFractals.has(type.number) && (
-              <mesh geometry={typeFractals.get(type.number)} scale={[0.5, 0.5, 0.5]}>
+            {typeFractals.has(type.number) && typeFractals.get(type.number) && (
+              <mesh geometry={typeFractals.get(type.number)!} scale={[0.5, 0.5, 0.5]}>
                 <meshStandardMaterial color={type.color} transparent opacity={0.4} wireframe />
               </mesh>
             )}

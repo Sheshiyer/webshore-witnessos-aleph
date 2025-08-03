@@ -10,7 +10,7 @@ import { verifyJWT } from '@/lib/auth';
 import type { UpdateAPIKeyRequest } from '@/types/api-keys';
 
 // Initialize API Key Manager (will be injected with D1 and KV in production)
-let apiKeyManager: APIKeyManager;
+let apiKeyManager: APIKeyManager | undefined;
 
 // Mock initialization for development
 if (!apiKeyManager) {
@@ -47,6 +47,14 @@ export async function GET(
     }
 
     const keyId = params.keyId;
+
+    if (!apiKeyManager) {
+      return NextResponse.json(
+        { success: false, error: 'Service unavailable' },
+        { status: 503 }
+      );
+    }
+
     const apiKey = await apiKeyManager.getAPIKeyById(keyId);
 
     if (!apiKey || apiKey.user_id !== user.id) {
@@ -100,6 +108,13 @@ export async function PUT(
     const keyId = params.keyId;
     const updateRequest: UpdateAPIKeyRequest = await request.json();
 
+    if (!apiKeyManager) {
+      return NextResponse.json(
+        { success: false, error: 'Service unavailable' },
+        { status: 503 }
+      );
+    }
+
     // Update API key
     const result = await apiKeyManager.updateAPIKey(keyId, user.id, updateRequest);
 
@@ -146,6 +161,13 @@ export async function DELETE(
     }
 
     const keyId = params.keyId;
+
+    if (!apiKeyManager) {
+      return NextResponse.json(
+        { success: false, error: 'Service unavailable' },
+        { status: 503 }
+      );
+    }
 
     // Revoke API key
     const result = await apiKeyManager.revokeAPIKey(keyId, user.id);
@@ -210,7 +232,8 @@ if (process.env.NODE_ENV === 'development') {
   ];
 
   // Override methods for development
-  apiKeyManager.getAPIKeyById = async (keyId: string) => {
+  if (apiKeyManager) {
+    apiKeyManager.getAPIKeyById = async (keyId: string) => {
     return mockAPIKeys.find(key => key.id === keyId) || null;
   };
 
@@ -243,5 +266,6 @@ if (process.env.NODE_ENV === 'development') {
     mockAPIKeys[keyIndex].updated_at = new Date().toISOString();
 
     return { success: true };
-  };
+    };
+  }
 }

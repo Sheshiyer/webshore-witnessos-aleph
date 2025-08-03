@@ -8,10 +8,10 @@ main = "src/workers/index.ts"
 compatibility_date = "2024-01-15"
 compatibility_flags = ["nodejs_compat"]
 
-# Custom domain routes (managed via Cloudflare Dashboard)
-# routes = [
-#   { pattern = "api.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
-# ]
+# Custom domain routes for API
+routes = [
+  { pattern = "api.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
+]
 
 # Service bindings to specialized workers (RPC)
 [[services]]
@@ -107,14 +107,27 @@ SWISS_EPHEMERIS_ENABLED = "true"
 tag = "v1"
 new_sqlite_classes = ["EngineCoordinator", "ForecastSession"]
 
-# Build configuration
-[build]
-command = "npm run build"
+# Build configuration (disabled for Worker-only deployment)
+# [build]
+# command = "npm run build"
 
 # Development configuration
 [env.development]
 name = "witnessos-api-router-dev"
 compatibility_date = "2024-01-15"
+
+# Service bindings for development
+[[env.development.services]]
+binding = "ENGINE_SERVICE"
+service = "witnessos-engine-service"
+
+[[env.development.services]]
+binding = "FORECAST_SERVICE"
+service = "witnessos-forecast-service"
+
+[[env.development.services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
 
 [env.development.vars]
 ENVIRONMENT = "development"
@@ -182,14 +195,27 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router-staging"
 
-# Staging Workflows - Service bindings to dedicated workflow workers
+# Staging Service bindings
 [[env.staging.services]]
-binding = "CONSCIOUSNESS_WORKFLOW"
-service = "witnessos-consciousness-workflow-staging"
+binding = "ENGINE_SERVICE"
+service = "witnessos-engine-service"
 
 [[env.staging.services]]
-binding = "INTEGRATION_WORKFLOW"
-service = "witnessos-integration-workflow-staging"
+binding = "FORECAST_SERVICE"
+service = "witnessos-forecast-service"
+
+[[env.staging.services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+# Staging Workflows - Service bindings to dedicated workflow workers (disabled for now)
+# [[env.staging.services]]
+# binding = "CONSCIOUSNESS_WORKFLOW"
+# service = "witnessos-consciousness-workflow-staging"
+
+# [[env.staging.services]]
+# binding = "INTEGRATION_WORKFLOW"
+# service = "witnessos-integration-workflow-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
@@ -207,7 +233,7 @@ SWISS_EPHEMERIS_ENABLED = "true"
 [env.production]
 name = "witnessos-api-router-prod"
 routes = [
-  { pattern = "api-v2.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
+  { pattern = "api.witnessos.space/*", zone_id = "cf14b78dd6490cd4e21cd91af1ac7cb7" }
 ]
 
 # Production KV Namespaces
@@ -258,14 +284,27 @@ name = "FORECAST_SESSION"
 class_name = "ForecastSession"
 script_name = "witnessos-api-router-prod"
 
-# Production Workflows - Service bindings to dedicated workflow workers
+# Production Service bindings
 [[env.production.services]]
-binding = "CONSCIOUSNESS_WORKFLOW"
-service = "witnessos-consciousness-workflow-prod"
+binding = "ENGINE_SERVICE"
+service = "witnessos-engine-service"
 
 [[env.production.services]]
-binding = "INTEGRATION_WORKFLOW"
-service = "witnessos-integration-workflow-prod"
+binding = "FORECAST_SERVICE"
+service = "witnessos-forecast-service"
+
+[[env.production.services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+# Production Workflows - Service bindings to dedicated workflow workers (disabled for now)
+# [[env.production.services]]
+# binding = "CONSCIOUSNESS_WORKFLOW"
+# service = "witnessos-consciousness-workflow-prod"
+
+# [[env.production.services]]
+# binding = "INTEGRATION_WORKFLOW"
+# service = "witnessos-integration-workflow-prod"
 
 [env.production.vars]
 ENVIRONMENT = "production"

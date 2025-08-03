@@ -124,7 +124,7 @@ export const BiorhythmEngine: React.FC<BiorhythmEngineProps> = ({
       const time = state.clock.elapsedTime;
       if (meshRef.current.material && 'uniforms' in meshRef.current.material) {
         const material = meshRef.current.material as THREE.ShaderMaterial;
-        if (material.uniforms) {
+        if (material.uniforms && material.uniforms.time) {
           material.uniforms.time.value = time;
         }
       }

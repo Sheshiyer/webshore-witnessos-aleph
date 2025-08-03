@@ -505,6 +505,154 @@ export interface SigilForgeOutput extends BaseEngineOutput {
   [key: string]: unknown;
 }
 
+// ===== FACE READING ENGINE =====
+export interface FaceReadingInput extends BaseEngineInput, BirthData {
+  processing_consent: boolean;
+  analysis_depth?: 'basic' | 'detailed' | 'comprehensive';
+  include_health_indicators?: boolean;
+  integrate_with_vedic?: boolean;
+  integrate_with_tcm?: boolean;
+  store_biometric_data?: boolean;
+  [key: string]: unknown;
+}
+
+export interface FaceReadingOutput extends BaseEngineOutput {
+  constitutional_analysis: {
+    dominant_element: string;
+    secondary_element: string;
+    constitutional_type: string;
+    elemental_balance: Record<string, number>;
+    constitutional_strength: number;
+  };
+  twelve_houses_analysis: Record<string, {
+    house_name: string;
+    reading: string;
+    health_indicators: string[];
+    personality_traits: string[];
+    life_areas: string[];
+  }>;
+  five_elements_assessment: Record<string, {
+    element_name: string;
+    strength: number;
+    characteristics: string[];
+    health_correlations: string[];
+    recommendations: string[];
+  }>;
+  health_indicators: {
+    vitality_score: number;
+    stress_indicators: string[];
+    health_recommendations: string[];
+    constitutional_vulnerabilities: string[];
+    strengthening_practices: string[];
+  };
+  personality_insights: {
+    core_traits: string[];
+    behavioral_patterns: string[];
+    communication_style: string;
+    decision_making_style: string;
+    relationship_patterns: string[];
+  };
+  integration_recommendations: {
+    vedic_correlations?: Record<string, unknown>;
+    tcm_correlations?: Record<string, unknown>;
+    lifestyle_recommendations: string[];
+    optimal_practices: string[];
+  };
+  [key: string]: unknown;
+}
+
+// ===== BIOFIELD ENGINE =====
+export interface BiofieldInput extends BaseEngineInput, BirthData {
+  image_data?: string;
+  video_data?: string;
+  analysis_mode?: 'single_frame' | 'temporal_sequence' | 'real_time';
+  analysis_depth?: 'basic' | 'detailed' | 'comprehensive';
+  include_spatial_metrics?: boolean;
+  include_temporal_metrics?: boolean;
+  include_color_analysis?: boolean;
+  include_composite_scores?: boolean;
+  integrate_with_face_reading?: boolean;
+  integrate_with_vedic?: boolean;
+  integrate_with_tcm?: boolean;
+  noise_reduction?: boolean;
+  edge_enhancement?: boolean;
+  calibration_mode?: 'auto' | 'manual' | 'reference';
+  biometric_consent: boolean;
+  store_analysis_only?: boolean;
+  [key: string]: unknown;
+}
+
+export interface BiofieldMetrics {
+  light_quanta_density: number;
+  normalized_area: number;
+  average_intensity: number;
+  inner_noise: number;
+  energy_analysis: number;
+  entropy_form_coefficient: number;
+  fractal_dimension: number;
+  correlation_dimension: number;
+  hurst_exponent: number;
+  lyapunov_exponent: number;
+  dfa_analysis: number;
+  bifurcation_analysis: number;
+  recurrence_analysis: number;
+  nonlinear_mapping: number;
+  body_symmetry: number;
+  contour_complexity: number;
+  pattern_regularity: number;
+}
+
+export interface ColorAnalysis {
+  color_distribution: Record<string, number>;
+  color_entropy: number;
+  color_correlation: number;
+  spectral_power_distribution: Record<string, number>;
+  color_coherence: number;
+  color_energy: number;
+  color_symmetry: number;
+  color_contrast: number;
+  dominant_wavelength: number;
+  color_perimeter: number;
+}
+
+export interface CompositeScores {
+  energy_score: number;
+  symmetry_balance_score: number;
+  coherence_score: number;
+  complexity_score: number;
+  regulation_score: number;
+  color_vitality_score: number;
+  color_coherence_score: number;
+}
+
+export interface MultiModalIntegration {
+  constitutional_correlation: Record<string, number>;
+  five_elements_alignment: Record<string, number>;
+  panchanga_correlation: Record<string, number>;
+  cosmic_timing_alignment: number;
+  organ_clock_correlation: Record<string, number>;
+  elemental_harmony: number;
+  multi_modal_consistency: number;
+  unified_recommendations: string[];
+}
+
+export interface BiofieldOutput extends BaseEngineOutput {
+  biofield_metrics: BiofieldMetrics;
+  color_analysis: ColorAnalysis;
+  composite_scores: CompositeScores;
+  multi_modal_integration: MultiModalIntegration;
+  image_quality_score: number;
+  processing_time: number;
+  calibration_status: string;
+  temporal_trends?: Record<string, number[]>;
+  stability_assessment?: number;
+  biofield_optimization: string[];
+  practice_suggestions: string[];
+  data_retention_policy: string;
+  biometric_protection_level: string;
+  [key: string]: unknown;
+}
+
 // ===== VEDICCLOCK-TCM ENGINE =====
 export interface VedicClockTCMInput extends BaseEngineInput, BirthData {
   target_date?: string;
@@ -588,9 +736,9 @@ export interface VedicClockTCMOutput extends BaseEngineOutput {
 }
 
 // Engine union types for generic handling
-export type EngineInput = NumerologyInput | HumanDesignInput | TarotInput | IChingInput | EnneagramInput | SacredGeometryInput | BiorhythmInput | VimshottariInput | GeneKeysInput | SigilForgeInput | VedicClockTCMInput;
+export type EngineInput = NumerologyInput | HumanDesignInput | TarotInput | IChingInput | EnneagramInput | SacredGeometryInput | BiorhythmInput | VimshottariInput | GeneKeysInput | SigilForgeInput | VedicClockTCMInput | FaceReadingInput | BiofieldInput;
 
-export type EngineOutput = NumerologyOutput | HumanDesignOutput | TarotOutput | IChingOutput | EnneagramOutput | SacredGeometryOutput | BiorhythmOutput | VimshottariOutput | GeneKeysOutput | SigilForgeOutput | VedicClockTCMOutput;
+export type EngineOutput = NumerologyOutput | HumanDesignOutput | TarotOutput | IChingOutput | EnneagramOutput | SacredGeometryOutput | BiorhythmOutput | VimshottariOutput | GeneKeysOutput | SigilForgeOutput | VedicClockTCMOutput | FaceReadingOutput | BiofieldOutput;
 
 export type EngineName =
   | 'numerology'
@@ -603,6 +751,8 @@ export type EngineName =
   | 'vimshottari'
   | 'gene_keys'
   | 'sigil_forge'
-  | 'vedicclock_tcm';
+  | 'vedicclock_tcm'
+  | 'face_reading'
+  | 'biofield';
 
 // Export all types - removed to avoid conflicts, using individual exports above

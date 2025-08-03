@@ -68,7 +68,16 @@ export default function APIConnectionTest({ isVisible = false }: APIConnectionTe
         options.body = JSON.stringify(body);
       }
 
-      const result = await apiClient.makeRequest(endpoint, options);
+      // Use public methods instead of private makeRequest
+      let result: any;
+      if (endpoint === '/health') {
+        result = await apiClient.testConnection();
+      } else if (endpoint === '/engines') {
+        result = await apiClient.listEngines();
+      } else {
+        // For other endpoints, use testConnection as fallback
+        result = await apiClient.testConnection();
+      }
       setTestResults(prev => ({
         ...prev,
         [endpoint]: {

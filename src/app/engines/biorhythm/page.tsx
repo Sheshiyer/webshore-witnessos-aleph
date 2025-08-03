@@ -215,9 +215,9 @@ export default function BiorhythmPage() {
               </div>
             </div>
             
-            {result.cycles && (
+            {(result.cycles && typeof result.cycles === 'object') ? (
               <div className="space-y-2">
-                {Object.entries(result.cycles).map(([cycle, data]: [string, any]) => (
+                {Object.entries(result.cycles as Record<string, any>).map(([cycle, data]: [string, any]) => (
                   <div key={cycle} className="p-2 bg-white/5 rounded">
                     <div className="flex justify-between items-center">
                       <span className="capitalize font-medium">{cycle}</span>
@@ -238,7 +238,7 @@ export default function BiorhythmPage() {
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

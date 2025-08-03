@@ -17,9 +17,9 @@ const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Use deployed Cloudflare Workers API for production
-  console.log('🚀 Using deployed Cloudflare Workers API');
-  return 'https://witnessos-api-router.sheshnarayan-iyer.workers.dev';
+  // Use deployed Railway backend API for production
+  console.log('🚀 Using deployed Railway backend API');
+  return 'https://witnessos-engines-production.up.railway.app';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -27,15 +27,76 @@ const API_BASE_URL = getApiBaseUrl();
 // Enable TypeScript engines by default
 const USE_TYPESCRIPT_ENGINES = process.env.USE_TYPESCRIPT_ENGINES !== 'false';
 
-// Disable fallback mode when using production backend
-const isProductionBackend = API_BASE_URL.includes('api.witnessos.space');
-let FALLBACK_MODE = false; // Always start with fallback mode disabled
+// Enable fallback mode when backend is unavailable
+const isProductionBackend = API_BASE_URL.includes('api.witnessos.space') || API_BASE_URL.includes('railway.app');
+let FALLBACK_MODE = true; // Start with fallback mode enabled until backend is confirmed working
 
 console.log('🔧 API Configuration:', {
   baseUrl: API_BASE_URL,
   isProductionBackend,
   fallbackMode: FALLBACK_MODE
 });
+
+// Auto-detect backend availability and switch modes
+let backendHealthCheckInProgress = false;
+
+async function checkBackendHealth(): Promise<boolean> {
+  if (backendHealthCheckInProgress) return false;
+
+  backendHealthCheckInProgress = true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/calculate/numerology`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: { birth_date: '1991-08-13', full_name: 'Health Check' } }),
+    });
+
+    const isHealthy = response.ok;
+    if (isHealthy && FALLBACK_MODE) {
+      console.log('✅ Backend is now available - switching to real API');
+      FALLBACK_MODE = false;
+    } else if (!isHealthy && !FALLBACK_MODE) {
+      console.log('⚠️ Backend unavailable - switching to fallback mode');
+      FALLBACK_MODE = true;
+    }
+
+    return isHealthy;
+  } catch (error) {
+    if (!FALLBACK_MODE) {
+      console.log('⚠️ Backend connection failed - switching to fallback mode');
+      FALLBACK_MODE = true;
+    }
+    return false;
+  } finally {
+    backendHealthCheckInProgress = false;
+  }
+}
+
+// Check backend health every 30 seconds
+if (typeof window !== 'undefined') {
+  setInterval(checkBackendHealth, 30000);
+  // Initial check after 2 seconds
+  setTimeout(checkBackendHealth, 2000);
+}
+
+// Test backend connectivity (legacy function - use apiClient.testConnection() instead)
+export async function testBackendConnectivity(): Promise<{ success: boolean; message: string; details?: any }> {
+  try {
+    const result = await apiClient.testConnection();
+    return {
+      success: result.success,
+      message: result.success ? 'Backend connection successful' : (result.error || 'Connection failed'),
+      details: result
+    };
+  } catch (error) {
+    console.error('❌ Backend connectivity test failed:', error);
+    return {
+      success: false,
+      message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      details: { error: String(error) }
+    };
+  }
+}
 
 interface ApiResponse<T> {
   success: boolean;
@@ -146,6 +207,80 @@ const generateMockEngineData = (engineName: EngineName, input: Record<string, an
       elements: ['fire', 'water', 'earth', 'air'][Math.floor(Math.random() * 4)],
       interpretation: "Mock Sigil Forge reading - backend disconnected",
       metadata: { consciousnessLevel: 0.5 + Math.random() * 0.4 }
+    },
+    vedicclock_tcm: {
+      vimshottari_context: {
+        mahadasha_lord: 'Jupiter',
+        antardasha_lord: 'Venus',
+        life_lesson_theme: 'Expansion and wisdom'
+      },
+      panchanga_state: {
+        tithi: 'Panchami',
+        vara: 'Shukravara',
+        nakshatra: 'Rohini',
+        dominant_element: 'Earth'
+      },
+      tcm_organ_state: {
+        primary_organ: 'Heart',
+        element: 'Fire',
+        energy_direction: 'peak'
+      },
+      interpretation: "Mock VedicClock-TCM reading - backend disconnected",
+      metadata: { consciousnessLevel: 0.6 + Math.random() * 0.3 }
+    },
+    face_reading: {
+      constitutional_analysis: {
+        dominant_element: ['Wood', 'Fire', 'Earth', 'Metal', 'Water'][Math.floor(Math.random() * 5)],
+        secondary_element: ['Wood', 'Fire', 'Earth', 'Metal', 'Water'][Math.floor(Math.random() * 5)],
+        constitutional_type: 'Balanced Constitution',
+        constitutional_strength: 0.7 + Math.random() * 0.3
+      },
+      health_indicators: {
+        vitality_score: 0.6 + Math.random() * 0.4,
+        health_recommendations: ['Maintain regular sleep', 'Practice breathing exercises', 'Stay hydrated']
+      },
+      personality_insights: {
+        core_traits: ['Analytical', 'Intuitive', 'Balanced'],
+        communication_style: 'Direct and thoughtful',
+        decision_making_style: 'Deliberate and considered'
+      },
+      interpretation: "Mock Face Reading analysis - backend disconnected",
+      metadata: { consciousnessLevel: 0.7 + Math.random() * 0.3 }
+    },
+    biofield: {
+      biofield_metrics: {
+        light_quanta_density: 0.6 + Math.random() * 0.4,
+        average_intensity: 0.5 + Math.random() * 0.5,
+        energy_analysis: 0.7 + Math.random() * 0.3,
+        fractal_dimension: 1.5 + Math.random() * 0.5,
+        body_symmetry: 0.8 + Math.random() * 0.2
+      },
+      color_analysis: {
+        color_distribution: { red: 0.3, green: 0.4, blue: 0.3 },
+        color_energy: 0.6 + Math.random() * 0.4,
+        dominant_wavelength: 500 + Math.random() * 200
+      },
+      composite_scores: {
+        energy_score: 0.6 + Math.random() * 0.4,
+        symmetry_balance_score: 0.7 + Math.random() * 0.3,
+        coherence_score: 0.5 + Math.random() * 0.5,
+        complexity_score: 0.4 + Math.random() * 0.6,
+        regulation_score: 0.6 + Math.random() * 0.4,
+        color_vitality_score: 0.7 + Math.random() * 0.3,
+        color_coherence_score: 0.6 + Math.random() * 0.4
+      },
+      multi_modal_integration: {
+        multi_modal_consistency: 0.7 + Math.random() * 0.3,
+        cosmic_timing_alignment: 0.6 + Math.random() * 0.4,
+        elemental_harmony: 0.8 + Math.random() * 0.2,
+        unified_recommendations: ['Continue current practices', 'Focus on energy balance']
+      },
+      biofield_optimization: ['Practice coherent breathing', 'Maintain energetic balance', 'Regular meditation'],
+      processing_time: 1.5 + Math.random() * 2,
+      biometric_protection_level: 'maximum',
+      data_retention_policy: 'analysis_only',
+      interpretation: "Mock Biofield analysis - backend disconnected",
+      metadata: { consciousnessLevel: 0.8 + Math.random() * 0.2 }
     }
   };
 
@@ -517,7 +652,7 @@ class WitnessOSAPIClient {
       ...(options && { options }),
     };
 
-    return this.makeRequest(`/engines/${engineName}/calculate`, {
+    return this.makeRequest(`/calculate/${engineName}`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -1029,3 +1164,10 @@ class WitnessOSAPIClient {
 // Export singleton instance
 export const apiClient = new WitnessOSAPIClient();
 export default apiClient;
+
+// Convenience functions for direct use
+export const calculateEngine = (engineName: EngineName, input: Record<string, any>) =>
+  apiClient.calculateEngine(engineName, input);
+
+export const testConnection = () =>
+  apiClient.testConnection();

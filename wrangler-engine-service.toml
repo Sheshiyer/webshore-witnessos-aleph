@@ -68,9 +68,36 @@ RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
 [env.production]
 name = "witnessos-engine-service-prod"
 
+# Production Service dependencies
+[[env.production.services]]
+binding = "AI_SERVICE"
+service = "witnessos-ai-service"
+
+[[env.production.services]]
+binding = "ENGINE_PROXY"
+service = "witnessos-engine-proxy-prod"
+
+# Production KV Namespaces
+[[env.production.kv_namespaces]]
+binding = "KV_CACHE"
+id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+preview_id = "d5aa9b42b2f948bfa59143d5a56ea58b"
+
+[[env.production.kv_namespaces]]
+binding = "KV_USER_PROFILES"
+id = "6df29230ffca4e7c8299decdf0a2121f"
+preview_id = "6df29230ffca4e7c8299decdf0a2121f"
+
+# Production D1 Database
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "witnessos-db"
+database_id = "36b03146-4184-45cc-9ed6-a24f0747cdb5"
+
 [env.production.vars]
 ENVIRONMENT = "production"
+SERVICE_NAME = "engine-service"
 ENABLE_CACHING = "true"
 PYTHON_ENGINES_ENABLED = "true"
 SWISS_EPHEMERIS_ENABLED = "true"
-RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app" 
+RAILWAY_BASE_URL = "https://webshore-witnessos-aleph-production.up.railway.app"
