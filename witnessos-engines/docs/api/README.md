@@ -2,7 +2,7 @@
 
 ## 🌟 **Overview**
 
-The WitnessOS Consciousness API provides access to a sophisticated consciousness exploration platform featuring 10 different spiritual and psychological analysis engines, multi-engine workflows, and AI-enhanced interpretations.
+The WitnessOS Consciousness API provides access to a sophisticated consciousness exploration platform featuring **13 different consciousness exploration engines**, multi-engine workflows, and AI-enhanced interpretations.
 
 ### **Base URLs**
 - **Production API Gateway**: `https://api.witnessos.space` (Cloudflare Workers)
@@ -39,6 +39,8 @@ The consciousness engines run on Railway's infrastructure for maximum accuracy:
 - `sacred_geometry`: Pattern generation and visualization
 - `sigil_forge`: Intention-based symbol synthesis
 - `vedicclock_tcm`: Multi-dimensional consciousness optimization combining Vedic time cycles with TCM organ rhythms
+- `face_reading`: TCM and Vedic facial analysis with health indicators
+- `biofield`: Advanced biofield analysis with spatial and temporal metrics
 
 ### **Authentication**
 Most endpoints require JWT authentication. Include your token in the Authorization header:
@@ -178,6 +180,8 @@ curl https://webshore-witnessos-aleph-production.up.railway.app/engines
 | **Enneagram** | `/engines/enneagram/calculate` | Personality type and growth patterns |
 | **Sacred Geometry** | `/engines/sacred_geometry/calculate` | Geometric pattern analysis |
 | **Sigil Forge** | `/engines/sigil_forge/calculate` | Sacred symbol creation |
+| **Face Reading** | `/engines/face_reading/calculate` | TCM / Vedic facial constitution & health analysis |
+| **Biofield** | `/engines/biofield/calculate` | Energetic field analysis with spatial & temporal metrics |
 
 ### **Engine Input Examples**
 

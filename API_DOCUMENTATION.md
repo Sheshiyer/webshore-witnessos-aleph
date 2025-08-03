@@ -295,6 +295,23 @@ Calculate consciousness analysis for specified engine.
 
 **Output:** Constitutional analysis, Personality traits, Health indicators
 
+### 13. Biofield Engine
+**Endpoint:** `POST /engines/biofield/calculate`
+
+**Input:**
+```json
+{
+  "input": {
+    "birth_date": "1991-08-13",
+    "image_data": "<BASE64_ENCODED_IMAGE>",
+    "analysis_mode": "single_frame",
+    "biometric_consent": true
+  }
+}
+```
+
+**Output:** Spatial metrics, Colour analysis, Composite scores, Recommendations
+
 ---
 
 ## 🌟 Swiss Ephemeris Integration
@@ -364,6 +381,8 @@ Test all engines with admin user data for validation.
 - `422`: Validation Error
 - `500`: Internal Server Error
 - `503`: Service Unavailable
+
+> **Privacy Note:** `face_reading` and `biofield` endpoints require the `biometric_consent` flag set to **true**; raw media is discarded unless explicitly requested via engine options.
 
 ---
 

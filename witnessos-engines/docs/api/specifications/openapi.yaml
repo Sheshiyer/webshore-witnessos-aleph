@@ -2,11 +2,11 @@ openapi: 3.0.3
 info:
   title: WitnessOS Consciousness API
   description: |
-    The WitnessOS Consciousness API provides access to 11 different consciousness exploration engines,
+    The WitnessOS Consciousness API provides access to 13 different consciousness exploration engines,
     multi-engine workflows, AI-enhanced interpretations, and user management capabilities.
     
     ## Features
-    - **11 Consciousness Engines**: Numerology, Human Design, Tarot, I-Ching, Enneagram, Sacred Geometry, Biorhythm, Vimshottari, Gene Keys, Sigil Forge, VedicClock-TCM
+    - **13 Consciousness Engines**: Numerology, Human Design, Tarot, I-Ching, Enneagram, Sacred Geometry, Biorhythm, Vimshottari, Gene Keys, Sigil Forge, VedicClock-TCM, Face Reading, Biofield
     - **Multi-Engine Workflows**: Predefined patterns for natal, career, spiritual analysis
     - **AI-Enhanced Interpretations**: LLM-powered personalized insights and synthesis
     - **Global Performance**: Sub-200ms response times via Cloudflare Workers edge network
@@ -139,6 +139,25 @@ paths:
                     spread_type: "three_card"
                   options:
                     deck: "rider_waite"
+              biofield:
+                summary: Biofield analysis
+                value:
+                  input:
+                    birth_date: "1990-01-15"
+                    image_data: "base64encodedimage..."
+                    analysis_mode: "single_frame"
+                    biometric_consent: true
+                  options:
+                    include_spatial_metrics: true
+              face_reading:
+                summary: Face Reading analysis
+                value:
+                  input:
+                    birth_date: "1990-01-15"
+                    processing_consent: true
+                    analysis_depth: "detailed"
+                  options:
+                    include_health_indicators: true
       responses:
         '200':
           description: Calculation result
@@ -150,6 +169,62 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /engines/biofield/calculate:
+    post:
+      summary: Biofield Analysis
+      description: Perform advanced biofield analysis with spatial and temporal metrics
+      operationId: calculateBiofield
+      tags:
+        - Engines
+        - Biofield
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BiofieldRequest'
+      responses:
+        '200':
+          description: Biofield analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiofieldResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /engines/face_reading/calculate:
+    post:
+      summary: Face Reading Analysis
+      description: Perform facial analysis with TCM and Vedic correlations
+      operationId: calculateFaceReading
+      tags:
+        - Engines
+        - Face Reading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FaceReadingRequest'
+      responses:
+        '200':
+          description: Face reading analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaceReadingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
 
@@ -368,6 +443,9 @@ components:
           - vimshottari
           - gene_keys
           - sigil_forge
+          - vedicclock_tcm
+          - face_reading
+          - biofield
       description: Name of the consciousness engine
 
   schemas:
@@ -385,7 +463,7 @@ components:
           example: "production"
         engines:
           type: integer
-          example: 10
+          example: 13
         endpoints:
           type: object
         documentation:
@@ -501,6 +579,396 @@ components:
         processingTime:
           type: number
           description: Processing time in milliseconds
+        cached:
+          type: boolean
+        requestId:
+          type: string
+
+    BiofieldRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          type: object
+          required:
+            - biometric_consent
+          properties:
+            birth_date:
+              type: string
+              format: date
+            image_data:
+              type: string
+              description: Base64 encoded image data
+            video_data:
+              type: string
+              description: Base64 encoded video data
+            analysis_mode:
+              type: string
+              enum: ['single_frame', 'temporal_sequence', 'real_time']
+              default: 'single_frame'
+            analysis_depth:
+              type: string
+              enum: ['basic', 'detailed', 'comprehensive']
+              default: 'detailed'
+            include_spatial_metrics:
+              type: boolean
+              default: true
+            include_temporal_metrics:
+              type: boolean
+              default: false
+            include_color_analysis:
+              type: boolean
+              default: true
+            include_composite_scores:
+              type: boolean
+              default: true
+            integrate_with_face_reading:
+              type: boolean
+              default: false
+            integrate_with_vedic:
+              type: boolean
+              default: false
+            integrate_with_tcm:
+              type: boolean
+              default: false
+            noise_reduction:
+              type: boolean
+              default: true
+            edge_enhancement:
+              type: boolean
+              default: true
+            calibration_mode:
+              type: string
+              enum: ['auto', 'manual', 'reference']
+              default: 'auto'
+            biometric_consent:
+              type: boolean
+              description: User consent for biometric data processing
+            store_analysis_only:
+              type: boolean
+              default: true
+        options:
+          type: object
+          properties:
+            useCache:
+              type: boolean
+              default: true
+            userId:
+              type: string
+            saveProfile:
+              type: boolean
+              default: false
+
+    BiofieldResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            biofield_metrics:
+              type: object
+              properties:
+                light_quanta_density:
+                  type: number
+                normalized_area:
+                  type: number
+                average_intensity:
+                  type: number
+                inner_noise:
+                  type: number
+                energy_analysis:
+                  type: number
+                entropy_form_coefficient:
+                  type: number
+                fractal_dimension:
+                  type: number
+                correlation_dimension:
+                  type: number
+                hurst_exponent:
+                  type: number
+                lyapunov_exponent:
+                  type: number
+                dfa_analysis:
+                  type: number
+                bifurcation_analysis:
+                  type: number
+                recurrence_analysis:
+                  type: number
+                nonlinear_mapping:
+                  type: number
+                body_symmetry:
+                  type: number
+                contour_complexity:
+                  type: number
+                pattern_regularity:
+                  type: number
+            color_analysis:
+              type: object
+              properties:
+                color_distribution:
+                  type: object
+                color_entropy:
+                  type: number
+                color_correlation:
+                  type: number
+                spectral_power_distribution:
+                  type: object
+                color_coherence:
+                  type: number
+                color_energy:
+                  type: number
+                color_symmetry:
+                  type: number
+                color_contrast:
+                  type: number
+                dominant_wavelength:
+                  type: number
+                color_perimeter:
+                  type: number
+            composite_scores:
+              type: object
+              properties:
+                energy_score:
+                  type: number
+                symmetry_balance_score:
+                  type: number
+                coherence_score:
+                  type: number
+                complexity_score:
+                  type: number
+                regulation_score:
+                  type: number
+                color_vitality_score:
+                  type: number
+                color_coherence_score:
+                  type: number
+            multi_modal_integration:
+              type: object
+              properties:
+                constitutional_correlation:
+                  type: object
+                five_elements_alignment:
+                  type: object
+                panchanga_correlation:
+                  type: object
+                cosmic_timing_alignment:
+                  type: number
+                organ_clock_correlation:
+                  type: object
+                elemental_harmony:
+                  type: number
+                multi_modal_consistency:
+                  type: number
+                unified_recommendations:
+                  type: array
+                  items:
+                    type: string
+            image_quality_score:
+              type: number
+            processing_time:
+              type: number
+            calibration_status:
+              type: string
+            temporal_trends:
+              type: object
+            stability_assessment:
+              type: number
+            biofield_optimization:
+              type: array
+              items:
+                type: string
+            practice_suggestions:
+              type: array
+              items:
+                type: string
+            data_retention_policy:
+              type: string
+            biometric_protection_level:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+        processingTime:
+          type: number
+        cached:
+          type: boolean
+        requestId:
+          type: string
+
+    FaceReadingRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          type: object
+          required:
+            - processing_consent
+          properties:
+            birth_date:
+              type: string
+              format: date
+            birth_time:
+              type: string
+            birth_location:
+              type: string
+            processing_consent:
+              type: boolean
+              description: User consent for facial analysis processing
+            analysis_depth:
+              type: string
+              enum: ['basic', 'detailed', 'comprehensive']
+              default: 'detailed'
+            include_health_indicators:
+              type: boolean
+              default: true
+            integrate_with_vedic:
+              type: boolean
+              default: false
+            integrate_with_tcm:
+              type: boolean
+              default: true
+            store_biometric_data:
+              type: boolean
+              default: false
+        options:
+          type: object
+          properties:
+            useCache:
+              type: boolean
+              default: true
+            userId:
+              type: string
+            saveProfile:
+              type: boolean
+              default: false
+
+    FaceReadingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            constitutional_analysis:
+              type: object
+              properties:
+                dominant_element:
+                  type: string
+                secondary_element:
+                  type: string
+                constitutional_type:
+                  type: string
+                elemental_balance:
+                  type: object
+                constitutional_strength:
+                  type: number
+            twelve_houses_analysis:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  house_name:
+                    type: string
+                  reading:
+                    type: string
+                  health_indicators:
+                    type: array
+                    items:
+                      type: string
+                  personality_traits:
+                    type: array
+                    items:
+                      type: string
+                  life_areas:
+                    type: array
+                    items:
+                      type: string
+            five_elements_assessment:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  element_name:
+                    type: string
+                  strength:
+                    type: number
+                  characteristics:
+                    type: array
+                    items:
+                      type: string
+                  health_correlations:
+                    type: array
+                    items:
+                      type: string
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+            health_indicators:
+              type: object
+              properties:
+                vitality_score:
+                  type: number
+                stress_indicators:
+                  type: array
+                  items:
+                    type: string
+                health_recommendations:
+                  type: array
+                  items:
+                    type: string
+                constitutional_vulnerabilities:
+                  type: array
+                  items:
+                    type: string
+                strengthening_practices:
+                  type: array
+                  items:
+                    type: string
+            personality_insights:
+              type: object
+              properties:
+                core_traits:
+                  type: array
+                  items:
+                    type: string
+                behavioral_patterns:
+                  type: array
+                  items:
+                    type: string
+                communication_style:
+                  type: string
+                decision_making_style:
+                  type: string
+                relationship_patterns:
+                  type: array
+                  items:
+                    type: string
+            integration_recommendations:
+              type: object
+              properties:
+                vedic_correlations:
+                  type: object
+                tcm_correlations:
+                  type: object
+                lifestyle_recommendations:
+                  type: array
+                  items:
+                    type: string
+                optimal_practices:
+                  type: array
+                  items:
+                    type: string
+        timestamp:
+          type: string
+          format: date-time
+        processingTime:
+          type: number
         cached:
           type: boolean
         requestId:
@@ -846,3 +1314,7 @@ tags:
     description: Predefined multi-engine consciousness analysis patterns
   - name: Authentication
     description: User authentication and account management
+  - name: Biofield
+    description: Biofield analysis and visualization
+  - name: Face Reading
+    description: Facial analysis with TCM and Vedic correlations
