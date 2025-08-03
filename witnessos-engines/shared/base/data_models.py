@@ -86,7 +86,7 @@ class BaseEngineOutput(BaseModel):
 
     # Core data
     raw_data: Dict[str, Any] = Field(default_factory=dict, description="Raw calculation results")
-    formatted_output: str = Field(..., description="Human-readable interpretation")
+    formatted_output: Union[str, Dict[str, Any]] = Field(..., description="Human-readable interpretation or structured data")
     recommendations: List[str] = Field(default_factory=list, description="Actionable guidance")
 
     # WitnessOS specific fields
