@@ -152,6 +152,8 @@ export const NumerologyEngine: React.FC<NumerologyEngineProps> = ({
   // Hooks
   const { calculateNumerology, state: apiState } = useWitnessOSAPI({
     onSuccess: data => {
+      console.log('🔍 Raw Numerology Response:', data);
+      console.log('🔍 Response Keys:', Object.keys(data || {}));
       const numerologyResult = data as NumerologyOutput;
       setResult(numerologyResult);
       

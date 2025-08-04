@@ -1,7 +1,7 @@
 /**
  * Engine Test Suite Component
  *
- * Tests all 10 consciousness engine components to verify they render and function correctly
+ * Tests all 13 consciousness engine components to verify they render and function correctly
  * This is the critical next step in Phase 5.7 - Engine Component Integration & Testing
  */
 
@@ -19,6 +19,9 @@ import {
   SigilForgeEngine,
   TarotEngine,
   VimshottariEngine,
+  VedicClockTCMEngine,
+  FaceReadingEngine,
+  BiofieldEngine,
   type EngineComponent,
 } from '@/components/consciousness-engines';
 import { OrbitControls } from '@react-three/drei';
@@ -46,7 +49,7 @@ export const EngineTestSuite: React.FC = () => {
 
   // Import API hook dynamically to avoid auto-formatting issues
   const { useWitnessOSAPI } = require('@/hooks/useWitnessOSAPI');
-  const { healthCheck, calculateNumerology, calculateTarot, calculateIChing, isConnected } =
+  const { healthCheck, calculateEngine, calculateNumerology, calculateTarot, calculateIChing, isConnected } =
     useWitnessOSAPI();
 
   // Test data for engines
@@ -94,7 +97,7 @@ export const EngineTestSuite: React.FC = () => {
       return;
     }
 
-    const apiTestEngines = ['numerology', 'tarot', 'iching'] as EngineComponent[];
+    const apiTestEngines = ['numerology', 'human_design', 'biorhythm', 'tarot', 'iching'] as EngineComponent[];
 
     for (const engine of apiTestEngines) {
       const startTime = performance.now();
@@ -121,6 +124,20 @@ export const EngineTestSuite: React.FC = () => {
               question: testData.question.text,
               method: 'three_coins',
               include_changing_lines: true,
+            });
+            break;
+          case 'human_design':
+            result = await calculateEngine('human_design', {
+              birthDate: testData.birthDate,
+              birthTime: '13:31',
+              birthLocation: [12.9629, 77.5775],
+              timezone: 'Asia/Kolkata'
+            });
+            break;
+          case 'biorhythm':
+            result = await calculateEngine('biorhythm', {
+              birthDate: testData.birthDate,
+              currentDate: new Date().toISOString().split('T')[0]
             });
             break;
           default:
@@ -168,6 +185,9 @@ export const EngineTestSuite: React.FC = () => {
       'enneagram',
       'sacred_geometry',
       'sigil_forge',
+      'vedicclock_tcm',
+      'face_reading',
+      'biofield',
     ];
 
     for (const engine of engines) {
@@ -250,6 +270,12 @@ export const EngineTestSuite: React.FC = () => {
             {...commonProps}
           />
         );
+      case 'vedicclock_tcm':
+        return <VedicClockTCMEngine birthData={testData.birthData} {...commonProps} />;
+      case 'face_reading':
+        return <FaceReadingEngine birthData={testData.birthData} {...commonProps} />;
+      case 'biofield':
+        return <BiofieldEngine birthData={testData.birthData} {...commonProps} />;
       default:
         return null;
     }

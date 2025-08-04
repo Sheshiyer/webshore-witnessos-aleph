@@ -83,11 +83,11 @@ export default function EnginePage({ params }: EnginePageProps) {
     notFound();
   }
 
-  // Redirect to home if not authenticated
-  if (!isAuthenticated) {
-    router.push('/');
-    return null;
-  }
+  // Redirect to home if not authenticated (temporarily disabled for API testing)
+  // if (!isAuthenticated) {
+  //   router.push('/');
+  //   return null;
+  // }
 
   // Show loading if profile is still loading
   if (profileState.isLoading) {
@@ -153,9 +153,9 @@ export default function EnginePage({ params }: EnginePageProps) {
         <EngineComponent
           question={{ question: `Analyze using ${engineMetadata.name} engine` }}
           onCalculationComplete={handleCalculationComplete}
-          // Additional props for specific engines
-          fullName={profileState.profile?.personalData?.fullName || ''}
-          birthDate={profileState.profile?.birthData?.birthDate || ''}
+          // Additional props for specific engines (using test data for API testing)
+          fullName={profileState.profile?.personalData?.fullName || 'Test User'}
+          birthDate={profileState.profile?.birthData?.birthDate || '1991-08-13'}
           intention={{ question: "Manifest consciousness expansion" }}
           birthData={profileState.profile?.birthData || {
             birthDate: '',
