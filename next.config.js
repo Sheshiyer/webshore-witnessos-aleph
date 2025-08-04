@@ -16,7 +16,7 @@ const nextConfig = {
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://webshore-witnessos-aleph-production.up.railway.app',
     NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT || 'production',
     NEXT_PUBLIC_FALLBACK_MODE: process.env.NEXT_PUBLIC_FALLBACK_MODE || 'true',
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://witnessos.space'

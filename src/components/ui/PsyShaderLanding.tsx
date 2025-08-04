@@ -22,13 +22,8 @@ const audioVSStyles = `
   }
 `;
 
-// Demo track URLs from the audio-vs example
-const demoTracks = [
-  { name: 'MERKABA', url: 'https://assets.codepen.io/7558/Merkaba.mp3' },
-  { name: 'DHAMIKA', url: 'https://assets.codepen.io/7558/Dhamika.mp3' },
-  { name: 'VACANT', url: 'https://assets.codepen.io/7558/Vacant.mp3' },
-  { name: 'LXSTNGHT', url: 'https://assets.codepen.io/7558/lxstnght-back_1.mp3' }
-];
+// Demo track - only Merkanba as requested
+const demoTrack = { name: 'MERKABA', url: 'https://assets.codepen.io/7558/Merkaba.mp3' };
 
 
 
@@ -295,31 +290,11 @@ export default function PsyShaderLanding() {
 
 
 
-  // Audio file handling
-  const handleAudioFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !audioRef.current) return;
-
-    const url = URL.createObjectURL(file);
-    audioRef.current.src = url;
-
-    if (!isAudioInitialized) {
-      initAudio().then(() => {
-        if (audioRef.current) {
-          connectAudioElement(audioRef.current);
-          startAnalysis();
-        }
-      });
-    } else {
-      connectAudioElement(audioRef.current);
-      startAnalysis();
-    }
-  }, [isAudioInitialized, initAudio, connectAudioElement, startAnalysis]);
-
-  const loadDemoTrack = useCallback((url: string) => {
+  // Load the Merkanba demo track automatically
+  const loadMerkanbaTrack = useCallback(() => {
     if (!audioRef.current) return;
 
-    audioRef.current.src = url;
+    audioRef.current.src = demoTrack.url;
     audioRef.current.crossOrigin = 'anonymous';
 
     if (!isAudioInitialized) {
@@ -327,15 +302,15 @@ export default function PsyShaderLanding() {
         if (audioRef.current) {
           connectAudioElement(audioRef.current);
           startAnalysis();
-          audioRef.current.play().catch(console.error);
         }
       });
     } else {
       connectAudioElement(audioRef.current);
       startAnalysis();
-      audioRef.current.play().catch(console.error);
     }
   }, [isAudioInitialized, initAudio, connectAudioElement, startAnalysis]);
+
+
 
   const enableMicrophone = useCallback(async () => {
     try {
@@ -573,59 +548,34 @@ export default function PsyShaderLanding() {
             gap: '1rem'
           }}
         >
-          {/* Demo Tracks */}
+          {/* Demo Track */}
           <div>
-            <span style={{ color: '#b8a99a', marginRight: '1rem' }}>DEMO TRACKS:</span>
-            {demoTracks.map((track, index) => (
-              <button
-                key={index}
-                onClick={() => loadDemoTrack(track.url)}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid rgba(255, 107, 53, 0.3)',
-                  color: '#f3ede9',
-                  padding: '0.25rem 0.5rem',
-                  marginRight: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  textTransform: 'uppercase'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                {track.name}
-              </button>
-            ))}
-          </div>
-
-          {/* File Upload and Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <input
-              type="file"
-              accept="audio/*"
-              onChange={handleAudioFile}
-              style={{ display: 'none' }}
-              id="audio-file-input"
-            />
-            <label
-              htmlFor="audio-file-input"
+            <span style={{ color: '#b8a99a', marginRight: '1rem' }}>AUDIO:</span>
+            <button
+              onClick={loadMerkanbaTrack}
               style={{
                 backgroundColor: 'transparent',
                 border: '1px solid rgba(255, 107, 53, 0.3)',
                 color: '#f3ede9',
                 padding: '0.25rem 0.5rem',
+                marginRight: '0.5rem',
                 cursor: 'pointer',
                 fontSize: '0.75rem',
                 textTransform: 'uppercase'
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
-              UPLOAD AUDIO FILE
-            </label>
+              {demoTrack.name}
+            </button>
+          </div>
 
+          {/* Audio Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={handlePlayPause}
               style={{

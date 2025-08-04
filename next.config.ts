@@ -44,8 +44,8 @@ const nextConfig: NextConfig = {
 
   // Environment-specific configuration
   env: {
-    // Always use production backend for all environments to ensure demo login works
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space',
+    // Always use Railway backend for all environments to ensure demo login works
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://webshore-witnessos-aleph-production.up.railway.app',
   },
 
   // API proxy disabled - using production backend directly

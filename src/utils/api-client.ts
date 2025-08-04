@@ -28,8 +28,8 @@ const API_BASE_URL = getApiBaseUrl();
 const USE_TYPESCRIPT_ENGINES = process.env.USE_TYPESCRIPT_ENGINES !== 'false';
 
 // Enable fallback mode when backend is unavailable
-const isProductionBackend = API_BASE_URL.includes('api.witnessos.space') || API_BASE_URL.includes('railway.app');
-let FALLBACK_MODE = true; // Start with fallback mode enabled until backend is confirmed working
+const isProductionBackend = API_BASE_URL.includes('railway.app');
+let FALLBACK_MODE = false; // Start with real API since Railway backend is operational
 
 console.log('🔧 API Configuration:', {
   baseUrl: API_BASE_URL,

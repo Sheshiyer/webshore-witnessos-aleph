@@ -3,13 +3,23 @@
 ## 🎯 URGENT: Frontend Integration Tasks (Next 48 Hours)
 
 ### **Component Integration with Real API**
-- [ ] **Test Engine Components with Real API Data** 🔥 IMMEDIATE
-  - **Status:** API client fixed, Railway backend operational with all 13 engines
-  - **Next:** Test each engine component with real API responses
+- [x] **Test Engine Components with Real API Data** ✅ IN PROGRESS
+  - **Status:** ✅ API client fixed, ✅ Test suite updated for all 13 engines
+  - **Progress:** Enhanced EngineTestSuite with all 13 engines, added debug logging
   - **Components:** `src/components/consciousness-engines/` - All 13 engine components
   - **Target:** Verify real data integration, fix any response parsing issues
-  - **Test URL:** http://localhost:3000 (dev server running)
+  - **Test URL:** http://localhost:3000/test-engines (comprehensive test suite)
+  - **Next:** Run tests, analyze response formats, fix type mismatches
   - **Acceptance:** All engine components successfully display real calculation results
+
+- [ ] **Fix API Response Format Mismatches** 🔥 IMMEDIATE
+  - **Status:** Test suite ready, need to analyze actual backend response formats
+  - **Issue:** Frontend types expect different field names than backend returns
+  - **Example:** Frontend expects `lifePath` but backend returns `life_path_number`
+  - **Components:** All engine components, type definitions in `src/types/engines.ts`
+  - **Target:** Update types or add response transformation layer
+  - **Test Method:** Use debug logs in NumerologyEngine and test suite
+  - **Acceptance:** All engines display real data without type errors
 
 - [ ] **Update Engine Result Display Components**
   - **Missing:** Real API integration for engine cards, result displays

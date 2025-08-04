@@ -23,7 +23,7 @@ export class APIHealthChecker {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space';
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webshore-witnessos-aleph-production.up.railway.app';
   }
 
   static getInstance(): APIHealthChecker {
@@ -161,7 +161,7 @@ export class APIHealthChecker {
     // Test each endpoint
     for (const endpoint of endpoints) {
       const originalBaseUrl = this.baseUrl;
-      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.witnessos.space';
+      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webshore-witnessos-aleph-production.up.railway.app';
       
       try {
         const result = await this.checkHealth(5000);

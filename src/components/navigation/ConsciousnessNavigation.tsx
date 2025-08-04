@@ -98,8 +98,8 @@ export default function ConsciousnessNavigation() {
     setIsOpen(false);
   };
 
-  // Don't render anything if loading or not admin
-  if (isLoading || !isAuthenticated || !isAdmin) {
+  // Don't render anything if loading (temporarily allow non-admin for testing)
+  if (isLoading) {
     return null;
   }
 
