@@ -91,7 +91,7 @@ class EnneagramResonator(BaseEngine):
         center_data = self.enneagram_data.centers[center_name.lower()]
         return EnneagramCenter(**center_data)
     
-    def _identify_type_from_assessment(self, responses: Dict[str, str]) -> tuple[int, float]:
+    def _identify_type_from_assessment(self, assessment_responses: Dict[str, str]) -> tuple[int, float]:
         """
         Identify type from assessment responses.
         
@@ -101,7 +101,7 @@ class EnneagramResonator(BaseEngine):
         # Simple scoring algorithm - count responses for each type
         type_scores = {i: 0 for i in range(1, 10)}
         
-        for question_id, response in responses.items():
+        for question_id, response in assessment_responses.items():
             # Extract type number from response (assuming response format like "1", "2", etc.)
             try:
                 type_num = int(response)

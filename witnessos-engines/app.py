@@ -337,8 +337,14 @@ async def calculate_engine(engine_name: str, request: EngineRequest):
             )
         elif engine_name == "enneagram":
             input_obj = EnneagramInput(
-                responses=request.input["responses"],
-                birth_date=date_class.fromisoformat(request.input["birth_date"]) if request.input.get("birth_date") else None
+                identification_method=request.input.get("identification_method", "assessment"),
+                assessment_responses=request.input.get("assessment_responses"),
+                selected_type=request.input.get("selected_type"),
+                behavioral_description=request.input.get("behavioral_description"),
+                include_wings=request.input.get("include_wings", True),
+                include_instincts=request.input.get("include_instincts", True),
+                include_arrows=request.input.get("include_arrows", True),
+                focus_area=request.input.get("focus_area")
             )
         elif engine_name == "sacred_geometry":
             input_obj = SacredGeometryInput(
@@ -549,8 +555,14 @@ async def get_engine_metadata(engine_name: str):
             "description": "Personality type analysis with wings, instincts, and growth paths",
             "version": "2.5.0",
             "inputs": {
-                "responses": {"type": "array", "items": "object", "required": True, "description": "Array of question responses"},
-                "birth_date": {"type": "string", "format": "date", "required": False, "description": "Birth date for additional insights"}
+                "identification_method": {"type": "string", "enum": ["assessment", "self_select", "intuitive"], "required": True, "description": "Method for type identification"},
+                "assessment_responses": {"type": "object", "required": False, "description": "Assessment question responses (required for assessment method)"},
+                "selected_type": {"type": "integer", "minimum": 1, "maximum": 9, "required": False, "description": "Pre-selected type (required for self_select method)"},
+                "behavioral_description": {"type": "string", "required": False, "description": "Behavioral description (required for intuitive method)"},
+                "include_wings": {"type": "boolean", "default": True, "description": "Include wing analysis"},
+                "include_instincts": {"type": "boolean", "default": True, "description": "Include instinctual variant analysis"},
+                "include_arrows": {"type": "boolean", "default": True, "description": "Include integration/disintegration arrows"},
+                "focus_area": {"type": "string", "required": False, "description": "Specific area of focus for analysis"}
             },
             "outputs": ["type", "wing", "instinct", "growth_path", "stress_path"],
             "calculation_time": "~1-2 seconds",
