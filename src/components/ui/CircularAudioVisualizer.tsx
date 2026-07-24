@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 
 interface CircularAudioVisualizerProps {
   frequencyData: Uint8Array;
@@ -9,6 +9,29 @@ interface CircularAudioVisualizerProps {
   sensitivity: number;
 }
 
+// Performance optimization constants
+const PERFORMANCE_CONFIG = {
+  HIGH_PERFORMANCE: { numRings: 3, numPoints: 180, updateInterval: 16 },
+  MEDIUM_PERFORMANCE: { numRings: 2, numPoints: 120, updateInterval: 33 },
+  LOW_PERFORMANCE: { numRings: 1, numPoints: 60, updateInterval: 50 },
+};
+
+// Detect device performance level
+const getPerformanceLevel = () => {
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+  if (!gl) return 'LOW_PERFORMANCE';
+
+  const renderer = gl.getParameter(gl.RENDERER);
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isLowEnd = isMobile || renderer.includes('Intel') || renderer.includes('Software');
+
+  if (isLowEnd) return 'LOW_PERFORMANCE';
+  if (isMobile) return 'MEDIUM_PERFORMANCE';
+  return 'HIGH_PERFORMANCE';
+};
+
 export const CircularAudioVisualizer: React.FC<CircularAudioVisualizerProps> = ({
   frequencyData,
   audioLevel,
@@ -18,6 +41,9 @@ export const CircularAudioVisualizer: React.FC<CircularAudioVisualizerProps> = (
   sensitivity
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastRenderTime = useRef<number>(0);
+  const performanceLevel = useMemo(() => getPerformanceLevel(), []);
+  const config = PERFORMANCE_CONFIG[performanceLevel as keyof typeof PERFORMANCE_CONFIG];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,9 +66,13 @@ export const CircularAudioVisualizer: React.FC<CircularAudioVisualizerProps> = (
     };
   }, []);
 
-  useEffect(() => {
+  const renderVisualization = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const now = performance.now();
+    if (now - lastRenderTime.current < config.updateInterval) return;
+    lastRenderTime.current = now;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -57,9 +87,8 @@ export const CircularAudioVisualizer: React.FC<CircularAudioVisualizerProps> = (
 
     if (frequencyData.length === 0) return;
 
-    // Draw multiple rings for different frequency ranges
-    const numRings = 3;
-    const numPoints = 180;
+    // Use performance-optimized settings
+    const { numRings, numPoints } = config;
 
     for (let ring = 0; ring < numRings; ring++) {
       const ringRadius = baseRadius * (0.6 + ring * 0.2);
@@ -143,7 +172,12 @@ export const CircularAudioVisualizer: React.FC<CircularAudioVisualizerProps> = (
     ctx.fillStyle = pulseGradient;
     ctx.fill();
 
-  }, [frequencyData, audioLevel, bassLevel, midLevel, trebleLevel, sensitivity]);
+  }, [frequencyData, audioLevel, bassLevel, midLevel, trebleLevel, sensitivity, config]);
+
+  // Use the optimized render function
+  useEffect(() => {
+    renderVisualization();
+  }, [renderVisualization]);
 
   return (
     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-5">

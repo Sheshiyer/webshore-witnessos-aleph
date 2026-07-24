@@ -3,6 +3,37 @@ import * as THREE from 'three';
 import { gsap } from 'gsap';
 import CircularAudioVisualizer from './CircularAudioVisualizer';
 
+// Performance monitoring
+class PerformanceMonitor {
+  private frameCount = 0;
+  private lastTime = performance.now();
+  private fps = 60;
+
+  update() {
+    this.frameCount++;
+    const now = performance.now();
+
+    if (now - this.lastTime >= 1000) {
+      this.fps = Math.round((this.frameCount * 1000) / (now - this.lastTime));
+      this.frameCount = 0;
+      this.lastTime = now;
+
+      // Log performance warnings
+      if (this.fps < 30) {
+        console.warn('🐌 Audio visualization performance below 30fps:', this.fps);
+      }
+    }
+
+    return this.fps;
+  }
+
+  getFPS() {
+    return this.fps;
+  }
+}
+
+const performanceMonitor = new PerformanceMonitor();
+
 // Audio-VS Aesthetic CSS Variables
 const audioVSStyles = `
   :root {
@@ -253,19 +284,33 @@ export default function PsyShaderLanding() {
     rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    // Animation loop
+    // Performance-optimized animation loop
     let animationId: number;
+    let lastFrameTime = performance.now();
+
     const animate = () => {
+      const now = performance.now();
+      const deltaTime = now - lastFrameTime;
+
+      // Monitor performance
+      const fps = performanceMonitor.update();
+
+      // Adaptive quality based on performance
+      const performanceScale = fps < 30 ? 0.5 : fps < 45 ? 0.75 : 1.0;
+
       if (anomalyRef.current && material) {
-        material.uniforms.time.value = performance.now() * 0.001;
+        material.uniforms.time.value = now * 0.001;
         material.uniforms.audioLevel.value = audioData.audioLevel;
         material.uniforms.bassLevel.value = audioData.bassLevel;
 
-        anomalyRef.current.rotation.x += 0.01 * (1 + audioData.audioLevel);
-        anomalyRef.current.rotation.y += 0.01 * (1 + audioData.bassLevel);
+        // Scale rotation speed based on performance
+        const rotationSpeed = 0.01 * performanceScale;
+        anomalyRef.current.rotation.x += rotationSpeed * (1 + audioData.audioLevel);
+        anomalyRef.current.rotation.y += rotationSpeed * (1 + audioData.bassLevel);
       }
 
       renderer.render(scene, camera);
+      lastFrameTime = now;
       animationId = requestAnimationFrame(animate);
     };
     animate();

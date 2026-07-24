@@ -18,6 +18,8 @@ import SigilForgeEngineComponent from './SigilForgeEngine';
 import TarotEngineComponent from './TarotEngine';
 import VimshottariEngineComponent from './VimshottariEngine';
 import VedicClockTCMEngineComponent from './VedicClockTCMEngine';
+import FaceReadingEngineComponent from './FaceReadingEngine';
+import BiofieldEngineComponent from './BiofieldEngine';
 import { NadaBrahmanEngine as NadaBrahmanEngineComponent } from './NadaBrahmanEngine';
 
 // Re-export with consistent names
@@ -34,6 +36,8 @@ export {
   TarotEngineComponent as TarotEngine,
   VimshottariEngineComponent as VimshottariEngine,
   VedicClockTCMEngineComponent as VedicClockTCMEngine,
+  FaceReadingEngineComponent as FaceReadingEngine,
+  BiofieldEngineComponent as BiofieldEngine,
   NadaBrahmanEngineComponent as NadaBrahmanEngine,
 };
 
@@ -49,7 +53,9 @@ export type EngineComponent =
   | 'enneagram'
   | 'sacred_geometry'
   | 'sigil_forge'
-  | 'vedicclock_tcm';
+  | 'vedicclock_tcm'
+  | 'face_reading'
+  | 'biofield';
 
 // Engine metadata for discovery layer integration
 export const ENGINE_METADATA = {
@@ -141,6 +147,22 @@ export const ENGINE_METADATA = {
     frequency: 432, // Sacred frequency for consciousness integration
     element: 'time',
   },
+  face_reading: {
+    name: 'Face Reading Engine',
+    description: 'Facial feature analysis for consciousness mapping',
+    layer: 2, // Recognition layer
+    color: '#FFB6C1', // Light pink for facial analysis
+    frequency: 396,
+    element: 'biometric',
+  },
+  biofield: {
+    name: 'Biofield Engine',
+    description: 'Energy field visualization and analysis',
+    layer: 3, // Integration layer
+    color: '#00CED1', // Dark turquoise for energy fields
+    frequency: 528,
+    element: 'energy',
+  },
 } as const;
 
 // Helper function to get engines by discovery layer
@@ -168,14 +190,16 @@ export const ENGINE_COMPONENTS = {
   sacred_geometry: SacredGeometryEngineComponent,
   sigil_forge: SigilForgeEngineComponent,
   vedicclock_tcm: VedicClockTCMEngineComponent,
+  face_reading: FaceReadingEngineComponent,
+  biofield: BiofieldEngineComponent,
 } as const;
 
 // Discovery layer engine distribution
 export const LAYER_ENGINES = {
   0: [], // Portal layer - no engines, just entry
   1: ['sacred_geometry', 'biorhythm'], // Awakening - foundational patterns
-  2: ['numerology', 'vimshottari', 'tarot', 'iching'], // Recognition - system understanding
-  3: ['human_design', 'gene_keys', 'enneagram', 'sigil_forge', 'vedicclock_tcm'], // Integration - personal mastery
+  2: ['numerology', 'vimshottari', 'tarot', 'iching', 'face_reading'], // Recognition - system understanding
+  3: ['human_design', 'gene_keys', 'enneagram', 'sigil_forge', 'vedicclock_tcm', 'biofield'], // Integration - personal mastery
 } as const;
 
 // Consciousness frequency mapping for engine harmonics
@@ -193,6 +217,8 @@ export const ENGINE_ELEMENTS = {
   evolution: ['gene_keys'],
   personality: ['enneagram'],
   intention: ['sigil_forge'],
+  biometric: ['face_reading'],
+  energy: ['biofield'],
 } as const;
 
 export default {
@@ -208,6 +234,8 @@ export default {
   SacredGeometryEngine: SacredGeometryEngineComponent,
   SigilForgeEngine: SigilForgeEngineComponent,
   VedicClockTCMEngine: VedicClockTCMEngineComponent,
+  FaceReadingEngine: FaceReadingEngineComponent,
+  BiofieldEngine: BiofieldEngineComponent,
   BreathDetection: BreathDetectionComponent,
 
   // Metadata

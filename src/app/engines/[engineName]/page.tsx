@@ -70,11 +70,34 @@ interface EnginePageProps {
 }
 
 export default function EnginePage({ params }: EnginePageProps) {
+  return <EnginePageClient params={params} />;
+}
+
+function EnginePageClient({ params }: EnginePageProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const profileState = useConsciousnessProfile();
-  
-  const engineName = params.engineName as EngineName;
+
+  const [engineName, setEngineName] = React.useState<EngineName | null>(null);
+
+  React.useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setEngineName(resolvedParams.engineName as EngineName);
+    };
+    resolveParams();
+  }, [params]);
+  // Show loading while resolving params
+  if (!engineName) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-cyan-300 text-xl font-mono">Loading Engine...</div>
+        </div>
+      </div>
+    );
+  }
+
   const EngineComponent = ENGINE_COMPONENTS[engineName];
   const engineMetadata = ENGINE_METADATA[engineName];
 

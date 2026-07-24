@@ -59,12 +59,12 @@ export class ForecastSession extends DurableObject<ForecastSessionEnv> {
     super(state, env);
     
     // Keep WebSocket connections alive
-    this.ctx.setWebSocketAutoResponse(
+    this.state.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair("ping", "pong")
     );
     
     // Restore active sessions from storage on startup
-    this.ctx.blockConcurrencyWhile(async () => {
+    this.state.blockConcurrencyWhile(async () => {
       await this.restoreActiveSessions();
     });
   }

@@ -79,62 +79,13 @@ interface ErrorResponse {
   requestId?: string;
 }
 
-// Forecast API Types
-interface DailyForecast {
-  date: string;
-  energyProfile: {
-    biorhythm: any;
-    overallEnergy: 'high' | 'medium' | 'low';
-    criticalDays: string[];
-    trend: string;
-  };
-  guidance: {
-    iching: any;
-    tarot: any;
-    synthesis: string;
-  };
-  recommendations: {
-    optimal_activities: string[];
-    timing_suggestions: string[];
-    awareness_points: string[];
-  };
-  raycastOptimized?: {
-    summary: string;
-    icon: string;
-    subtitle: string;
-    actions: string[];
-  };
-}
-
-interface WeeklyForecast {
-  week: {
-    start: string;
-    end: string;
-    weekNumber: number;
-  };
-  dailyForecasts: DailyForecast[];
-  weeklyThemes: {
-    dominantEnergy: string;
-    challenges: string[];
-    opportunities: string[];
-    overallGuidance: string;
-  };
-  engineInsights: {
-    numerology?: any;
-    biorhythm: any;
-    vimshottari?: any;
-  };
-  raycastOptimized?: {
-    weekSummary: string;
-    dailyHighlights: string[];
-    keyActions: string[];
-  };
-}
+// Using imported forecast types from ../types/forecast
 
 export class WitnessOSAPIHandler {
   private kvData: any; // CloudflareKVDataAccess - simplified for now
   private authService: AuthService;
   private aiInterpreter?: any; // Will be initialized if OpenRouter API key is available
+  private db: any; // Database instance
   private corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -422,12 +373,18 @@ export class WitnessOSAPIHandler {
 
       if (path.startsWith('/timeline/entry/') && method === 'PUT') {
         const entryId = path.split('/')[3];
-        return await this.handleUpdateTimelineEntry(request, requestId, entryId);
+        if (entryId) {
+          return await this.handleUpdateTimelineEntry(request, requestId, entryId);
+        }
+        return this.createErrorResponse(400, 'MISSING_ENTRY_ID', 'Timeline entry ID required', requestId);
       }
 
       if (path.startsWith('/timeline/entry/') && method === 'DELETE') {
         const entryId = path.split('/')[3];
-        return await this.handleDeleteTimelineEntry(request, requestId, entryId);
+        if (entryId) {
+          return await this.handleDeleteTimelineEntry(request, requestId, entryId);
+        }
+        return this.createErrorResponse(400, 'MISSING_ENTRY_ID', 'Timeline entry ID required', requestId);
       }
 
       if (path.startsWith('/profiles/')) {
@@ -1279,12 +1236,12 @@ export class WitnessOSAPIHandler {
     const guidance: ForecastGuidance = {
       iching: ichingResult ? {
               hexagram: ichingResult.data?.rawData?.hexagram || ichingResult.data?.hexagram,
-              interpretation: ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput,
+              interpretation: String(ichingResult.data?.rawData?.interpretation || ichingResult.data?.formattedOutput || ''),
               changingLines: ichingResult.data?.rawData?.changingLines || ichingResult.data?.changingLines
             } : undefined,
       tarot: tarotResult ? {
          card: tarotResult.data?.rawData?.card || tarotResult.data?.card,
-              interpretation: tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput,
+              interpretation: String(tarotResult.data?.rawData?.interpretation || tarotResult.data?.formattedOutput || ''),
         focusArea: 'daily_guidance'
       } : undefined,
       synthesis,
@@ -1299,7 +1256,7 @@ export class WitnessOSAPIHandler {
       energyProfile,
       guidance,
       recommendations,
-      predictiveInsights
+      ...(predictiveInsights && { predictiveInsights })
     };
 
     // Add Raycast optimization if requested
@@ -1347,7 +1304,7 @@ export class WitnessOSAPIHandler {
       overallEnergy: energyLevel,
       criticalDays: biorhythmResult.critical_days_ahead || [],
       trend,
-      optimalTiming
+      ...(optimalTiming && { optimalTiming })
     };
   }
 
@@ -2081,9 +2038,9 @@ export class WitnessOSAPIHandler {
       markdown += `\n## 📈 Predictive Insights\n`;
       markdown += `**Trend:** ${forecast.predictiveInsights.trendAnalysis.direction} (${(forecast.predictiveInsights.trendAnalysis.confidence * 100).toFixed(0)}% confidence)\n\n`;
 
-      if (forecast.predictiveInsights.criticalPeriods.length > 0) {
+      if (forecast.predictiveInsights.criticalPeriods && forecast.predictiveInsights.criticalPeriods.length > 0) {
         markdown += `**Critical Periods:**\n`;
-        forecast.predictiveInsights.criticalPeriods.forEach(period => {
+        forecast.predictiveInsights.criticalPeriods.forEach((period: { date: string; description: string }) => {
           markdown += `- ${period.date}: ${period.description}\n`;
         });
       }
@@ -2185,7 +2142,7 @@ export class WitnessOSAPIHandler {
   }
 
   // Enhanced Daily Workflow Helper Methods
-  private generateWorkflowRecommendations(energyProfile: any, ichingResult: any, tarotResult: any): string[] {
+  private generateWorkflowRecommendations(energyProfile: EnergyProfile, ichingResult: IChingResult | null, tarotResult: TarotResult | null): string[] {
     const recommendations: string[] = [];
 
     // Energy-based recommendations
@@ -2237,7 +2194,7 @@ export class WitnessOSAPIHandler {
     return recommendations.slice(0, 6); // Limit to 6 recommendations
   }
 
-  private async generateBasicSynthesis(results: any[], date: string, requestId: string): Promise<string> {
+  private async generateBasicSynthesis(results: EngineResult[], date: string, requestId: string): Promise<string> {
     // Try AI synthesis first
     if (this.aiInterpreter) {
       try {
@@ -3446,140 +3403,10 @@ export class WitnessOSAPIHandler {
     }
   }
 
-  // Forecast API Handlers
-  private async handleDailyForecast(request: Request, requestId: string, targetDate?: string): Promise<Response> {
-    try {
-      // Get user from authentication
-      const authResult = await this.authenticateRequest(request);
-      if (!authResult.success || !authResult.user) {
-        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for forecast', requestId);
-      }
-
-      const user = authResult.user;
-      const date = targetDate || new Date().toISOString().split('T')[0];
-
-      // Check cache first
-      const cachedForecast = await this.kvData.getDailyForecastCache(user.id.toString(), date);
-      if (cachedForecast) {
-        console.log(`[${requestId}] Daily forecast cache hit for ${date}`);
-        return this.createResponse(200, {}, {
-          forecast: cachedForecast.forecast,
-          cached: true,
-          cachedAt: cachedForecast.cachedAt,
-          requestId,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Get user profile for birth data
-      const userProfile = await this.getUserProfileFromAuth(user);
-      if (!userProfile) {
-        return this.createErrorResponse(400, 'PROFILE_REQUIRED', 'User profile with birth data required for forecast', requestId);
-      }
-
-      // Generate daily forecast
-      const forecast = await this.generateDailyForecast(userProfile, date, requestId);
-
-      // Cache the forecast
-      await this.kvData.setDailyForecastCache(user.id.toString(), date, forecast);
-
-      // Create timeline entry
-      await this.createTimelineEntry(
-        user.id.toString(),
-        'forecast_daily',
-        { date, userProfile },
-        forecast,
-        {
-          confidence: 85, // Daily forecasts have good confidence
-          cached: false,
-          requestId,
-          source: 'api'
-        }
-      );
-
-      return this.createResponse(200, {}, {
-        forecast,
-        cached: false,
-        requestId,
-        timestamp: new Date().toISOString()
-      });
-
-    } catch (error) {
-      console.error(`[${requestId}] Daily forecast failed:`, error);
-      return this.createErrorResponse(500, 'DAILY_FORECAST_FAILED', 'Daily forecast generation failed', requestId);
-    }
+  // Forecast API Handlers - Main implementation
   }
 
-  private async generateDailyForecast(userProfile: any, targetDate: string, requestId: string): Promise<DailyForecast> {
-    const dailyQuestion = `What guidance and energy insights do I need for ${targetDate}?`;
-
-    // Execute enhanced daily forecast calculations
-    const calculations = [
-      {
-        engine: 'biorhythm' as const,
-        input: {
-          birthDate: userProfile.birthDate,
-          targetDate: targetDate,
-          forecast_days: 7,
-          include_extended_cycles: true
-        }
-      },
-      {
-        engine: 'iching' as const,
-        input: {
-          question: dailyQuestion,
-          method: 'random',
-          includeChangingLines: true
-        }
-      },
-      {
-        engine: 'tarot' as const,
-        input: {
-          question: dailyQuestion,
-          spreadType: 'single_card',
-          focusArea: 'daily_guidance'
-        }
-      }
-    ];
-
-    const results = await Promise.all(
-      calculations.map(async calc => {
-        try {
-          const result = await calculateEngine(calc.engine, calc.input);
-          return { engine: calc.engine, success: true, data: result };
-        } catch (error) {
-          console.error(`[${requestId}] Engine ${calc.engine} failed:`, error);
-          return { engine: calc.engine, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-        }
-      })
-    );
-
-    // Extract successful results
-    const biorhythmResult = results.find(r => r.engine === 'biorhythm' && r.success)?.data;
-    const ichingResult = results.find(r => r.engine === 'iching' && r.success)?.data;
-    const tarotResult = results.find(r => r.engine === 'tarot' && r.success)?.data;
-
-    // Analyze energy profile
-    const energyProfile = this.analyzeEnergyProfile(biorhythmResult, targetDate);
-
-    // Generate synthesis
-    const synthesis = await this.generateForecastSynthesis(biorhythmResult, ichingResult, tarotResult, targetDate, requestId);
-
-    // Generate recommendations
-    const recommendations = this.generateForecastRecommendations(biorhythmResult, ichingResult, tarotResult);
-
-    return {
-      date: targetDate,
-      energyProfile,
-      guidance: {
-        iching: ichingResult,
-        tarot: tarotResult,
-        synthesis
-      },
-      recommendations
-    };
-  }
-
+  // Helper methods for forecast generation
   private analyzeEnergyProfile(biorhythmResult: any, targetDate: string): DailyForecast['energyProfile'] {
     if (!biorhythmResult) {
       return {
@@ -5492,6 +5319,65 @@ export class WitnessOSAPIHandler {
   }
 
   // Timeline API Handlers
+  private async handleUpdateTimelineEntry(request: Request, requestId: string, entryId: string): Promise<Response> {
+    try {
+      const authResult = await this.authenticateRequest(request);
+      if (!authResult.success || !authResult.user) {
+        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for timeline update', requestId);
+      }
+
+      const body = await request.json();
+      const { updates } = body;
+
+      if (!updates) {
+        return this.createErrorResponse(400, 'MISSING_UPDATES', 'Updates object required', requestId);
+      }
+
+      const result = await this.kvData.updateTimelineEntry(entryId, authResult.user.id.toString(), updates);
+
+      if (!result.success) {
+        return this.createErrorResponse(400, 'UPDATE_FAILED', result.error || 'Failed to update timeline entry', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        message: 'Timeline entry updated successfully',
+        entryId,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Update timeline entry failed:`, error);
+      return this.createErrorResponse(500, 'TIMELINE_UPDATE_FAILED', 'Failed to update timeline entry', requestId);
+    }
+  }
+
+  private async handleDeleteTimelineEntry(request: Request, requestId: string, entryId: string): Promise<Response> {
+    try {
+      const authResult = await this.authenticateRequest(request);
+      if (!authResult.success || !authResult.user) {
+        return this.createErrorResponse(401, 'AUTHENTICATION_REQUIRED', 'Authentication required for timeline deletion', requestId);
+      }
+
+      const result = await this.kvData.deleteTimelineEntry(entryId, authResult.user.id.toString());
+
+      if (!result.success) {
+        return this.createErrorResponse(400, 'DELETE_FAILED', result.error || 'Failed to delete timeline entry', requestId);
+      }
+
+      return this.createResponse(200, {}, {
+        message: 'Timeline entry deleted successfully',
+        entryId,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error(`[${requestId}] Delete timeline entry failed:`, error);
+      return this.createErrorResponse(500, 'TIMELINE_DELETE_FAILED', 'Failed to delete timeline entry', requestId);
+    }
+  }
+
   private async handleGetTimeline(request: Request, requestId: string): Promise<Response> {
     try {
       const authResult = await this.authenticateRequest(request);

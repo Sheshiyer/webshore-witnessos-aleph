@@ -16,7 +16,12 @@
     "deploy:enhanced": "./scripts/deploy-enhanced-architecture.sh production",
     "deploy:enhanced:staging": "./scripts/deploy-enhanced-architecture.sh staging",
     "deploy:enhanced:dev": "./scripts/deploy-enhanced-architecture.sh development",
-    "migrate:rollback": "./scripts/migrate-to-enhanced-architecture.sh rollback"
+    "migrate:rollback": "./scripts/migrate-to-enhanced-architecture.sh rollback",
+    "agent": "tsx src/cli/agent-cli.ts",
+    "agent:init": "tsx src/cli/agent-cli.ts init",
+    "agent:execute": "tsx src/cli/agent-cli.ts execute",
+    "agent:status": "tsx src/cli/agent-cli.ts status",
+    "agent:interactive": "tsx src/cli/agent-cli.ts interactive"
   },
   "dependencies": {
     "@react-three/drei": "^10.5.0",
@@ -26,17 +31,23 @@
     "astronomy-engine": "^2.1.19",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.2",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
     "ephemeris": "^2.0.0",
     "framer-motion": "^12.23.3",
     "gsap": "^3.13.0",
+    "inquirer": "^8.2.6",
     "jose": "^6.0.12",
     "next": "^15.3.5",
+    "ora": "^5.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.11",
-    "three": "^0.178.0"
+    "three": "^0.178.0",
+    "tsx": "^4.20.3"
   },
   "devDependencies": {
+    "@types/inquirer": "^9.0.7",
     "@types/node": "24.0.13",
     "@types/react": "19.1.8",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
@@ -44,6 +55,10 @@
     "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.5",
     "prettier": "^3.6.2",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "wrangler": "^3.78.12"
+  },
+  "bin": {
+    "witnessos-agent": "./src/cli/agent-cli.ts"
   }
 }

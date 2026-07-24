@@ -97,6 +97,22 @@ export interface SacredGeometry {
   platonicSolid?: string;
 }
 
+// Engine name type definition
+export type EngineName = 
+  | 'numerology'
+  | 'human_design'
+  | 'biorhythm'
+  | 'vimshottari'
+  | 'tarot'
+  | 'iching'
+  | 'gene_keys'
+  | 'enneagram'
+  | 'sacred_geometry'
+  | 'sigil_forge'
+  | 'face_reading'
+  | 'biofield'
+  | 'vedicclock_tcm';
+
 // Consciousness state types
 export interface ConsciousnessState {
   awarenessLevel: number; // 0.0 - 1.0

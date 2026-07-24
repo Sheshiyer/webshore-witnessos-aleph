@@ -150,19 +150,27 @@ export default function AudioReactiveEngineInterface({
     return Math.min(1, resonance);
   }, [engineKey]);
 
-  // Animation loop
+  // Optimized animation loop with frame rate limiting
   const animate = useCallback(() => {
     if (!isActive || !isAudioInitialized) return;
+
+    // Limit to 30fps for audio analysis (sufficient for most audio visualization)
+    const now = performance.now();
+    const lastFrameTime = animationFrameRef.current || 0;
+    if (now - lastFrameTime < 33.33) { // ~30fps
+      requestAnimationFrame(animate);
+      return;
+    }
 
     const currentAudioData = analyzeAudio();
     if (currentAudioData) {
       setAudioData(currentAudioData);
-      
+
       const resonance = calculateEngineResonance(currentAudioData);
       setEngineResonance(resonance);
 
-      // Trigger engine interaction on significant frequency peaks
-      if (resonance > 0.7 && onEngineInteraction) {
+      // Trigger engine interaction on significant frequency peaks (throttled)
+      if (resonance > 0.7 && onEngineInteraction && now - lastFrameTime > 100) { // Max 10 interactions per second
         onEngineInteraction({
           type: 'harmonic_resonance',
           frequency: currentAudioData.dominantFrequency,
@@ -173,7 +181,8 @@ export default function AudioReactiveEngineInterface({
       }
     }
 
-    animationFrameRef.current = requestAnimationFrame(animate);
+    animationFrameRef.current = now;
+    requestAnimationFrame(animate);
   }, [isActive, isAudioInitialized, analyzeAudio, calculateEngineResonance, onEngineInteraction]);
 
   // Start/stop animation

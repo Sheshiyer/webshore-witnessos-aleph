@@ -1,0 +1,12 @@
+{
+  "input": {
+    "identification_method": "assessment",
+    "assessment_responses": {
+      "1": "agree",
+      "2": "neutral",
+      "3": "disagree",
+      "4": "agree",
+      "5": "strongly_agree"
+    }
+  }
+}

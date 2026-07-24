@@ -1,9 +1,9 @@
 # PROJECT TODO - HYBRID ARCHITECTURE PIVOT
 
 ## In Progress
+- [ ] Fix remaining TypeScript compilation errors (600+ errors across multiple files)
 
 ## Pending
-- [ ] Fix remaining TypeScript compilation errors (600+ errors across multiple files)
 - [ ] Update type definitions and imports throughout the codebase
 - [ ] Resolve API handler and worker type mismatches
 - [ ] Clean up engine types that are no longer needed
@@ -11,6 +11,7 @@
 - [ ] Test that Cloudflare workers still compile without TypeScript engines
 - [ ] Update documentation to reflect Python-only engine architecture
 ## Completed (move to memory.md)
+- [DONE] Fix enneagram engine KeyError: 'responses' - updated parameter names and deployed to Railway
 - [x] Verify Python engines on Railway are still working (moved to memory.md)
 - [x] Implement FastAPI endpoints for all consciousness engines (10 engines: human_design, numerology, biorhythm, vimshottari, tarot, iching, gene_keys, enneagram, sacred_geometry, sigil_forge)
 - [x] Update project constants with Railway production URL

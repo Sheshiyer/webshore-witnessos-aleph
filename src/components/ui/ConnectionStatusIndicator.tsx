@@ -230,13 +230,15 @@ export function useConnectionState() {
 
 // Offline mode banner component
 export function OfflineModeBanner() {
-  const { shouldShowOfflineMode, statusMessage, forceCheck } = useConnectionState();
+  const { shouldShowOfflineMode, statusMessage, forceCheck, connectionState } = useConnectionState();
   const [isClient, setIsClient] = useState(false);
 
   // Ensure this only renders on client to prevent hydration mismatch
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+
 
   // Don't render on server to prevent hydration mismatch
   if (!isClient) {

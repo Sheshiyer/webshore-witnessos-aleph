@@ -49,6 +49,14 @@ Comprehensive documentation of WitnessOS consciousness engine development, inclu
 - ✅ Verified chart generation accuracy with multiple test cases
 - ✅ Improved error handling and validation for birth data
 
+#### Enneagram Engine Input Format Fix (August 2025)
+- ✅ Fixed KeyError: 'responses' in enneagram engine calculation
+- ✅ Updated enneagram.py method signature from 'responses' to 'assessment_responses'
+- ✅ Updated app.py engine metadata to use correct input field names
+- ✅ Aligned EnneagramInput model with backend implementation
+- ✅ Deployed fixes to Railway backend via git push
+- ✅ Verified Railway automatic deployment process works correctly
+
 ### Enhanced Architecture Implementation (January 2025)
 
 #### Cloudflare-Native Microservice Architecture

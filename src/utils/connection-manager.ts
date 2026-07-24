@@ -104,16 +104,20 @@ class ConnectionManager {
       const healthResult: HealthCheckResult = await apiHealthChecker.checkHealth(5000);
 
       if (healthResult.isReachable) {
+        // Consider both 'healthy' and 'degraded' as acceptable for basic functionality
+        const isAcceptable = healthResult.status === 'healthy' || healthResult.status === 'degraded';
+
         this.updateState({
           isBackendReachable: true,
           lastSuccessfulConnection: new Date(),
           retryCount: 0,
-          error: null,
+          error: healthResult.status === 'degraded' ? 'Some services degraded but core functionality available' : null,
           mode: 'production',
         });
 
         if (!silent) {
-          console.log('✅ Backend connection successful');
+          const statusMsg = healthResult.status === 'degraded' ? 'Backend connection successful (degraded)' : 'Backend connection successful';
+          console.log('✅', statusMsg);
         }
 
         return true;
@@ -192,16 +196,31 @@ class ConnectionManager {
 
   // Subscribe to connection state changes
   subscribe(listener: (state: ConnectionState) => void): () => void {
+    const isFirstSubscriber = this.listeners.length === 0;
     this.listeners.push(listener);
-    
+
+    // Start health checks when first subscriber is added
+    if (isFirstSubscriber) {
+      console.log('🔍 Starting connection health checks...');
+      this.startHealthChecks();
+      // Do an initial check
+      this.checkBackendConnection();
+    }
+
     // Immediately notify with current state
     listener(this.state);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.listeners.indexOf(listener);
       if (index > -1) {
         this.listeners.splice(index, 1);
+      }
+
+      // Stop health checks when no more subscribers
+      if (this.listeners.length === 0) {
+        console.log('🛑 Stopping connection health checks...');
+        this.stopHealthChecks();
       }
     };
   }
@@ -246,7 +265,18 @@ class ConnectionManager {
 
   // Check if we should show offline UI
   shouldShowOfflineMode(): boolean {
-    return !this.state.isOnline || (!this.state.isBackendReachable && this.state.mode === 'offline');
+    // Show banner if browser is offline
+    if (!this.state.isOnline) {
+      return true;
+    }
+
+    // Show banner if backend is not reachable (regardless of mode)
+    if (!this.state.isBackendReachable) {
+      return true;
+    }
+
+    // Don't show banner if everything is working
+    return false;
   }
 
   // Check if we can make API requests
@@ -259,14 +289,19 @@ class ConnectionManager {
     if (!this.state.isOnline) {
       return 'No internet connection';
     }
-    
+
     if (!this.state.isBackendReachable) {
       if (this.state.retryCount > 0) {
         return `Backend offline (retrying ${this.state.retryCount}/${this.options.maxRetries})`;
       }
       return 'Backend temporarily unavailable';
     }
-    
+
+    // Check if we have a degraded status
+    if (this.state.error && this.state.error.includes('degraded')) {
+      return 'Connected (some services degraded)';
+    }
+
     return 'Connected';
   }
 }

@@ -142,8 +142,8 @@ export const CyberpunkAuthModal: React.FC<CyberpunkAuthModalProps> = ({
     if (error.includes('Invalid response format')) {
       return 'Connection issue. Please try again or use demo login.';
     }
-    if (error.includes('Network error')) {
-      return 'Network connection failed. Please check your internet.';
+    if (error.includes('Network error') || error.includes('Failed to fetch')) {
+      return 'Network connection failed. Please check your internet connection.';
     }
     if (error.includes('Invalid credentials')) {
       return 'Invalid email or password. Please check your credentials.';
@@ -154,8 +154,17 @@ export const CyberpunkAuthModal: React.FC<CyberpunkAuthModalProps> = ({
     if (error.includes('User already exists')) {
       return 'Account already exists. Try logging in instead.';
     }
-    // Return the original error if no specific mapping found
-    return error;
+    if (error.includes('HTTP 404') || error.includes('404')) {
+      return 'Service temporarily unavailable. Please try demo login.';
+    }
+    if (error.includes('HTTP 500') || error.includes('500')) {
+      return 'Server error. Please try again in a moment.';
+    }
+    if (error.includes('timeout') || error.includes('Timeout')) {
+      return 'Connection timeout. Please check your network and try again.';
+    }
+    // Return user-friendly version of the error, removing technical details
+    return error.replace(/HTTP \d+:?/g, '').trim() || 'Authentication failed. Please try again.';
   };
 
   const handleDemoLogin = async () => {
@@ -291,8 +300,31 @@ export const CyberpunkAuthModal: React.FC<CyberpunkAuthModalProps> = ({
 
             {/* Error/Success Messages */}
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded px-3 py-2 text-red-400 text-sm font-mono text-center animate-pulse">
-                <span className="text-red-500">[ERROR]</span> {error}
+              <div className="space-y-2">
+                <div className="bg-red-900/20 border border-red-500/30 rounded px-3 py-2 text-red-400 text-sm font-mono text-center animate-pulse">
+                  <span className="text-red-500">[ERROR]</span> {error}
+                </div>
+                {/* Retry Options */}
+                <div className="flex gap-2 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      setSuccess('');
+                    }}
+                    className="px-3 py-1 text-xs font-mono text-cyan-400 border border-cyan-500/30 rounded hover:bg-cyan-500/10 transition-colors"
+                  >
+                    RETRY
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDemoLogin}
+                    disabled={isSubmitting}
+                    className="px-3 py-1 text-xs font-mono text-orange-400 border border-orange-500/30 rounded hover:bg-orange-500/10 transition-colors disabled:opacity-50"
+                  >
+                    DEMO LOGIN
+                  </button>
+                </div>
               </div>
             )}
             {success && (
@@ -320,7 +352,9 @@ export const CyberpunkAuthModal: React.FC<CyberpunkAuthModalProps> = ({
               {isSubmitting && (
                 <span className="inline-block animate-spin mr-2">⟳</span>
               )}
-              {isSubmitting ? 'CONNECTING...' :
+              {isSubmitting ?
+                (authMode === 'login' ? 'AUTHENTICATING...' :
+                 authMode === 'signup' ? 'CREATING ACCOUNT...' : 'PROCESSING...') :
                authMode === 'login' ? AUTH_MODAL_COPY.BUTTONS.LOGIN :
                authMode === 'signup' ? AUTH_MODAL_COPY.BUTTONS.SIGNUP : AUTH_MODAL_COPY.BUTTONS.RESET}
             </button>
@@ -353,6 +387,14 @@ export const CyberpunkAuthModal: React.FC<CyberpunkAuthModalProps> = ({
                 {AUTH_MODAL_COPY.LINK_TEXT.TO_LOGIN}
               </button>
             )}
+          </div>
+
+          {/* Connection Status Indicator */}
+          <div className="mt-4 flex items-center justify-center space-x-2 text-xs font-mono">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-green-400">BACKEND: ONLINE</span>
+            <span className="text-gray-500">|</span>
+            <span className="text-cyan-400">API: {process.env.NEXT_PUBLIC_API_URL?.includes('api.witnessos.space') ? 'CLOUDFLARE' : 'RAILWAY'}</span>
           </div>
 
           {/* Demo Admin Login Button */}

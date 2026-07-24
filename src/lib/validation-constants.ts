@@ -30,68 +30,69 @@ export const DEFAULT_TEST_USER = {
  */
 export const ENGINE_INPUT_TRANSFORMERS = {
   numerology: () => ({
-    fullName: DEFAULT_TEST_USER.fullName,
-    birthDate: DEFAULT_TEST_USER.birthDate,
+    full_name: DEFAULT_TEST_USER.fullName,
+    birth_date: DEFAULT_TEST_USER.birthDate,
     system: 'pythagorean' as const,
-    currentYear: DEFAULT_TEST_USER.currentYear
+    current_year: DEFAULT_TEST_USER.currentYear
   }),
 
   human_design: () => ({
-    fullName: DEFAULT_TEST_USER.fullName,
-    birthDate: DEFAULT_TEST_USER.birthDate,
-    birthTime: DEFAULT_TEST_USER.birthTime,
-    birthLocation: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
+    full_name: DEFAULT_TEST_USER.fullName,
+    birth_date: DEFAULT_TEST_USER.birthDate,
+    birth_time: DEFAULT_TEST_USER.birthTime,
+    birth_location: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
     timezone: DEFAULT_TEST_USER.birthLocation.timezone
   }),
 
   biorhythm: () => ({
-    birthDate: DEFAULT_TEST_USER.birthDate,
-    targetDate: DEFAULT_TEST_USER.targetDate,
-    forecastDays: 30,
-    includeExtendedCycles: true
+    birth_date: DEFAULT_TEST_USER.birthDate,
+    target_date: DEFAULT_TEST_USER.targetDate,
+    forecast_days: 30,
+    include_extended_cycles: true
   }),
 
   vimshottari: () => ({
-    birthDate: DEFAULT_TEST_USER.birthDate,
-    birthTime: DEFAULT_TEST_USER.birthTime,
-    birthLocation: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
+    birth_date: DEFAULT_TEST_USER.birthDate,
+    birth_time: DEFAULT_TEST_USER.birthTime,
+    birth_location: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
     timezone: DEFAULT_TEST_USER.birthLocation.timezone
   }),
 
   tarot: () => ({
     question: 'What guidance do you have for my spiritual path and consciousness development?',
-    spreadType: 'three_card' as const,
-    focusArea: 'spiritual_development'
+    spread_type: 'three_card' as const,
+    focus_area: 'spiritual_development'
   }),
 
   iching: () => ({
     question: 'What wisdom do you offer for my current life situation and growth?',
     method: 'coins' as const,
-    includeChangingLines: true
+    include_changing_lines: true
   }),
 
   gene_keys: () => ({
-    birthDate: DEFAULT_TEST_USER.birthDate,
-    birthTime: DEFAULT_TEST_USER.birthTime,
-    birthLocation: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
-    includeActivationSequence: true
+    birth_date: DEFAULT_TEST_USER.birthDate,
+    birth_time: DEFAULT_TEST_USER.birthTime,
+    birth_location: [DEFAULT_TEST_USER.birthLocation.latitude, DEFAULT_TEST_USER.birthLocation.longitude],
+    include_activation_sequence: true
   }),
 
   enneagram: () => ({
-    identificationMethod: 'intuitive' as const,
-    selectedType: 5, // Default to Type 5 for testing
-    includeWings: true,
-    includeArrows: true,
-    includeInstincts: true
+    identification_method: 'assessment' as const,
+    assessment_responses: {
+      'q1': '1',
+      'q2': '2',
+      'q3': '3'
+    }
   }),
-
-  sacred_geometry: () => ({
+  
+   sacred_geometry: () => ({
     intention: 'Explore the sacred patterns of consciousness and universal harmony',
-    patternType: 'mandala' as const,
-    petalCount: 8,
-    layerCount: 3,
-    colorScheme: 'chakra' as const,
-    meditationFocus: true
+    pattern_type: 'mandala' as const,
+    petal_count: 8,
+    layer_count: 3,
+    color_scheme: 'chakra' as const,
+    meditation_focus: true
   }),
 
   sigil_forge: () => ({
